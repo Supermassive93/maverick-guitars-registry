@@ -2,6 +2,9 @@
 *.txt
 !README.txt
 
+# Session notes (may contain keys)
+Session notes - MD Files/
+
 # Dependencies
 node_modules/
 .env

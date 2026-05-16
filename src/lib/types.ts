@@ -54,7 +54,9 @@ export interface Guitar {
   image_urls: string[] | null
   primary_image_url: string | null
   status: GuitarStatus
+  admin_notes: string | null
   submission_notes: string | null
+  submitter_email: string | null
 }
 
 export interface ModelSpec {

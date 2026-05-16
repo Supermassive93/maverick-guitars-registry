@@ -32,9 +32,17 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/admin/login', request.url))
   }
 
+  if (request.nextUrl.pathname === '/profile' && !user) {
+    return NextResponse.redirect(new URL('/login?next=/profile', request.url))
+  }
+
+  if ((request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register') && user) {
+    return NextResponse.redirect(new URL('/profile', request.url))
+  }
+
   return response
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/profile', '/login', '/register'],
 }

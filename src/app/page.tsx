@@ -1,21 +1,16 @@
 import { supabase } from '@/lib/supabase'
 import type { Guitar } from '@/lib/types'
-import GuitarCard from '@/components/GuitarCard'
-import RegistryStats from '@/components/RegistryStats'
+import RegistrySection from '@/components/RegistrySection'
 
 export const revalidate = 60
 
 async function getGuitars(): Promise<Guitar[]> {
   const { data, error } = await supabase
     .from('guitars')
-    .select('*')
+    .select('id, mgr_id, model, serial, series, generation, factory_colour, last_known_city, last_known_country, specification_source, primary_image_url, status')
     .eq('status', 'Approved')
     .order('mgr_id', { ascending: true })
-
-  if (error) {
-    console.error('Error fetching guitars:', error)
-    return []
-  }
+  if (error) { console.error(error); return [] }
   return data as Guitar[]
 }
 
@@ -23,31 +18,97 @@ export default async function RegistryPage() {
   const guitars = await getGuitars()
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="mb-12">
-        <h1 className="text-4xl font-bold tracking-tight text-white mb-3">
-          Maverick Guitars Registry
-        </h1>
-        <p className="text-zinc-400 text-lg max-w-2xl">
-          A permanent community record of surviving Maverick Guitar Company instruments.
-          Every guitar registered here is part of the historical archive.
-        </p>
-      </div>
+    <>
+      {/* HERO */}
+      <section style={{
+        minHeight: 'calc(100vh - 56px)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+        padding: '0 4rem 5rem',
+        position: 'relative',
+        overflow: 'hidden',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+      }}>
+        {/* Grid background */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(255,255,255,0.02) 60px),repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(255,255,255,0.02) 60px)',
+          pointerEvents: 'none',
+        }} />
+        {/* Glow */}
+        <div style={{
+          position: 'absolute', width: '600px', height: '600px',
+          background: 'radial-gradient(circle,rgba(200,169,110,0.07) 0%,transparent 70%)',
+          top: '-100px', right: '-100px', pointerEvents: 'none',
+        }} />
 
-      <RegistryStats count={guitars.length} />
+        <div style={{ position: 'relative' }}>
+          <p style={{
+            fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+            color: '#c8a96e', textTransform: 'uppercase', marginBottom: '24px',
+          }}>
+            Est. 1998 · Knebworth, UK · Community Archive
+          </p>
+          <h1 style={{
+            fontFamily: 'var(--font-bebas)',
+            fontSize: 'clamp(72px, 10vw, 140px)',
+            lineHeight: 0.92, letterSpacing: '3px',
+            color: '#f0ede8', marginBottom: '32px',
+          }}>
+            MAVERICK<br />
+            <span style={{ color: '#c8a96e' }}>GUITARS</span>
+          </h1>
+          <p style={{
+            maxWidth: '560px', color: '#9e9b96', fontSize: '16px', lineHeight: 1.7, marginBottom: '40px',
+          }}>
+            The community registry, identification guide and archive for Maverick Guitars — the British-designed guitar brand active 1998–2006. Document your instrument. Preserve the history.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <a href="#registry" style={{
+              background: '#c8a96e', color: '#000',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '13px', fontWeight: 500,
+              letterSpacing: '1.5px', padding: '14px 28px', textDecoration: 'none',
+              display: 'inline-block',
+            }}>
+              BROWSE REGISTRY
+            </a>
+            <a href="/submit" style={{
+              background: 'transparent', color: '#9e9b96',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '13px',
+              letterSpacing: '1px', padding: '14px 28px',
+              border: '1px solid rgba(255,255,255,0.15)', textDecoration: 'none',
+              display: 'inline-block', transition: 'color 0.2s, border-color 0.2s',
+            }}
+            className="btn-ghost"
+            >
+              REGISTER YOUR GUITAR
+            </a>
+          </div>
+        </div>
 
-      {guitars.length === 0 ? (
-        <div className="mt-16 text-center">
-          <p className="text-zinc-500 text-lg mb-2">No guitars registered yet.</p>
-          <p className="text-zinc-600">Be the first — <a href="/submit" className="text-red-500 hover:text-red-400 underline underline-offset-2">submit your guitar</a>.</p>
+        {/* Stats — bottom right */}
+        <div style={{
+          position: 'absolute', bottom: '5rem', right: '4rem',
+          display: 'flex', gap: '48px',
+        }} className="hero-stats-desktop">
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '48px', color: '#c8a96e', lineHeight: 1 }}>{guitars.length}</div>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '2px', color: '#5c5a57', textTransform: 'uppercase', marginTop: '4px' }}>Registered</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '48px', color: '#c8a96e', lineHeight: 1 }}>22</div>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '2px', color: '#5c5a57', textTransform: 'uppercase', marginTop: '4px' }}>Models</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '48px', color: '#c8a96e', lineHeight: 1 }}>2</div>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '2px', color: '#5c5a57', textTransform: 'uppercase', marginTop: '4px' }}>Generations</div>
+          </div>
         </div>
-      ) : (
-        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {guitars.map((guitar) => (
-            <GuitarCard key={guitar.id} guitar={guitar} />
-          ))}
-        </div>
-      )}
-    </div>
+      </section>
+
+      {/* REGISTRY */}
+      <RegistrySection guitars={guitars} />
+    </>
   )
 }

@@ -1,17 +1,18 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Bebas_Neue, DM_Sans, DM_Mono } from 'next/font/google'
 import './globals.css'
 import Nav from '@/components/Nav'
 
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
-const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
+const bebasNeue = Bebas_Neue({ variable: '--font-bebas', weight: '400', subsets: ['latin'] })
+const dmSans    = DM_Sans({ variable: '--font-dm-sans', subsets: ['latin'], weight: ['300','400','500'] })
+const dmMono    = DM_Mono({ variable: '--font-dm-mono', subsets: ['latin'], weight: ['300','400','500'] })
 
 export const metadata: Metadata = {
   title: 'Maverick Guitars Registry',
-  description: 'A community registry and identification resource for Maverick Guitar Company instruments.',
+  description: 'The community registry, identification guide and archive for Maverick Guitars — the British guitar brand active 1998–2006.',
   openGraph: {
     title: 'Maverick Guitars Registry',
-    description: 'Community registry for Maverick Guitar Company instruments.',
+    description: 'The community registry, identification guide and archive for Maverick Guitars.',
     url: 'https://maverickguitars.org',
   },
 }
@@ -19,12 +20,16 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-zinc-100 min-h-screen`}>
+      <body className={`${bebasNeue.variable} ${dmSans.variable} ${dmMono.variable} antialiased min-h-screen`}>
         <Nav />
-        <main>{children}</main>
-        <footer className="border-t border-zinc-800 mt-24 py-10 text-center text-zinc-600 text-sm">
-          <p>Maverick Guitars Registry — an independent community project</p>
-          <p className="mt-1">Maverick Guitar Company Limited operated 1998–2006 · 6 Warren Business Park, Knebworth, Hertfordshire</p>
+        <main style={{ paddingTop: '56px' }}>{children}</main>
+        <footer style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} className="mt-24 py-10 text-center text-sm">
+          <p style={{ color: '#5c5a57', fontFamily: 'var(--font-dm-mono)' }}>
+            Maverick Guitars Registry — an independent community project
+          </p>
+          <p style={{ color: '#5c5a57', fontFamily: 'var(--font-dm-mono)', marginTop: '4px' }}>
+            Maverick Guitar Company Limited · Est. 1998 · Knebworth, Hertfordshire
+          </p>
         </footer>
       </body>
     </html>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import type { Guitar } from '@/lib/types'
-import { supabase } from '@/lib/supabase'
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 
 interface Props {
@@ -33,6 +33,7 @@ function GuitarPanel({ guitar, onAction }: { guitar: Guitar; onAction: () => voi
 
   async function act(status: 'Approved' | 'Rejected') {
     setLoading(true)
+    const supabase = createSupabaseBrowserClient()
     const { error } = await supabase
       .from('guitars')
       .update({
@@ -149,6 +150,7 @@ export default function AdminDashboard({ pending, recent }: Props) {
   const [tab, setTab] = useState<'pending' | 'recent'>('pending')
 
   async function signOut() {
+    const supabase = createSupabaseBrowserClient()
     await supabase.auth.signOut()
     router.push('/admin/login')
     router.refresh()

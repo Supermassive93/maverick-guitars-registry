@@ -4,19 +4,42 @@ interface Props {
 
 export default function RegistryStats({ count }: Props) {
   return (
-    <div className="flex gap-6 border-y border-zinc-800 py-6">
-      <div>
-        <p className="text-3xl font-bold text-white font-mono">{count}</p>
-        <p className="text-zinc-500 text-sm mt-1">Guitars registered</p>
-      </div>
-      <div className="border-l border-zinc-800 pl-6">
-        <p className="text-3xl font-bold text-white font-mono">21</p>
-        <p className="text-zinc-500 text-sm mt-1">Models documented</p>
-      </div>
-      <div className="border-l border-zinc-800 pl-6">
-        <p className="text-3xl font-bold text-white font-mono">1998–2006</p>
-        <p className="text-zinc-500 text-sm mt-1">Production years</p>
-      </div>
+    <div style={{
+      display: 'flex',
+      gap: '0',
+      borderTop: '1px solid rgba(255,255,255,0.08)',
+      borderBottom: '1px solid rgba(255,255,255,0.08)',
+      padding: '24px 0',
+      marginBottom: '8px',
+    }}>
+      <StatItem value={String(count)} label="Guitars registered" />
+      <StatItem value="22" label="Models documented" />
+      <StatItem value="1998–2006" label="Production years" />
+    </div>
+  )
+}
+
+function StatItem({ value, label }: { value: string; label: string }) {
+  return (
+    <div style={{
+      paddingRight: '40px',
+      marginRight: '40px',
+      borderRight: '1px solid rgba(255,255,255,0.08)',
+    }}
+    className="last:border-r-0 last:pr-0 last:mr-0"
+    >
+      <p style={{
+        fontFamily: 'var(--font-bebas)',
+        fontSize: '2rem',
+        letterSpacing: '1px',
+        color: '#c8a96e',
+        lineHeight: 1,
+      }}>
+        {value}
+      </p>
+      <p style={{ color: '#5c5a57', fontSize: '12px', fontFamily: 'var(--font-dm-mono)', marginTop: '4px', letterSpacing: '0.5px' }}>
+        {label}
+      </p>
     </div>
   )
 }

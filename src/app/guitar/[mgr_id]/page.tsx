@@ -19,29 +19,58 @@ function formatMgrId(id: number) {
   return `MGR-${String(id).padStart(4, '0')}`
 }
 
-function Badge({ label, colour }: { label: string; colour: string }) {
-  return <span className={`text-xs px-2 py-0.5 rounded font-mono ${colour}`}>{label}</span>
+function SpecBadge({ source }: { source: string | null }) {
+  if (!source) return null
+  const map: Record<string, { label: string; color: string; bg: string }> = {
+    'Catalogue Confirmed': { label: 'Catalogue Confirmed', color: '#4ade80', bg: 'rgba(74,222,128,0.1)' },
+    'Press Confirmed':     { label: 'Press Confirmed',     color: '#60a5fa', bg: 'rgba(96,165,250,0.1)' },
+    'Owner Confirmed':     { label: 'Owner Confirmed',     color: '#c084fc', bg: 'rgba(192,132,252,0.1)' },
+    'Registry Derived':    { label: 'Registry Derived',    color: '#c8a96e', bg: 'rgba(200,169,110,0.12)' },
+    'Unverified':          { label: 'Unverified',          color: '#5c5a57', bg: 'rgba(255,255,255,0.04)' },
+  }
+  const entry = map[source]
+  if (!entry) return null
+  return (
+    <span style={{
+      fontSize: '11px',
+      fontFamily: 'var(--font-dm-mono)',
+      color: entry.color,
+      background: entry.bg,
+      padding: '3px 8px',
+      letterSpacing: '0.3px',
+    }}>
+      {entry.label}
+    </span>
+  )
 }
 
-function specBadge(source: string | null) {
-  const map: Record<string, { label: string; colour: string }> = {
-    'Catalogue Confirmed': { label: 'Catalogue Confirmed', colour: 'bg-emerald-900/60 text-emerald-400' },
-    'Press Confirmed':     { label: 'Press Confirmed',     colour: 'bg-blue-900/60 text-blue-400' },
-    'Owner Confirmed':     { label: 'Owner Confirmed',     colour: 'bg-violet-900/60 text-violet-400' },
-    'Registry Derived':    { label: 'Registry Derived',    colour: 'bg-yellow-900/60 text-yellow-400' },
-    'Unverified':          { label: 'Unverified',          colour: 'bg-zinc-800 text-zinc-500' },
-  }
-  const entry = source ? map[source] : null
-  if (!entry) return null
-  return <Badge {...entry} />
+function Tag({ label }: { label: string }) {
+  return (
+    <span style={{
+      fontSize: '12px',
+      fontFamily: 'var(--font-dm-mono)',
+      color: '#9e9b96',
+      background: 'rgba(255,255,255,0.05)',
+      padding: '3px 10px',
+      letterSpacing: '0.3px',
+    }}>
+      {label}
+    </span>
+  )
 }
 
 function Field({ label, value }: { label: string; value: string | number | null | undefined }) {
   if (!value && value !== 0) return null
   return (
-    <div className="flex gap-3 py-2 border-b border-zinc-800/50 text-sm">
-      <span className="text-zinc-500 w-48 shrink-0">{label}</span>
-      <span className="text-zinc-200">{String(value)}</span>
+    <div style={{
+      display: 'flex',
+      gap: '16px',
+      padding: '10px 0',
+      borderBottom: '1px solid rgba(255,255,255,0.06)',
+      fontSize: '14px',
+    }}>
+      <span style={{ color: '#5c5a57', width: '200px', flexShrink: 0, fontFamily: 'var(--font-dm-mono)', fontSize: '12px' }}>{label}</span>
+      <span style={{ color: '#f0ede8' }}>{String(value)}</span>
     </div>
   )
 }
@@ -58,50 +87,93 @@ export default async function GuitarPage({ params }: { params: Promise<{ mgr_id:
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
-      <div className="mb-6">
-        <Link href="/" className="text-zinc-500 hover:text-zinc-300 text-sm transition-colors">← Registry</Link>
+      <div style={{ marginBottom: '24px' }}>
+        <Link
+          href="/"
+          className="link-muted"
+          style={{ fontSize: '13px', fontFamily: 'var(--font-dm-mono)', letterSpacing: '0.5px' }}
+        >
+          ← Registry
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         {/* Images */}
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {images.length > 0 ? (
             images.map((url, i) => (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={i} src={url} alt={`${guitar.model} photo ${i + 1}`} className="w-full rounded-lg border border-zinc-800" />
+              <img
+                key={i}
+                src={url}
+                alt={`${guitar.model} photo ${i + 1}`}
+                style={{ width: '100%', border: '1px solid rgba(255,255,255,0.08)', display: 'block' }}
+              />
             ))
           ) : (
-            <div className="aspect-square bg-zinc-900 border border-zinc-800 rounded-lg flex items-center justify-center text-zinc-700 text-7xl font-mono">♦</div>
+            <div style={{
+              aspectRatio: '1',
+              background: '#161616',
+              border: '1px solid rgba(255,255,255,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#2a2a2a', fontSize: '5rem', fontFamily: 'var(--font-dm-mono)',
+            }}>
+              ♦
+            </div>
           )}
         </div>
 
         {/* Details */}
         <div>
-          <div className="flex items-start gap-3 mb-1">
-            <span className="font-mono text-sm text-zinc-500">{formatMgrId(guitar.mgr_id)}</span>
-            {specBadge(guitar.specification_source)}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: '#5c5a57', letterSpacing: '0.5px' }}>
+              {formatMgrId(guitar.mgr_id)}
+            </span>
+            <SpecBadge source={guitar.specification_source} />
           </div>
-          <h1 className="text-3xl font-bold text-white mt-1">{guitar.model ?? 'Unknown model'}</h1>
-          {guitar.serial && <p className="text-zinc-400 font-mono text-lg mt-1">{guitar.serial}</p>}
 
-          <div className="flex flex-wrap gap-2 mt-4">
-            {guitar.generation && <Badge label={guitar.generation} colour="bg-zinc-800 text-zinc-300" />}
-            {guitar.series && <Badge label={guitar.series} colour="bg-zinc-800 text-zinc-400" />}
-            {guitar.left_handed === 'Yes — Factory' && <Badge label="Left handed" colour="bg-zinc-800 text-zinc-400" />}
+          <h1 style={{
+            fontFamily: 'var(--font-bebas)',
+            fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
+            letterSpacing: '2px',
+            color: '#f0ede8',
+            lineHeight: 1,
+            marginBottom: '8px',
+          }}>
+            {guitar.model ?? 'Unknown model'}
+          </h1>
+
+          {guitar.serial && (
+            <p style={{ color: '#9e9b96', fontFamily: 'var(--font-dm-mono)', fontSize: '14px', marginBottom: '16px' }}>
+              {guitar.serial}
+            </p>
+          )}
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '24px' }}>
+            {guitar.generation && <Tag label={guitar.generation} />}
+            {guitar.series && <Tag label={guitar.series} />}
+            {guitar.left_handed === 'Yes — Factory' && <Tag label="Left handed" />}
           </div>
 
           {(guitar.last_known_city || guitar.last_known_country) && (
-            <p className="text-zinc-500 text-sm mt-4">
-              📍 Last known: {[guitar.last_known_city, guitar.last_known_region, guitar.last_known_country].filter(Boolean).join(', ')}
+            <p style={{ color: '#5c5a57', fontSize: '13px', fontFamily: 'var(--font-dm-mono)', marginBottom: '8px' }}>
+              {[guitar.last_known_city, guitar.last_known_region, guitar.last_known_country].filter(Boolean).join(', ')}
             </p>
           )}
 
           {guitar.last_price && (
-            <p className="text-zinc-500 text-sm mt-1">Last known price: £{guitar.last_price}</p>
+            <p style={{ color: '#5c5a57', fontSize: '13px', fontFamily: 'var(--font-dm-mono)', marginBottom: '24px' }}>
+              Last known price: £{guitar.last_price}
+            </p>
           )}
 
-          <div className="mt-8 space-y-0">
-            <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">Specification</h2>
+          <div style={{ marginTop: '24px' }}>
+            <p style={{
+              fontSize: '10px', fontFamily: 'var(--font-dm-mono)', color: '#5c5a57',
+              letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px',
+            }}>
+              Specification
+            </p>
             <Field label="Catalogue year"       value={guitar.catalogue_year} />
             <Field label="Finish"               value={guitar.finish_type} />
             <Field label="Colour"               value={guitar.factory_colour ?? guitar.custom_shop_colour} />
@@ -128,15 +200,23 @@ export default async function GuitarPage({ params }: { params: Promise<{ mgr_id:
           </div>
 
           {guitar.submission_notes && (
-            <div className="mt-8 p-4 bg-zinc-900 rounded-lg border border-zinc-800">
-              <p className="text-xs text-zinc-500 uppercase tracking-widest mb-2">Notes</p>
-              <p className="text-zinc-300 text-sm">{guitar.submission_notes}</p>
+            <div style={{
+              marginTop: '32px',
+              padding: '16px',
+              background: '#161616',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}>
+              <p style={{ fontSize: '10px', fontFamily: 'var(--font-dm-mono)', color: '#5c5a57', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px' }}>
+                Notes
+              </p>
+              <p style={{ color: '#9e9b96', fontSize: '14px', lineHeight: 1.6 }}>{guitar.submission_notes}</p>
             </div>
           )}
 
           {guitar.date_approved && (
-            <p className="text-zinc-600 text-xs mt-6">
-              Added to registry {new Date(guitar.date_approved).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })}
+            <p style={{ color: '#5c5a57', fontSize: '12px', fontFamily: 'var(--font-dm-mono)', marginTop: '24px' }}>
+              Added to registry{' '}
+              {new Date(guitar.date_approved).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           )}
         </div>

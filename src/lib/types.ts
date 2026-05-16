@@ -1,5 +1,9 @@
+export type BodyContouring = 'Full Maverick contouring' | 'Partial contouring' | 'No contouring'
+export type SourceMaterialType = 'Catalogue' | 'Magazine' | 'Advertisement' | 'Receipt' | 'Photograph' | 'Video' | 'Audio' | 'Other'
+export type ArticleType = 'Article' | 'Testimonial' | 'Interview' | 'News'
+
 export type SerialStatus = 'Complete' | 'Partial' | 'Prefix only' | 'None Visible'
-export type Series = 'F-Series' | 'X-Series' | 'Species' | 'Chaos' | 'S-Series' | 'Streetfighter' | 'Matrix' | 'G-Series' | 'B-Series' | 'Unknown'
+export type Series = 'F-Series' | 'X-Series' | 'X-Treme' | 'Species' | 'Chaos' | 'S-Series' | 'Streetfighter' | 'Matrix' | 'G-Series' | 'B-Series' | 'Unknown'
 export type Generation = 'Gen 1' | 'Gen 2' | 'Gen 3' | 'Unknown'
 export type FinishType = 'Factory Finish' | 'Custom Shop Finish' | 'Refinished' | 'Unknown'
 export type GuitarStatus = 'Pending' | 'Approved' | 'Rejected'
@@ -8,6 +12,7 @@ export type SpecSource = 'Catalogue Confirmed' | 'Press Confirmed' | 'Registry D
 export interface Guitar {
   id: string
   mgr_id: number
+  user_id: string | null
   serial: string | null
   serial_number_only: number | null
   serial_status: SerialStatus | null
@@ -57,6 +62,44 @@ export interface Guitar {
   admin_notes: string | null
   submission_notes: string | null
   submitter_email: string | null
+  registered_by: string | null
+}
+
+export interface CatalogueModel {
+  id: string
+  catalogue_year: string
+  model: string
+  series: string | null
+  available_colours: string[] | null
+  pickup_configuration: string | null
+  bridge_type: string | null
+  body_wood: string | null
+  neck_wood: string | null
+  fretboard_wood: string | null
+  neck_profile: string | null
+  neck_construction: string | null
+  fret_count: string | null
+  scale_length: string | null
+  hardware_colour: string | null
+  pickup_surrounds: string | null
+  pickup_colour: string | null
+  pickup_covers: string | null
+  switch_type: string | null
+  potentiometers: string | null
+  locking_nut: string | null
+  headstock_style: string | null
+  headstock_face: string | null
+  headstock_logo: string | null
+  string_count: string | null
+  body_shape_analogue: string | null
+  body_contouring: BodyContouring | null
+  fret_markers: string | null
+  left_handed_available: boolean | null
+  original_rrp: number | null
+  left_handed_rrp: number | null
+  notes: string | null
+  source: string | null
+  created_at: string | null
 }
 
 export interface ModelSpec {
@@ -86,6 +129,40 @@ export interface ModelSpec {
   notes: string | null
 }
 
+export interface Profile {
+  id: string
+  username: string | null
+  created_at: string | null
+}
+
+export interface SourceMaterial {
+  id: string
+  title: string
+  material_type: SourceMaterialType
+  year: string | null
+  description: string | null
+  file_url: string | null
+  thumbnail_url: string | null
+  source_credit: string | null
+  notes: string | null
+  is_published: boolean
+  created_at: string | null
+}
+
+export interface Article {
+  id: string
+  title: string
+  slug: string
+  content: string | null
+  excerpt: string | null
+  author: string | null
+  article_type: ArticleType
+  is_published: boolean
+  published_at: string | null
+  created_at: string | null
+  updated_at: string | null
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -98,6 +175,26 @@ export interface Database {
         Row: ModelSpec
         Insert: Omit<ModelSpec, 'id'>
         Update: Partial<Omit<ModelSpec, 'id'>>
+      }
+      catalogue_models: {
+        Row: CatalogueModel
+        Insert: Omit<CatalogueModel, 'id' | 'created_at'>
+        Update: Partial<Omit<CatalogueModel, 'id' | 'created_at'>>
+      }
+      profiles: {
+        Row: Profile
+        Insert: Omit<Profile, 'created_at'>
+        Update: Partial<Omit<Profile, 'id' | 'created_at'>>
+      }
+      source_materials: {
+        Row: SourceMaterial
+        Insert: Omit<SourceMaterial, 'id' | 'created_at'>
+        Update: Partial<Omit<SourceMaterial, 'id' | 'created_at'>>
+      }
+      articles: {
+        Row: Article
+        Insert: Omit<Article, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Article, 'id' | 'created_at'>>
       }
     }
   }

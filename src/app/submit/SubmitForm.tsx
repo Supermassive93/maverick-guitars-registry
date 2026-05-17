@@ -29,6 +29,7 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
   'B1':               { series: 'B-Series',      prefix: 'B1-' },
   'S4':               { series: 'S-Series',      prefix: 'S4-' },
   'S5':               { series: 'S-Series',      prefix: 'S5-' },
+  'Z-47':             { series: 'Z-Series',      prefix: 'Z47-' },
   'JR4':              { series: 'JR-Series',     prefix: 'JR4-' },
   'Unknown':          { series: 'Unknown',       prefix: '' },
 }
@@ -1120,7 +1121,7 @@ export default function SubmitForm() {
             <Select value={form.headstock_style} onChange={set('headstock_style')} options={['6-aside', '6-aside reversed', '3-aside', '4-aside', '3+2 (3 tuners standard side, 2 opposing edge)', 'Unknown']} />
           </Field>
           <Field label="Scale length" prefilled={prefilledFields.has('scale_length')}>
-            <Select value={form.scale_length} onChange={set('scale_length')} options={['25" (Maverick / PRS Core)', '25.5" (Fender / Ibanez)', '24.75" (Gibson)', '24.724" (PRS SE)', 'Unknown']} />
+            <Select value={form.scale_length} onChange={set('scale_length')} options={['25" (Maverick / PRS Core)', '25.5" (Fender / Ibanez)', '24.75" (Gibson)', '24.724" (PRS SE)', '34" (Standard Bass)', '30" (Short Scale Bass)', 'Unknown']} />
           </Field>
           <Field label="Fret count" prefilled={prefilledFields.has('fret_count')}>
             <Select value={form.fret_count} onChange={set('fret_count')} options={['19', '21', '22', '24', 'Unknown']} />

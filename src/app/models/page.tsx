@@ -35,7 +35,7 @@ export default async function ModelsPage() {
   type CatalogueRow = Omit<SpecRow, 'description' | 'rarity'>
   type ShapeRow = { model: string; body_shape_analogue: string | null; headstock_style: string | null }
 
-  const [{ data: rawSpecRows }, { data: rawCatalogueRows }, { data: rawShapeRows }] = await Promise.all([
+  const [{ data: rawSpecRows }, { data: rawCatalogueRows }, { data: rawShapeRows }, { data: rawCounts }] = await Promise.all([
     supabase
       .from('model_specifications')
       .select('model, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type, description, rarity'),
@@ -46,6 +46,10 @@ export default async function ModelsPage() {
     supabase
       .from('model_shape_registry')
       .select('model, body_shape_analogue, headstock_style'),
+    supabase
+      .from('guitars')
+      .select('model')
+      .eq('status', 'Approved'),
   ])
 
   const specByModel = new Map<string, SpecRow>()
@@ -62,6 +66,13 @@ export default async function ModelsPage() {
   const shapeByModel = new Map<string, ShapeRow>()
   for (const row of (rawShapeRows ?? []) as ShapeRow[]) {
     shapeByModel.set(row.model, row)
+  }
+
+  // Only show rarity once ≥ 3 approved guitars exist for the model
+  const registryCountByModel = new Map<string, number>()
+  for (const row of (rawCounts ?? []) as { model: string | null }[]) {
+    if (!row.model) continue
+    registryCountByModel.set(row.model, (registryCountByModel.get(row.model) ?? 0) + 1)
   }
 
   function normaliseHeadstock(raw: string): string {
@@ -156,7 +167,8 @@ export default async function ModelsPage() {
           {models.map(m => {
             const spec = specByModel.get(m.model)
             const description = spec?.description ?? m.description
-            const rarity = spec?.rarity ?? m.rarity
+            const rarityRaw = spec?.rarity ?? m.rarity
+            const rarity = (registryCountByModel.get(m.model) ?? 0) >= 3 ? rarityRaw : null
             return (
             <div key={m.model} style={{ background: '#161616', padding: '2rem', display: 'flex', flexDirection: 'column' }}>
               <div style={{

@@ -241,6 +241,20 @@ export const MODEL_CATALOGUE: ModelData[] = [
     ],
     rarity: 'Rarely seen',
   },
+  // Z-Series
+  {
+    model: 'Z-47',
+    series: 'Z-Series',
+    description: 'A 4-string bass built on the Explorer/Mockingbird body platform — the only known Maverick bass to use this angular body shape. Features the Evolution Roller Pot complement in a straight-line configuration beneath the bridge, consistent with the B1. Bolt-on two-piece scarf joint neck with skunk stripe, 24-fret Indian Rosewood fingerboard, 4-aside headstock.',
+    specs: [
+      { key: 'Body style', value: 'Explorer-Mockingbird' },
+      { key: 'Headstock', value: '4-aside' },
+      { key: 'Frets', value: '24' },
+      { key: 'Fretboard', value: 'AAA Indian Rosewood' },
+      { key: 'Potentiometers', value: 'Factory Patented Evolution Roller Pots' },
+    ],
+    rarity: 'Rarely seen',
+  },
   // S-Series (bass — 2002 catalogue)
   {
     model: 'S4',
@@ -273,6 +287,7 @@ export const SERIES_ORDER = [
   // Bass guitars below the divider
   'B-Series',
   'S-Series',
+  'Z-Series',
 ]
 
-export const BASS_SERIES = ['B-Series', 'S-Series']
+export const BASS_SERIES = ['B-Series', 'S-Series', 'Z-Series']

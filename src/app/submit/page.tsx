@@ -90,6 +90,7 @@ type FormState = {
   bridge_configuration: string
   hardware_colour: string
   headstock_face: string
+  headstock_style: string
   headstock_logo: string
   bridge_logo: string
   pickup_surrounds: string
@@ -100,11 +101,16 @@ type FormState = {
   switch_knob: string
   potentiometers: string
   whammy_bar: string
+  fret_count: string
+  fretboard_wood: string
   neck_construction: string
   skunk_stripe: string
   headstock_break_angle: string
   neck_pitch: string
   left_handed: string
+  last_known_country: string
+  last_known_region: string
+  last_known_city: string
   source_type: string
   source_url: string
   last_price: string
@@ -118,11 +124,13 @@ const INITIAL: FormState = {
   left_handed: 'No',
   body_wood: '', body_shape_analogue: '', pickup_configuration: '',
   neck_pickup: '', middle_pickup: '', bridge_pickup: '', bridge_configuration: '',
-  hardware_colour: '', headstock_face: '', headstock_logo: '', bridge_logo: '', pickup_surrounds: '',
+  hardware_colour: '', headstock_face: '', headstock_style: '', headstock_logo: '', bridge_logo: '', pickup_surrounds: '',
   pickup_colours: '', tuner_style: '',
   neck_binding: '', switch_type: '', switch_knob: '', potentiometers: '',
-  whammy_bar: '', neck_construction: '', skunk_stripe: '', headstock_break_angle: '',
-  neck_pitch: '', source_type: '', source_url: '', last_price: '',
+  whammy_bar: '', fret_count: '', fretboard_wood: '',
+  neck_construction: '', skunk_stripe: '', headstock_break_angle: '',
+  neck_pitch: '', last_known_country: '', last_known_region: '', last_known_city: '',
+  source_type: '', source_url: '', last_price: '',
   submitter_email: '', submission_notes: '',
 }
 
@@ -428,6 +436,7 @@ function SubmitForm() {
         bridge_configuration: form.bridge_configuration || null,
         hardware_colour: form.hardware_colour || null,
         headstock_face: form.headstock_face || null,
+        headstock_style: form.headstock_style || null,
         headstock_logo: form.headstock_logo || null,
         bridge_logo: form.bridge_logo === 'Aftermarket branded' && bridgeLogoBrand
           ? `Aftermarket branded — ${bridgeLogoBrand}`
@@ -440,11 +449,16 @@ function SubmitForm() {
         switch_knob: form.switch_knob || null,
         potentiometers: form.potentiometers || null,
         whammy_bar: form.whammy_bar || null,
+        fret_count: form.fret_count || null,
+        fretboard_wood: form.fretboard_wood || null,
         neck_construction: form.neck_construction || null,
         skunk_stripe: form.skunk_stripe || null,
         headstock_break_angle: form.headstock_break_angle ? parseFloat(form.headstock_break_angle) : null,
         neck_pitch: form.neck_pitch ? parseFloat(form.neck_pitch) : null,
         left_handed: form.left_handed || null,
+        last_known_country: form.last_known_country || null,
+        last_known_region: form.last_known_region || null,
+        last_known_city: form.last_known_city || null,
         source_type: form.source_type || null,
         source_url: form.source_url || null,
         last_price: form.last_price ? parseFloat(form.last_price) : null,
@@ -622,11 +636,63 @@ function SubmitForm() {
 
   if (submitted) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-24 text-center">
-        <p className="text-5xl mb-6">✓</p>
-        <h1 className="text-2xl font-bold text-white mb-3">Submission received</h1>
-        <p className="text-zinc-400">Your guitar has been submitted for review. Once approved it will appear in the registry.</p>
-        <a href="/" className="inline-block mt-8 text-sm text-red-500 hover:text-red-400">← Back to registry</a>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem' }}>
+        <div style={{ width: '100%', maxWidth: '560px' }}>
+          <p style={{
+            fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+            letterSpacing: '3px', color: '#c8a96e',
+            textTransform: 'uppercase', marginBottom: '20px',
+          }}>
+            Submission received
+          </p>
+          <h1 style={{
+            fontFamily: 'var(--font-bebas)',
+            fontSize: 'clamp(48px, 7vw, 80px)',
+            letterSpacing: '3px', lineHeight: 0.92,
+            color: '#f0ede8', marginBottom: '28px',
+          }}>
+            GUITAR REGISTERED
+          </h1>
+          <p style={{ color: '#9e9b96', fontSize: '15px', lineHeight: 1.75, marginBottom: '8px' }}>
+            Your submission is pending review. Once approved it will appear in the registry.
+          </p>
+          {form.submitter_email && (
+            <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: '#5c5a57', marginBottom: '40px' }}>
+              Confirmation will be sent to {form.submitter_email}
+            </p>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '32px', flexWrap: 'wrap' }}>
+            <Link
+              href="/"
+              style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                letterSpacing: '1px', textTransform: 'uppercase',
+                color: '#c8a96e', textDecoration: 'none',
+              }}
+            >
+              ← Back to registry
+            </Link>
+            <button
+              onClick={() => {
+                setSubmitted(false)
+                setForm(INITIAL)
+                setSerialDigits('')
+                setImages([])
+                setIsModified(false)
+                setPrefilledFields(new Set())
+                setBridgeLogoBrand('')
+              }}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                letterSpacing: '1px', textTransform: 'uppercase',
+                color: '#5c5a57',
+              }}
+            >
+              Register another →
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
@@ -798,7 +864,7 @@ function SubmitForm() {
           <div>
             <label className="block text-sm text-zinc-400 mb-1">Handed</label>
             <div style={{ display: 'inline-flex', border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden' }}>
-              {(['No', 'Yes'] as const).map(val => {
+              {(['No', 'Yes', 'Unknown'] as const).map(val => {
                 const active = form.left_handed === val
                 return (
                   <button
@@ -818,7 +884,7 @@ function SubmitForm() {
                       transition: 'background 0.15s, color 0.15s',
                     }}
                   >
-                    {val === 'No' ? 'Right Handed' : 'Left Handed'}
+                    {val === 'No' ? 'Right handed' : val === 'Yes' ? 'Left handed' : 'Unknown'}
                   </button>
                 )
               })}
@@ -872,6 +938,9 @@ function SubmitForm() {
           )}
           <Field label="Headstock face colour" prefilled={prefilledFields.has('headstock_face')}>
             <Select value={form.headstock_face} onChange={set('headstock_face')} options={['Gloss Black', 'Matches body colour', 'Other']} />
+          </Field>
+          <Field label="Headstock style">
+            <Select value={form.headstock_style} onChange={set('headstock_style')} options={['6-aside', '6-aside reversed', '4-aside', '3+2 (3 tuners standard side, 2 opposing edge)', 'Unknown']} />
           </Field>
           <Field label="Headstock logo">
             <Select value={form.headstock_logo} onChange={set('headstock_logo')} options={['Reflective metal inlay', 'Cream silkscreen', 'Unknown']} />
@@ -972,6 +1041,12 @@ function SubmitForm() {
           <Field label="Neck construction">
             <Select value={form.neck_construction} onChange={set('neck_construction')} options={['Factory - Bolt-on 2-piece scarf joint', 'Factory - Bolt-on 1-piece', 'Set neck', 'Through neck', 'Aftermarket replacement neck', 'Unknown']} />
           </Field>
+          <Field label="Fret count">
+            <Select value={form.fret_count} onChange={set('fret_count')} options={['19', '21', '22', '24', 'Unknown']} />
+          </Field>
+          <Field label="Fretboard wood">
+            <Select value={form.fretboard_wood} onChange={set('fretboard_wood')} options={['AAA Indian Rosewood', 'Maple', 'Ebony', 'Split — Rosewood & Maple', 'Unknown']} />
+          </Field>
           <Field label="Neck binding" prefilled={prefilledFields.has('neck_binding')}>
             <Select value={form.neck_binding} onChange={set('neck_binding')} options={['Factory - No Binding', 'Factory - Cream Binding', 'Refinished Binding', 'Unknown']} />
           </Field>
@@ -996,6 +1071,17 @@ function SubmitForm() {
           <div className="sm:col-span-2">
             <Field label="Source URL">
               <input type="url" value={form.source_url} onChange={e => set('source_url')(e.target.value)} placeholder="https://…" className={inputCls} />
+            </Field>
+          </div>
+          <Field label="Last known country">
+            <Select value={form.last_known_country} onChange={set('last_known_country')} options={['United Kingdom', 'Ireland', 'United States', 'Canada', 'Australia', 'New Zealand', 'Germany', 'France', 'Netherlands', 'Belgium', 'Sweden', 'Norway', 'Denmark', 'Spain', 'Italy', 'Other']} />
+          </Field>
+          <Field label="Last known region">
+            <input type="text" value={form.last_known_region} onChange={e => set('last_known_region')(e.target.value)} placeholder="e.g. Scotland, California, New South Wales…" maxLength={80} className={inputCls} />
+          </Field>
+          <div className="sm:col-span-2">
+            <Field label="Last known city">
+              <input type="text" value={form.last_known_city} onChange={e => set('last_known_city')(e.target.value)} placeholder="e.g. Glasgow, Los Angeles, Sydney…" maxLength={80} className={inputCls} />
             </Field>
           </div>
         </Section>

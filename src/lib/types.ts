@@ -35,6 +35,7 @@ export interface Guitar {
   bridge_configuration: string | null
   hardware_colour: string | null
   headstock_face: string | null
+  headstock_style: string | null
   headstock_logo: string | null
   bridge_logo: string | null
   pickup_surrounds: string | null
@@ -45,6 +46,8 @@ export interface Guitar {
   switch_knob: string | null
   potentiometers: string | null
   whammy_bar: string | null
+  fret_count: string | null
+  fretboard_wood: string | null
   neck_construction: string | null
   skunk_stripe: string | null
   headstock_break_angle: number | null

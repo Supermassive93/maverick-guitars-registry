@@ -32,12 +32,17 @@ export default async function ModelsPage() {
     description: string | null
     rarity: string | null
   }
+  type CatalogueRow = Omit<SpecRow, 'description' | 'rarity'>
   type ShapeRow = { model: string; body_shape_analogue: string | null; headstock_style: string | null }
 
-  const [{ data: rawSpecRows }, { data: rawShapeRows }] = await Promise.all([
+  const [{ data: rawSpecRows }, { data: rawCatalogueRows }, { data: rawShapeRows }] = await Promise.all([
     supabase
       .from('model_specifications')
       .select('model, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type, description, rarity'),
+    supabase
+      .from('catalogue_models')
+      .select('model, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type')
+      .order('catalogue_year', { ascending: false }),
     supabase
       .from('model_shape_registry')
       .select('model, body_shape_analogue, headstock_style'),
@@ -46,6 +51,12 @@ export default async function ModelsPage() {
   const specByModel = new Map<string, SpecRow>()
   for (const row of (rawSpecRows ?? []) as SpecRow[]) {
     specByModel.set(row.model, row)
+  }
+
+  // catalogue_models: keep only the most recent row per model as fallback
+  const catalogueByModel = new Map<string, CatalogueRow>()
+  for (const row of (rawCatalogueRows ?? []) as CatalogueRow[]) {
+    if (!catalogueByModel.has(row.model)) catalogueByModel.set(row.model, row)
   }
 
   const shapeByModel = new Map<string, ShapeRow>()
@@ -60,29 +71,43 @@ export default async function ModelsPage() {
     return raw
   }
 
+  const SPEC_FIELD_MAP: Record<string, keyof CatalogueRow> = {
+    'Body style':    'body_shape_analogue',
+    'Body wood':     'body_wood',
+    'Pickup config': 'pickup_configuration',
+    'Bridge':        'bridge_type',
+    'Headstock':     'headstock_style',
+    'Frets':         'fret_count',
+    'Fretboard':     'fretboard_wood',
+    'Potentiometers':'potentiometers',
+    'Switch':        'switch_type',
+  }
+
   function getSpec(modelName: string, key: string, staticSpecs: { key: string; value: string }[]): string | null {
     const spec = specByModel.get(modelName)
+    const cat  = catalogueByModel.get(modelName)
     const shape = shapeByModel.get(modelName)
-    const DB_FIELD_MAP: Record<string, keyof SpecRow> = {
-      'Body style':    'body_shape_analogue',
-      'Body wood':     'body_wood',
-      'Pickup config': 'pickup_configuration',
-      'Bridge':        'bridge_type',
-      'Headstock':     'headstock_style',
-      'Frets':         'fret_count',
-      'Fretboard':     'fretboard_wood',
-      'Potentiometers':'potentiometers',
-      'Switch':        'switch_type',
-    }
+    const field = SPEC_FIELD_MAP[key]
+
     let raw: string | null = null
     if (key === 'Body style') {
-      // model_shape_registry overrides model_specifications for shape
-      raw = (shape?.body_shape_analogue ?? spec?.body_shape_analogue) ?? staticSpecs.find(s => s.key === key)?.value ?? null
+      // Priority: model_shape_registry → model_specifications → catalogue_models → static
+      raw = shape?.body_shape_analogue
+        ?? spec?.body_shape_analogue
+        ?? cat?.body_shape_analogue
+        ?? staticSpecs.find(s => s.key === key)?.value
+        ?? null
     } else if (key === 'Headstock') {
-      raw = (shape?.headstock_style ?? spec?.headstock_style) ?? staticSpecs.find(s => s.key === key)?.value ?? null
+      raw = shape?.headstock_style
+        ?? spec?.headstock_style
+        ?? cat?.headstock_style
+        ?? staticSpecs.find(s => s.key === key)?.value
+        ?? null
     } else {
-      const field = DB_FIELD_MAP[key]
-      raw = (field && spec ? (spec[field] as string | null) : null) ?? staticSpecs.find(s => s.key === key)?.value ?? null
+      raw = (field && spec ? (spec[field] as string | null) : null)
+        ?? (field && cat  ? (cat[field]  as string | null) : null)
+        ?? staticSpecs.find(s => s.key === key)?.value
+        ?? null
     }
     if (key === 'Headstock' && raw) return normaliseHeadstock(raw)
     return raw

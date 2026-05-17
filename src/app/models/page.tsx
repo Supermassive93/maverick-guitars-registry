@@ -18,9 +18,10 @@ const subNav = [
 export default async function ModelsPage() {
   const supabase = await createSupabaseServerClient()
 
-  type CatalogueRow = {
+  type SpecRow = {
     model: string
     body_shape_analogue: string | null
+    body_wood: string | null
     pickup_configuration: string | null
     bridge_type: string | null
     headstock_style: string | null
@@ -28,50 +29,28 @@ export default async function ModelsPage() {
     fretboard_wood: string | null
     potentiometers: string | null
     switch_type: string | null
-  }
-  type SpecRow = {
-    model: string
-    body_wood: string | null
     description: string | null
     rarity: string | null
   }
+  type ShapeRow = { model: string; body_shape_analogue: string | null; headstock_style: string | null }
 
-  const [{ data: rawCatalogueRows }, { data: rawSpecRows }] = await Promise.all([
-    supabase
-      .from('catalogue_models')
-      .select('model, body_shape_analogue, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type')
-      .order('catalogue_year', { ascending: false }),
+  const [{ data: rawSpecRows }, { data: rawShapeRows }] = await Promise.all([
     supabase
       .from('model_specifications')
-      .select('model, body_wood, description, rarity'),
+      .select('model, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type, description, rarity'),
+    supabase
+      .from('model_shape_registry')
+      .select('model, body_shape_analogue, headstock_style'),
   ])
 
-  const catalogueRows = (rawCatalogueRows ?? []) as CatalogueRow[]
-  const specRows = (rawSpecRows ?? []) as SpecRow[]
-
-  const catalogueByModel = new Map<string, CatalogueRow>()
-  for (const row of catalogueRows) {
-    if (!catalogueByModel.has(row.model)) catalogueByModel.set(row.model, row)
+  const specByModel = new Map<string, SpecRow>()
+  for (const row of (rawSpecRows ?? []) as SpecRow[]) {
+    specByModel.set(row.model, row)
   }
 
-  const bodyWoodByModel = new Map<string, string>()
-  const descriptionByModel = new Map<string, string>()
-  const rarityByModel = new Map<string, string>()
-  for (const row of specRows) {
-    if (row.body_wood) bodyWoodByModel.set(row.model, row.body_wood)
-    if (row.description) descriptionByModel.set(row.model, row.description)
-    if (row.rarity) rarityByModel.set(row.model, row.rarity)
-  }
-
-  const DB_FIELD_MAP: Record<string, string> = {
-    'Body style': 'body_shape_analogue',
-    'Pickup config': 'pickup_configuration',
-    'Bridge': 'bridge_type',
-    'Headstock': 'headstock_style',
-    'Frets': 'fret_count',
-    'Fretboard': 'fretboard_wood',
-    'Potentiometers': 'potentiometers',
-    'Switch': 'switch_type',
+  const shapeByModel = new Map<string, ShapeRow>()
+  for (const row of (rawShapeRows ?? []) as ShapeRow[]) {
+    shapeByModel.set(row.model, row)
   }
 
   function normaliseHeadstock(raw: string): string {
@@ -82,14 +61,29 @@ export default async function ModelsPage() {
   }
 
   function getSpec(modelName: string, key: string, staticSpecs: { key: string; value: string }[]): string | null {
-    const row = catalogueByModel.get(modelName)
-    let dbValue: string | null = null
-    if (key === 'Body wood') {
-      dbValue = bodyWoodByModel.get(modelName) ?? null
-    } else if (row && DB_FIELD_MAP[key]) {
-      dbValue = (row as Record<string, string | null>)[DB_FIELD_MAP[key]] ?? null
+    const spec = specByModel.get(modelName)
+    const shape = shapeByModel.get(modelName)
+    const DB_FIELD_MAP: Record<string, keyof SpecRow> = {
+      'Body style':    'body_shape_analogue',
+      'Body wood':     'body_wood',
+      'Pickup config': 'pickup_configuration',
+      'Bridge':        'bridge_type',
+      'Headstock':     'headstock_style',
+      'Frets':         'fret_count',
+      'Fretboard':     'fretboard_wood',
+      'Potentiometers':'potentiometers',
+      'Switch':        'switch_type',
     }
-    const raw = dbValue ?? staticSpecs.find(s => s.key === key)?.value ?? null
+    let raw: string | null = null
+    if (key === 'Body style') {
+      // model_shape_registry overrides model_specifications for shape
+      raw = (shape?.body_shape_analogue ?? spec?.body_shape_analogue) ?? staticSpecs.find(s => s.key === key)?.value ?? null
+    } else if (key === 'Headstock') {
+      raw = (shape?.headstock_style ?? spec?.headstock_style) ?? staticSpecs.find(s => s.key === key)?.value ?? null
+    } else {
+      const field = DB_FIELD_MAP[key]
+      raw = (field && spec ? (spec[field] as string | null) : null) ?? staticSpecs.find(s => s.key === key)?.value ?? null
+    }
     if (key === 'Headstock' && raw) return normaliseHeadstock(raw)
     return raw
   }
@@ -135,8 +129,9 @@ export default async function ModelsPage() {
           background: 'rgba(255,255,255,0.06)',
         }}>
           {models.map(m => {
-            const description = descriptionByModel.get(m.model) ?? m.description
-            const rarity = rarityByModel.get(m.model) ?? m.rarity
+            const spec = specByModel.get(m.model)
+            const description = spec?.description ?? m.description
+            const rarity = spec?.rarity ?? m.rarity
             return (
             <div key={m.model} style={{ background: '#161616', padding: '2rem', display: 'flex', flexDirection: 'column' }}>
               <div style={{

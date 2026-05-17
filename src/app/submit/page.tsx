@@ -348,7 +348,7 @@ function SubmitForm() {
             next.skunk_stripe = 'Factory - No skunk stripe'
             next.neck_binding = 'Factory - Cream Binding'
             next.fret_count = '24'
-          } else if (value === 'Set neck' || value === 'Through neck') {
+          } else if (value === 'Factory - Set neck' || value === 'Factory - Through neck') {
             next.skunk_stripe = 'Unknown'
             next.neck_binding = 'Unknown'
             next.fret_count = ''
@@ -1042,7 +1042,7 @@ function SubmitForm() {
 
         <Section title="Neck & construction">
           <Field label="Neck construction">
-            <Select value={form.neck_construction} onChange={set('neck_construction')} options={['Factory - Bolt-on 2-piece scarf joint', 'Factory - Bolt-on 1-piece', 'Set neck', 'Through neck', 'Aftermarket replacement neck', 'Unknown']} />
+            <Select value={form.neck_construction} onChange={set('neck_construction')} options={['Factory - Bolt-on 2-piece scarf joint', 'Factory - Bolt-on 1-piece', 'Factory - Set neck', 'Factory - Through neck', 'Aftermarket replacement neck', 'Unknown']} />
           </Field>
           <Field label="Fret count" prefilled={prefilledFields.has('fret_count')}>
             <Select value={form.fret_count} onChange={set('fret_count')} options={['19', '21', '22', '24', 'Unknown']} />

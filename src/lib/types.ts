@@ -1,5 +1,8 @@
 export type BodyContouring = 'Full Maverick contouring' | 'Partial contouring' | 'No contouring'
 export type SourceMaterialType = 'Catalogue' | 'Magazine' | 'Advertisement' | 'Receipt' | 'Photograph' | 'Video' | 'Audio' | 'Other'
+export type ExtractionStatus = 'pending' | 'processing' | 'complete' | 'failed'
+export type IndicatorStatus = 'draft' | 'confirmed' | 'retired'
+export type IndicatorConfidence = 'Low' | 'Medium' | 'High'
 export type ArticleType = 'Article' | 'Testimonial' | 'Interview' | 'News'
 
 export type SerialStatus = 'Complete' | 'Partial' | 'Prefix only' | 'None Visible' | 'Paper label' | 'Hand label'
@@ -148,7 +151,32 @@ export interface SourceMaterial {
   thumbnail_url: string | null
   source_credit: string | null
   notes: string | null
+  extracted_text: string | null
+  page_count: number | null
+  extraction_status: ExtractionStatus
   is_published: boolean
+  created_at: string | null
+}
+
+export interface GenerationIndicator {
+  id: string
+  feature: string
+  feature_value: string
+  generation: string
+  model: string | null
+  series: string | null
+  status: IndicatorStatus
+  confidence: IndicatorConfidence | null
+  notes: string | null
+  created_at: string | null
+}
+
+export interface GenerationIndicatorSource {
+  id: string
+  indicator_id: string
+  source_material_id: string
+  text_excerpt: string | null
+  page_reference: string | null
   created_at: string | null
 }
 
@@ -198,6 +226,16 @@ export interface Database {
         Row: Article
         Insert: Omit<Article, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<Article, 'id' | 'created_at'>>
+      }
+      generation_indicators: {
+        Row: GenerationIndicator
+        Insert: Omit<GenerationIndicator, 'id' | 'created_at'>
+        Update: Partial<Omit<GenerationIndicator, 'id' | 'created_at'>>
+      }
+      generation_indicator_sources: {
+        Row: GenerationIndicatorSource
+        Insert: Omit<GenerationIndicatorSource, 'id' | 'created_at'>
+        Update: Partial<Omit<GenerationIndicatorSource, 'id' | 'created_at'>>
       }
     }
   }

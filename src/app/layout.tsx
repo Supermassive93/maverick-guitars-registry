@@ -8,12 +8,18 @@ const dmSans    = DM_Sans({ variable: '--font-dm-sans', subsets: ['latin'], weig
 const dmMono    = DM_Mono({ variable: '--font-dm-mono', subsets: ['latin'], weight: ['300','400','500'] })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://www.maverickguitars.org'),
   title: 'Maverick Guitars Registry',
   description: 'The community registry, identification guide and archive for Maverick Guitars — the British guitar brand active 1998–2006.',
+  alternates: {
+    canonical: 'https://www.maverickguitars.org',
+  },
   openGraph: {
     title: 'Maverick Guitars Registry',
     description: 'The community registry, identification guide and archive for Maverick Guitars.',
-    url: 'https://maverickguitars.org',
+    url: 'https://www.maverickguitars.org',
+    siteName: 'Maverick Guitars Registry',
+    type: 'website',
   },
 }
 

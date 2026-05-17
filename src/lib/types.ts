@@ -48,6 +48,7 @@ export interface Guitar {
   whammy_bar: string | null
   fret_count: string | null
   fretboard_wood: string | null
+  scale_length: string | null
   neck_construction: string | null
   skunk_stripe: string | null
   headstock_break_angle: number | null

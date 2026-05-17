@@ -103,6 +103,7 @@ type FormState = {
   whammy_bar: string
   fret_count: string
   fretboard_wood: string
+  scale_length: string
   neck_construction: string
   skunk_stripe: string
   headstock_break_angle: string
@@ -127,7 +128,7 @@ const INITIAL: FormState = {
   hardware_colour: '', headstock_face: '', headstock_style: '', headstock_logo: '', bridge_logo: '', pickup_surrounds: '',
   pickup_colours: '', tuner_style: '',
   neck_binding: '', switch_type: '', switch_knob: '', potentiometers: '',
-  whammy_bar: '', fret_count: '', fretboard_wood: '',
+  whammy_bar: '', fret_count: '', fretboard_wood: '', scale_length: '',
   neck_construction: '', skunk_stripe: '', headstock_break_angle: '',
   neck_pitch: '', last_known_country: '', last_known_region: '', last_known_city: '',
   source_type: '', source_url: '', last_price: '',
@@ -239,7 +240,7 @@ function SubmitForm() {
     const supabase = createSupabaseBrowserClient()
     const { data } = await supabase
       .from('catalogue_models')
-      .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, pickup_colour, headstock_face, fretboard_wood')
+      .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, pickup_colour, headstock_face, headstock_style, fretboard_wood, scale_length')
       .eq('model', model)
       .order('catalogue_year', { ascending: false })
       .limit(1)
@@ -283,6 +284,14 @@ function SubmitForm() {
     if (data.fretboard_wood) {
       updates.fretboard_wood = data.fretboard_wood
       filled.add('fretboard_wood')
+    }
+    if (data.headstock_style) {
+      updates.headstock_style = data.headstock_style
+      filled.add('headstock_style')
+    }
+    if (data.scale_length) {
+      updates.scale_length = data.scale_length
+      filled.add('scale_length')
     }
 
     updates.tuner_style = 'Factory - Maverick/Wilkinson'
@@ -454,6 +463,7 @@ function SubmitForm() {
         whammy_bar: form.whammy_bar || null,
         fret_count: form.fret_count || null,
         fretboard_wood: form.fretboard_wood || null,
+        scale_length: form.scale_length || null,
         neck_construction: form.neck_construction || null,
         skunk_stripe: form.skunk_stripe || null,
         headstock_break_angle: form.headstock_break_angle ? parseFloat(form.headstock_break_angle) : null,
@@ -942,9 +952,6 @@ function SubmitForm() {
           <Field label="Headstock face colour" prefilled={prefilledFields.has('headstock_face')}>
             <Select value={form.headstock_face} onChange={set('headstock_face')} options={['Gloss Black', 'Matches body colour', 'Other']} />
           </Field>
-          <Field label="Headstock style">
-            <Select value={form.headstock_style} onChange={set('headstock_style')} options={['6-aside', '6-aside reversed', '4-aside', '3+2 (3 tuners standard side, 2 opposing edge)', 'Unknown']} />
-          </Field>
           <Field label="Headstock logo">
             <Select value={form.headstock_logo} onChange={set('headstock_logo')} options={['Reflective metal inlay', 'Cream silkscreen', 'Unknown']} />
           </Field>
@@ -1043,6 +1050,12 @@ function SubmitForm() {
         <Section title="Neck & construction">
           <Field label="Neck construction">
             <Select value={form.neck_construction} onChange={set('neck_construction')} options={['Factory - Bolt-on 2-piece scarf joint', 'Factory - Bolt-on 1-piece', 'Factory - Set neck', 'Factory - Through neck', 'Aftermarket replacement neck', 'Unknown']} />
+          </Field>
+          <Field label="Headstock style" prefilled={prefilledFields.has('headstock_style')}>
+            <Select value={form.headstock_style} onChange={set('headstock_style')} options={['6-aside', '6-aside reversed', '4-aside', '3+2 (3 tuners standard side, 2 opposing edge)', 'Unknown']} />
+          </Field>
+          <Field label="Scale length" prefilled={prefilledFields.has('scale_length')}>
+            <Select value={form.scale_length} onChange={set('scale_length')} options={['25" (Maverick / PRS Core)', '25.5" (Fender / Ibanez)', '24.75" (Gibson)', '24.724" (PRS SE)', 'Unknown']} />
           </Field>
           <Field label="Fret count" prefilled={prefilledFields.has('fret_count')}>
             <Select value={form.fret_count} onChange={set('fret_count')} options={['19', '21', '22', '24', 'Unknown']} />

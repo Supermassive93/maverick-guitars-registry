@@ -28,7 +28,7 @@ export const MODEL_CATALOGUE: ModelData[] = [
     specs: [
       { key: 'Body style', value: 'Superstrat' },
       { key: 'Pickup config', value: 'HH' },
-      { key: 'Bridge', value: 'Floyd Rose' },
+      { key: 'Bridge', value: 'Maverick Floyd Rose - Licensed' },
       { key: 'Body wood', value: 'Basswood' },
     ],
   },
@@ -39,7 +39,7 @@ export const MODEL_CATALOGUE: ModelData[] = [
     specs: [
       { key: 'Body style', value: 'Superstrat' },
       { key: 'Pickup config', value: 'HH' },
-      { key: 'Bridge', value: 'Wilkinson hardtail' },
+      { key: 'Bridge', value: 'Maverick/Wilkinson Hardtail' },
       { key: 'Body wood', value: 'Basswood' },
     ],
   },
@@ -50,7 +50,7 @@ export const MODEL_CATALOGUE: ModelData[] = [
     specs: [
       { key: 'Body style', value: 'Superstrat' },
       { key: 'Pickup config', value: 'HH' },
-      { key: 'Bridge', value: 'Hardtail' },
+      { key: 'Bridge', value: 'Maverick/Wilkinson Hardtail' },
     ],
     rarity: 'Low production',
   },
@@ -61,7 +61,7 @@ export const MODEL_CATALOGUE: ModelData[] = [
     specs: [
       { key: 'Body style', value: 'Superstrat' },
       { key: 'Pickup config', value: 'HSH' },
-      { key: 'Bridge', value: 'Floyd Rose' },
+      { key: 'Bridge', value: 'Maverick Floyd Rose - Licensed' },
       { key: 'Body wood', value: 'Basswood' },
     ],
   },
@@ -72,7 +72,7 @@ export const MODEL_CATALOGUE: ModelData[] = [
     specs: [
       { key: 'Body style', value: 'Superstrat' },
       { key: 'Pickup config', value: 'HSS' },
-      { key: 'Bridge', value: 'Wilkinson hardtail' },
+      { key: 'Bridge', value: 'Maverick/Wilkinson Hardtail' },
     ],
   },
   {
@@ -140,7 +140,7 @@ export const MODEL_CATALOGUE: ModelData[] = [
     specs: [
       { key: 'Body style', value: 'Superstrat' },
       { key: 'Pickup config', value: 'HH' },
-      { key: 'Bridge', value: 'Hardtail' },
+      { key: 'Bridge', value: 'Maverick/Wilkinson Hardtail' },
       { key: 'Headstock', value: 'Standard 6-aside (body-matched colour)' },
       { key: 'Frets', value: '24' },
       { key: 'Fretboard', value: 'AAA Indian Rosewood' },

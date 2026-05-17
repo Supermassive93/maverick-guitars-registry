@@ -49,6 +49,7 @@ const FACTORY_COLOURS = [
   'CM — Cream', 'SL — Silver', 'TR — Transparent Red', 'TB — Transparent Blue',
   'TG — Transparent Green', 'TP — Transparent Purple', 'MS — Metallic Sage', 'MP — Metallic Purple',
   'NT — Natural',
+  'CB — Cherryburst',
 ]
 
 const CUSTOM_COLOURS = ['BW — Black & White (Zebra)', 'BR — Black & Red (DTM)', 'Custom Airbrushed', 'Unknown']
@@ -68,6 +69,7 @@ type FormState = {
   bridge_pickup: string
   bridge_configuration: string
   hardware_colour: string
+  headstock_face: string
   headstock_logo: string
   bridge_logo: string
   pickup_surrounds: string
@@ -94,7 +96,7 @@ const INITIAL: FormState = {
   left_handed: 'No',
   body_wood: '', body_shape_analogue: '', pickup_configuration: '',
   neck_pickup: '', middle_pickup: '', bridge_pickup: '', bridge_configuration: '',
-  hardware_colour: '', headstock_logo: '', bridge_logo: '', pickup_surrounds: '',
+  hardware_colour: '', headstock_face: '', headstock_logo: '', bridge_logo: '', pickup_surrounds: '',
   neck_binding: '', switch_type: '', switch_knob: '', potentiometers: '',
   whammy_bar: '', neck_construction: '', skunk_stripe: '', headstock_break_angle: '',
   neck_pitch: '', source_type: '', source_url: '', last_price: '',
@@ -267,6 +269,7 @@ function SubmitForm() {
         bridge_pickup: form.bridge_pickup || null,
         bridge_configuration: form.bridge_configuration || null,
         hardware_colour: form.hardware_colour || null,
+        headstock_face: form.headstock_face || null,
         headstock_logo: form.headstock_logo || null,
         bridge_logo: form.bridge_logo || null,
         pickup_surrounds: form.pickup_surrounds || null,
@@ -603,30 +606,60 @@ function SubmitForm() {
           <Field label="Finish type">
             <Select value={form.finish_type} onChange={set('finish_type')} options={['Factory Finish', 'Custom Shop Finish', 'Refinished', 'Unknown']} />
           </Field>
-          {(!form.finish_type || form.finish_type === 'Factory Finish' || form.finish_type === 'Refinished') && (
+          {(!form.finish_type || form.finish_type === 'Factory Finish') && (
             <Field label="Factory colour">
               <Select value={form.factory_colour} onChange={set('factory_colour')} options={FACTORY_COLOURS} />
             </Field>
           )}
-          {(form.finish_type === 'Custom Shop Finish') && (
+          {form.finish_type === 'Custom Shop Finish' && (
             <Field label="Custom Shop colour">
               <Select value={form.custom_shop_colour} onChange={set('custom_shop_colour')} options={CUSTOM_COLOURS} />
+            </Field>
+          )}
+          {form.finish_type === 'Refinished' && (
+            <Field label="Refinish description">
+              <input
+                type="text"
+                value={form.custom_shop_colour}
+                onChange={e => set('custom_shop_colour')(e.target.value.slice(0, 100))}
+                placeholder="e.g. Satin black rattle-can, sunburst respray…"
+                maxLength={100}
+                className={inputCls}
+              />
+              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#3a3835', marginTop: '5px' }}>
+                {form.custom_shop_colour.length}/100 characters
+              </p>
+            </Field>
+          )}
+          {form.finish_type === 'Unknown' && (
+            <Field label="Finish description (optional)">
+              <input
+                type="text"
+                value={form.custom_shop_colour}
+                onChange={e => set('custom_shop_colour')(e.target.value.slice(0, 100))}
+                placeholder="Describe what you can see, e.g. dark blue metallic…"
+                maxLength={100}
+                className={inputCls}
+              />
+              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#3a3835', marginTop: '5px' }}>
+                {form.custom_shop_colour.length}/100 characters
+              </p>
             </Field>
           )}
           <Field label="Body wood">
             <Select value={form.body_wood} onChange={set('body_wood')} options={['Canadian Basswood', 'Alder', 'Mahogany', 'Basswood', 'Unknown']} />
           </Field>
-          <Field label="Body shape">
+          <Field label="Body shape analogue">
             <Select value={form.body_shape_analogue} onChange={set('body_shape_analogue')} options={['Superstrat', 'Explorer-Mockingbird', 'Les Paul', 'Single Cutaway', 'PRS', 'Telecaster', 'Other', 'Unknown']} />
           </Field>
         </Section>
 
         <Section title="Hardware & electronics">
           <Field label="Pickup configuration">
-            <Select value={form.pickup_configuration} onChange={set('pickup_configuration')} options={['HH', 'HSH', 'HSS', 'H', 'SS', 'SSS', 'Other', 'Unknown']} />
+            <Select value={form.pickup_configuration} onChange={set('pickup_configuration')} options={['HH', 'HSH', 'HSS', 'HS', 'H', 'SS', 'SSS', 'Other', 'Unknown']} />
           </Field>
           <Field label="Bridge">
-            <Select value={form.bridge_configuration} onChange={set('bridge_configuration')} options={['Floyd Rose', 'Floyd Rose Licensed', 'Wilkinson Hardtail', 'Hardtail', 'Tune-o-matic', 'Wraparound', 'Synchronised Tremolo', 'Unknown']} />
+            <Select value={form.bridge_configuration} onChange={set('bridge_configuration')} options={['Maverick Floyd Rose - Licensed', 'Floyd Rose - Aftermarket', 'Maverick/Wilkinson Hardtail', 'Hardtail - Aftermarket', 'Tune-o-matic - String Through', 'Standard Tune-o-matic - Nashville', 'Wraparound', 'Synchronised Tremolo', 'Unknown']} />
           </Field>
           <Field label="Hardware colour">
             <Select value={form.hardware_colour} onChange={set('hardware_colour')} options={['Chrome', 'Gold', 'Black', 'Nickel', 'Unknown']} />
@@ -665,6 +698,9 @@ function SubmitForm() {
           </Field>
           <Field label="Skunk stripe">
             <Select value={form.skunk_stripe} onChange={set('skunk_stripe')} options={['Present', 'Absent', 'Unknown']} />
+          </Field>
+          <Field label="Headstock face colour">
+            <Select value={form.headstock_face} onChange={set('headstock_face')} options={['Gloss Black', 'Matches body colour', 'Other']} />
           </Field>
           <Field label="Headstock logo">
             <Select value={form.headstock_logo} onChange={set('headstock_logo')} options={['Reflective metal inlay', 'Cream silkscreen', 'Unknown']} />

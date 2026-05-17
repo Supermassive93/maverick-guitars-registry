@@ -31,6 +31,7 @@ export interface Guitar {
   bridge_pickup: string | null
   bridge_configuration: string | null
   hardware_colour: string | null
+  headstock_face: string | null
   headstock_logo: string | null
   bridge_logo: string | null
   pickup_surrounds: string | null

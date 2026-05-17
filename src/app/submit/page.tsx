@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import FormClosed from '@/components/FormClosed'
 import SubmitForm from './SubmitForm'
@@ -16,5 +17,5 @@ export default async function SubmitPage() {
     )
   }
 
-  return <SubmitForm />
+  return <Suspense><SubmitForm /></Suspense>
 }

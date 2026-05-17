@@ -4,6 +4,56 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import type { Guitar } from '@/lib/types'
 
+function PendingModal({ serial, model, onClose }: { serial: string; model: string; onClose: () => void }) {
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 50,
+        background: 'rgba(0,0,0,0.7)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '16px',
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: '#161616',
+          border: '1px solid rgba(255,255,255,0.12)',
+          padding: '40px 36px',
+          maxWidth: '420px',
+          width: '100%',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#c8a96e', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '16px' }}>
+          Submission pending
+        </p>
+        <p style={{ fontFamily: 'var(--font-bebas)', fontSize: '1.6rem', letterSpacing: '2px', color: '#f0ede8', marginBottom: '4px' }}>
+          {model} — {serial}
+        </p>
+        <p style={{ color: '#9e9b96', fontSize: '14px', fontFamily: 'var(--font-dm-mono)', lineHeight: 1.7, marginBottom: '28px' }}>
+          A submission has been made for this guitar and is currently awaiting admin review. Check back once it has been approved to view the full registry entry.
+        </p>
+        <button
+          onClick={onClose}
+          style={{
+            background: 'none',
+            border: '1px solid rgba(255,255,255,0.15)',
+            color: '#9e9b96',
+            fontFamily: 'var(--font-dm-mono)',
+            fontSize: '12px',
+            letterSpacing: '1px',
+            padding: '10px 20px',
+            cursor: 'pointer',
+          }}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  )
+}
+
 interface Props {
   guitars: Guitar[]
 }
@@ -48,7 +98,10 @@ export default function RegistrySection({ guitars }: Props) {
     })
   }, [guitars, search, filterModel, filterGen])
 
+  const [pendingModal, setPendingModal] = useState<{ serial: string; model: string } | null>(null)
+
   const isPrePopulated = (g: Guitar) => g.status === 'Pre-populated'
+  const isPending      = (g: Guitar) => g.status === 'Pending'
 
   const approved = guitars.filter(g => g.status === 'Approved')
   const gen1 = approved.filter(g => g.generation === 'Gen 1').length
@@ -136,7 +189,7 @@ export default function RegistrySection({ guitars }: Props) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-dm-mono)', fontSize: '13px' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
-              {['MGR ID', 'Serial', 'Model', 'Generation', 'Colour', 'Location', 'Source', 'Owner'].map(h => (
+              {['MGR ID', 'Serial', 'Model', 'Generation', 'Status', 'Colour', 'Location', 'Owner'].map(h => (
                 <th key={h} style={{
                   textAlign: 'left', color: '#5c5a57', fontSize: '11px',
                   letterSpacing: '2px', textTransform: 'uppercase',
@@ -159,46 +212,63 @@ export default function RegistrySection({ guitars }: Props) {
                 </td>
               </tr>
             ) : filtered.map(g => {
-              const pre = isPrePopulated(g)
+              const pre     = isPrePopulated(g)
+              const pending = isPending(g)
+              const approved = g.status === 'Approved'
+
+              const rowOpacity = pre ? 0.45 : pending ? 0.7 : 1
+              const rowCursor  = approved ? 'pointer' : pending ? 'pointer' : 'default'
+
+              const statusBadge = approved
+                ? { label: 'Registered',   color: '#4ade80', bg: 'rgba(74,222,128,0.08)',   border: 'rgba(74,222,128,0.2)' }
+                : pending
+                ? { label: 'Pending',      color: '#c8a96e', bg: 'rgba(200,169,110,0.08)',  border: 'rgba(200,169,110,0.25)' }
+                : { label: 'Unregistered', color: '#3a3835', bg: 'rgba(255,255,255,0.03)',  border: 'rgba(255,255,255,0.06)' }
+
               return (
                 <tr
                   key={g.id}
-                  style={{
-                    borderBottom: '1px solid rgba(255,255,255,0.06)',
-                    cursor: pre ? 'default' : 'pointer',
-                    transition: 'background 0.15s',
-                    opacity: pre ? 0.45 : 1,
-                  }}
-                  className={pre ? undefined : 'registry-row'}
-                  onClick={pre ? undefined : () => window.location.href = `/guitar/${g.mgr_id}`}
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', cursor: rowCursor, transition: 'background 0.15s', opacity: rowOpacity }}
+                  className={approved ? 'registry-row' : undefined}
+                  onClick={
+                    approved ? () => window.location.href = `/guitar/${g.mgr_id}`
+                    : pending ? () => setPendingModal({ serial: g.serial ?? '', model: g.model ?? '' })
+                    : undefined
+                  }
                 >
-                  <td style={{ padding: '13px 14px', color: pre ? '#5c5a57' : '#c8a96e' }}>
-                    {pre ? '—' : formatMgrId(g.mgr_id)}
+                  <td style={{ padding: '13px 14px', color: approved ? '#c8a96e' : '#3a3835' }}>
+                    {approved ? formatMgrId(g.mgr_id) : '—'}
                   </td>
                   <td style={{ padding: '13px 14px', color: pre ? '#5c5a57' : '#f0ede8' }}>{g.serial ?? '—'}</td>
                   <td style={{ padding: '13px 14px', color: pre ? '#5c5a57' : '#f0ede8' }}>{g.model ?? '—'}</td>
                   <td style={{ padding: '13px 14px' }}>
                     {g.generation ? (
                       <span style={{
-                        display: 'inline-block',
-                        fontSize: '10px', letterSpacing: '1px', padding: '3px 8px',
-                        textTransform: 'uppercase',
+                        display: 'inline-block', fontSize: '10px', letterSpacing: '1px',
+                        padding: '3px 8px', textTransform: 'uppercase',
                         background: g.generation.includes('1') ? 'rgba(200,169,110,0.15)' : 'rgba(100,160,220,0.1)',
-                        color: g.generation.includes('1') ? '#c8a96e' : '#6aafd4',
-                        border: `1px solid ${g.generation.includes('1') ? 'rgba(200,169,110,0.3)' : 'rgba(100,160,220,0.25)'}`,
+                        color:      g.generation.includes('1') ? '#c8a96e' : '#6aafd4',
+                        border:     `1px solid ${g.generation.includes('1') ? 'rgba(200,169,110,0.3)' : 'rgba(100,160,220,0.25)'}`,
                       }}>
                         {g.generation}
                       </span>
                     ) : <span style={{ color: '#3a3835' }}>—</span>}
                   </td>
-                  <td style={{ padding: '13px 14px', color: '#5c5a57' }}>
-                    {pre ? '—' : (g.factory_colour ? g.factory_colour.split(' — ')[0] : '—')}
+                  <td style={{ padding: '13px 14px' }}>
+                    <span style={{
+                      display: 'inline-block', fontSize: '10px', letterSpacing: '1px',
+                      padding: '3px 8px', textTransform: 'uppercase',
+                      color: statusBadge.color, background: statusBadge.bg,
+                      border: `1px solid ${statusBadge.border}`,
+                    }}>
+                      {statusBadge.label}
+                    </span>
                   </td>
-                  <td style={{ padding: '13px 14px', color: '#5c5a57' }}>
-                    {pre ? '—' : ([g.last_known_city, g.last_known_country].filter(Boolean).join(', ') || '—')}
+                  <td style={{ padding: '13px 14px', color: '#9e9b96' }}>
+                    {!pre ? (g.factory_colour ? g.factory_colour.split(' — ')[0] : '—') : '—'}
                   </td>
-                  <td style={{ padding: '13px 14px', color: '#5c5a57' }}>
-                    {pre ? '—' : (g.specification_source ?? '—')}
+                  <td style={{ padding: '13px 14px', color: '#9e9b96' }}>
+                    {!pre ? ([g.last_known_city, g.last_known_country].filter(Boolean).join(', ') || '—') : '—'}
                   </td>
                   <td style={{ padding: '13px 14px' }}>
                     {pre ? (
@@ -221,6 +291,13 @@ export default function RegistrySection({ guitars }: Props) {
           </tbody>
         </table>
       </div>
+      {pendingModal && (
+        <PendingModal
+          serial={pendingModal.serial}
+          model={pendingModal.model}
+          onClose={() => setPendingModal(null)}
+        />
+      )}
     </section>
   )
 }

@@ -8,7 +8,7 @@ async function getGuitars(): Promise<Guitar[]> {
   const { data, error } = await supabase
     .from('guitars')
     .select('id, mgr_id, model, serial, serial_number_only, series, generation, factory_colour, last_known_city, last_known_country, specification_source, registered_by, primary_image_url, status')
-    .in('status', ['Approved', 'Pre-populated'])
+    .in('status', ['Approved', 'Pending', 'Pre-populated'])
     .order('model', { ascending: true })
     .order('serial_number_only', { ascending: true, nullsFirst: false })
   if (error) { console.error(error); return [] }

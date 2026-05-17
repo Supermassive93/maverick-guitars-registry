@@ -5,6 +5,9 @@
 # Session notes (may contain keys)
 Session notes - MD Files/
 
+# Local working assets — reference photos, silhouette sources, personal images
+Images/
+
 # Dependencies
 node_modules/
 .env

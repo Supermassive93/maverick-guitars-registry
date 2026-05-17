@@ -156,14 +156,21 @@ export default async function GuitarPage({ params }: { params: Promise<{ mgr_id:
           </div>
 
           {(guitar.last_known_city || guitar.last_known_country) && (
-            <p style={{ color: '#5c5a57', fontSize: '13px', fontFamily: 'var(--font-dm-mono)', marginBottom: '8px' }}>
+            <p style={{ color: '#5c5a57', fontSize: '13px', fontFamily: 'var(--font-dm-mono)', marginBottom: '4px' }}>
               {[guitar.last_known_city, guitar.last_known_region, guitar.last_known_country].filter(Boolean).join(', ')}
             </p>
           )}
 
           {guitar.last_price && (
-            <p style={{ color: '#5c5a57', fontSize: '13px', fontFamily: 'var(--font-dm-mono)', marginBottom: '24px' }}>
+            <p style={{ color: '#5c5a57', fontSize: '13px', fontFamily: 'var(--font-dm-mono)', marginBottom: '4px' }}>
               Last known price: £{guitar.last_price}
+            </p>
+          )}
+
+          {guitar.registered_by && (
+            <p style={{ color: '#5c5a57', fontSize: '13px', fontFamily: 'var(--font-dm-mono)', marginBottom: '24px' }}>
+              Registered by{' '}
+              <span style={{ color: '#9e9b96' }}>{guitar.registered_by}</span>
             </p>
           )}
 

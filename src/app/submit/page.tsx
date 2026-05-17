@@ -1213,6 +1213,7 @@ function SubmitForm() {
                 <li>— Plain wrapping paper or a roll of craft paper makes an easy portable backdrop</li>
                 <li>— A guitar stand in front of a neutral wall works well for full-length shots</li>
                 <li>— Wall hangers provide a clean, consistent angle for front and rear views</li>
+                <li>— Hold the camera directly above and perpendicular to the guitar — 90° minimises lens distortion</li>
                 <li>— Keep the guitar centred and fill the frame — avoid wide empty borders</li>
               </ul>
             </div>

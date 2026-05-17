@@ -137,6 +137,10 @@ export interface ModelSpec {
   catalogue_page: string | null
   press_references: string | null
   notes: string | null
+  description: string | null
+  rarity: string | null
+  created_at: string | null
+  updated_at: string | null
 }
 
 export interface Profile {

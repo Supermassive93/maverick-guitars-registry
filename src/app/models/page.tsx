@@ -18,7 +18,25 @@ const subNav = [
 export default async function ModelsPage() {
   const supabase = await createSupabaseServerClient()
 
-  const [{ data: catalogueRows }, { data: specRows }] = await Promise.all([
+  type CatalogueRow = {
+    model: string
+    body_shape_analogue: string | null
+    pickup_configuration: string | null
+    bridge_type: string | null
+    headstock_style: string | null
+    fret_count: string | null
+    fretboard_wood: string | null
+    potentiometers: string | null
+    switch_type: string | null
+  }
+  type SpecRow = {
+    model: string
+    body_wood: string | null
+    description: string | null
+    rarity: string | null
+  }
+
+  const [{ data: rawCatalogueRows }, { data: rawSpecRows }] = await Promise.all([
     supabase
       .from('catalogue_models')
       .select('model, body_shape_analogue, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type')
@@ -28,15 +46,18 @@ export default async function ModelsPage() {
       .select('model, body_wood, description, rarity'),
   ])
 
-  const catalogueByModel = new Map<string, Record<string, string | null>>()
-  for (const row of catalogueRows ?? []) {
-    if (!catalogueByModel.has(row.model)) catalogueByModel.set(row.model, row as Record<string, string | null>)
+  const catalogueRows = (rawCatalogueRows ?? []) as CatalogueRow[]
+  const specRows = (rawSpecRows ?? []) as SpecRow[]
+
+  const catalogueByModel = new Map<string, CatalogueRow>()
+  for (const row of catalogueRows) {
+    if (!catalogueByModel.has(row.model)) catalogueByModel.set(row.model, row)
   }
 
   const bodyWoodByModel = new Map<string, string>()
   const descriptionByModel = new Map<string, string>()
   const rarityByModel = new Map<string, string>()
-  for (const row of specRows ?? []) {
+  for (const row of specRows) {
     if (row.body_wood) bodyWoodByModel.set(row.model, row.body_wood)
     if (row.description) descriptionByModel.set(row.model, row.description)
     if (row.rarity) rarityByModel.set(row.model, row.rarity)
@@ -66,7 +87,7 @@ export default async function ModelsPage() {
     if (key === 'Body wood') {
       dbValue = bodyWoodByModel.get(modelName) ?? null
     } else if (row && DB_FIELD_MAP[key]) {
-      dbValue = row[DB_FIELD_MAP[key]] ?? null
+      dbValue = (row as Record<string, string | null>)[DB_FIELD_MAP[key]] ?? null
     }
     const raw = dbValue ?? staticSpecs.find(s => s.key === key)?.value ?? null
     if (key === 'Headstock' && raw) return normaliseHeadstock(raw)

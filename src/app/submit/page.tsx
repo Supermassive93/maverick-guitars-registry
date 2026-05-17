@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import { PRERELEASE } from '@/lib/config'
+import GuidedCropModal from '@/components/GuidedCropModal'
 
 type ModelConfig = { series: string; prefix: string }
 const MODEL_CONFIG: Record<string, ModelConfig> = {
@@ -233,6 +234,7 @@ function SubmitForm() {
   const [form, setForm] = useState<FormState>(INITIAL)
   const [serialDigits, setSerialDigits] = useState('')
   const [imageSlots, setImageSlots] = useState<ImageSlot[]>(makeInitialSlots)
+  const [cropTarget, setCropTarget] = useState<{ index: number; file: File } | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
@@ -445,12 +447,26 @@ function SubmitForm() {
   }
 
   function handleSlotFile(index: number, file: File | null) {
+    if (!file) {
+      setImageSlots(prev => prev.map((slot, i) => {
+        if (i !== index) return slot
+        if (slot.preview) URL.revokeObjectURL(slot.preview)
+        return { ...slot, file: null, preview: null }
+      }))
+      return
+    }
+    setCropTarget({ index, file })
+  }
+
+  function handleCropConfirm(croppedFile: File) {
+    const index = cropTarget?.index
+    if (index == null) return
     setImageSlots(prev => prev.map((slot, i) => {
       if (i !== index) return slot
       if (slot.preview) URL.revokeObjectURL(slot.preview)
-      if (!file) return { ...slot, file: null, preview: null }
-      return { ...slot, file, preview: URL.createObjectURL(file) }
+      return { ...slot, file: croppedFile, preview: URL.createObjectURL(croppedFile) }
     }))
+    setCropTarget(null)
   }
 
   async function uploadImages(): Promise<Map<string, string>> {
@@ -1282,6 +1298,17 @@ function SubmitForm() {
           {submitting ? 'Submitting…' : 'Submit guitar for review'}
         </button>
       </form>
+
+      {cropTarget && (
+        <GuidedCropModal
+          file={cropTarget.file}
+          position={imageSlots[cropTarget.index].position}
+          bodyShape={form.body_shape_analogue || undefined}
+          headstockStyle={form.headstock_style || undefined}
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropTarget(null)}
+        />
+      )}
     </div>
   )
 }

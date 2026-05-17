@@ -29,6 +29,7 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
   'B1':               { series: 'B-Series',      prefix: 'B1-' },
   'S4':               { series: 'S-Series',      prefix: 'S4-' },
   'S5':               { series: 'S-Series',      prefix: 'S5-' },
+  'JR4':              { series: 'JR-Series',      prefix: 'JR4-' },
   'Unknown':          { series: 'Unknown',        prefix: '' },
 }
 

@@ -1,4 +1,5 @@
-import { MODEL_CATALOGUE, SERIES_ORDER, BASS_SERIES } from '@/data/models'
+import { MODEL_CATALOGUE, SERIES_ORDER, BASS_SERIES, STANDARD_SPEC_KEYS } from '@/data/models'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
@@ -14,7 +15,64 @@ const subNav = [
   { href: '#identify', label: 'Generation Guide' },
 ]
 
-export default function ModelsPage() {
+export default async function ModelsPage() {
+  const supabase = await createSupabaseServerClient()
+
+  const [{ data: catalogueRows }, { data: specRows }] = await Promise.all([
+    supabase
+      .from('catalogue_models')
+      .select('model, body_shape_analogue, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type')
+      .order('catalogue_year', { ascending: false }),
+    supabase
+      .from('model_specifications')
+      .select('model, body_wood, description, rarity'),
+  ])
+
+  const catalogueByModel = new Map<string, Record<string, string | null>>()
+  for (const row of catalogueRows ?? []) {
+    if (!catalogueByModel.has(row.model)) catalogueByModel.set(row.model, row as Record<string, string | null>)
+  }
+
+  const bodyWoodByModel = new Map<string, string>()
+  const descriptionByModel = new Map<string, string>()
+  const rarityByModel = new Map<string, string>()
+  for (const row of specRows ?? []) {
+    if (row.body_wood) bodyWoodByModel.set(row.model, row.body_wood)
+    if (row.description) descriptionByModel.set(row.model, row.description)
+    if (row.rarity) rarityByModel.set(row.model, row.rarity)
+  }
+
+  const DB_FIELD_MAP: Record<string, string> = {
+    'Body style': 'body_shape_analogue',
+    'Pickup config': 'pickup_configuration',
+    'Bridge': 'bridge_type',
+    'Headstock': 'headstock_style',
+    'Frets': 'fret_count',
+    'Fretboard': 'fretboard_wood',
+    'Potentiometers': 'potentiometers',
+    'Switch': 'switch_type',
+  }
+
+  function normaliseHeadstock(raw: string): string {
+    const val = raw.toLowerCase()
+    if (val === '6-aside') return 'Standard 6-aside'
+    if (val === '6-aside reversed') return 'Reverse 6-aside'
+    return raw
+  }
+
+  function getSpec(modelName: string, key: string, staticSpecs: { key: string; value: string }[]): string | null {
+    const row = catalogueByModel.get(modelName)
+    let dbValue: string | null = null
+    if (key === 'Body wood') {
+      dbValue = bodyWoodByModel.get(modelName) ?? null
+    } else if (row && DB_FIELD_MAP[key]) {
+      dbValue = row[DB_FIELD_MAP[key]] ?? null
+    }
+    const raw = dbValue ?? staticSpecs.find(s => s.key === key)?.value ?? null
+    if (key === 'Headstock' && raw) return normaliseHeadstock(raw)
+    return raw
+  }
+
   const electricSeries = SERIES_ORDER.filter(s => !BASS_SERIES.includes(s))
   const bassSeries = SERIES_ORDER.filter(s => BASS_SERIES.includes(s))
 
@@ -55,8 +113,11 @@ export default function ModelsPage() {
           gap: '1px',
           background: 'rgba(255,255,255,0.06)',
         }}>
-          {models.map(m => (
-            <div key={m.model} style={{ background: '#161616', padding: '2rem' }}>
+          {models.map(m => {
+            const description = descriptionByModel.get(m.model) ?? m.description
+            const rarity = rarityByModel.get(m.model) ?? m.rarity
+            return (
+            <div key={m.model} style={{ background: '#161616', padding: '2rem', display: 'flex', flexDirection: 'column' }}>
               <div style={{
                 fontFamily: 'var(--font-bebas)',
                 fontSize: '52px',
@@ -68,7 +129,7 @@ export default function ModelsPage() {
                 {m.model}
               </div>
 
-              {m.rarity && (
+              {rarity && (
                 <div style={{
                   display: 'inline-block',
                   fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
@@ -77,33 +138,38 @@ export default function ModelsPage() {
                   background: bass ? 'rgba(255,255,255,0.04)' : 'rgba(200,169,110,0.08)',
                   padding: '3px 8px', marginBottom: '8px',
                 }}>
-                  {m.rarity}
+                  {rarity}
                 </div>
               )}
 
               <p style={{
                 fontSize: '13px', color: '#9e9b96', lineHeight: 1.6,
-                marginTop: '12px', marginBottom: m.specs.length ? '24px' : '0',
+                marginTop: '12px', marginBottom: '0',
               }}>
-                {m.description}
+                {description}
               </p>
 
-              {m.specs.length > 0 && (
-                <div>
-                  {m.specs.map(s => (
-                    <div key={s.key} style={{
-                      display: 'flex', justifyContent: 'space-between',
+              <div style={{ marginTop: 'auto', paddingTop: '24px' }}>
+                {STANDARD_SPEC_KEYS.map(key => {
+                  const value = getSpec(m.model, key, m.specs)
+                  const isUnknown = !value
+                  return (
+                    <div key={key} style={{
+                      display: 'flex', justifyContent: 'space-between', gap: '12px',
                       fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
                       padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.06)',
                     }}>
-                      <span style={{ color: '#5c5a57' }}>{s.key}</span>
-                      <span style={{ color: '#f0ede8' }}>{s.value}</span>
+                      <span style={{ color: '#5c5a57', flexShrink: 0 }}>{key}</span>
+                      <span style={{ color: isUnknown ? '#3a3835' : '#f0ede8', textAlign: 'right' }}>
+                        {value ?? 'Unknown'}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              )}
+                  )
+                })}
+              </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       </section>
     )

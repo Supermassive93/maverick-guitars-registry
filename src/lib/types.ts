@@ -3,7 +3,7 @@ export type SourceMaterialType = 'Catalogue' | 'Magazine' | 'Advertisement' | 'R
 export type ArticleType = 'Article' | 'Testimonial' | 'Interview' | 'News'
 
 export type SerialStatus = 'Complete' | 'Partial' | 'Prefix only' | 'None Visible'
-export type Series = 'F-Series' | 'X-Series' | 'X-Treme' | 'Species' | 'Chaos' | 'S-Series' | 'Streetfighter' | 'Matrix' | 'G-Series' | 'B-Series' | 'Unknown'
+export type Series = 'F-Series' | 'X-Series' | 'X-Treme' | 'Species' | 'Chaos' | 'S-Series' | 'Streetfighter' | 'Matrix' | 'G-Series' | 'B-Series' | 'JR-Series' | 'Unknown'
 export type Generation = 'Gen 1' | 'Gen 2' | 'Gen 3' | 'Unknown'
 export type FinishType = 'Factory Finish' | 'Custom Shop Finish' | 'Refinished' | 'Unknown'
 export type GuitarStatus = 'Pending' | 'Approved' | 'Rejected'

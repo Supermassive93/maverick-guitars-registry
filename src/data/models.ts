@@ -170,10 +170,15 @@ export const MODEL_CATALOGUE: ModelData[] = [
   {
     model: 'Species 3',
     series: 'Species',
-    description: 'The top-spec Species model. Produced alongside the other Species variants as part of a focused sub-range.',
+    description: 'A pre-production single-cut prototype that predates the G-Series. Never commercially released. The only known Maverick single-cut that pre-dates the G1/G2, making it one of the most historically significant models in the catalogue.',
     specs: [
-      { key: 'Body style', value: 'Species' },
+      { key: 'Body style', value: 'Single Cut - LP style' },
+      { key: 'Pickup config', value: 'HH' },
+      { key: 'Bridge', value: 'Tune-o-matic - String Through' },
+      { key: 'Headstock', value: '3-aside' },
+      { key: 'Frets', value: '24' },
     ],
+    rarity: 'Pre-production — never in commercial production',
   },
   {
     model: 'Species 7 String',

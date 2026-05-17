@@ -2,7 +2,18 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+const CANONICAL_HOST = 'www.maverickguitars.org'
+
 export async function proxy(request: NextRequest) {
+  const host = request.headers.get('host') ?? ''
+  if (host && host !== CANONICAL_HOST && !host.includes('localhost')) {
+    const url = request.nextUrl.clone()
+    url.host = CANONICAL_HOST
+    url.protocol = 'https'
+    url.port = ''
+    return NextResponse.redirect(url, { status: 301 })
+  }
+
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -44,5 +55,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/profile', '/login', '/register'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 }

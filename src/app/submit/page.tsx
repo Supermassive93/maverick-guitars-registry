@@ -134,14 +134,6 @@ const INITIAL: FormState = {
   submitter_email: '', submission_notes: '',
 }
 
-// Map catalogue_models DB values → form dropdown values
-
-function mapBodyShape(db: string | null): string {
-  if (!db) return ''
-  if (db === 'Explorer/Mockingbird') return 'Explorer-Mockingbird'
-  return db
-}
-
 
 function Field({ label, required, prefilled, children }: {
   label: string; required?: boolean; prefilled?: boolean; children: React.ReactNode
@@ -275,9 +267,8 @@ function SubmitForm() {
       updates.potentiometers = data.potentiometers
       filled.add('potentiometers')
     }
-    const mappedShape = mapBodyShape(data.body_shape_analogue)
-    if (mappedShape) {
-      updates.body_shape_analogue = mappedShape
+    if (data.body_shape_analogue) {
+      updates.body_shape_analogue = data.body_shape_analogue
       filled.add('body_shape_analogue')
     }
 
@@ -961,7 +952,7 @@ function SubmitForm() {
             <Select value={form.body_wood} onChange={set('body_wood')} options={['Canadian Basswood', 'Alder', 'Mahogany', 'Basswood', 'Unknown']} />
           </Field>
           <Field label="Body shape analogue" prefilled={prefilledFields.has('body_shape_analogue')}>
-            <Select value={form.body_shape_analogue} onChange={set('body_shape_analogue')} options={['Superstrat', 'Explorer-Mockingbird', 'Les Paul', 'Single Cutaway', 'PRS', 'Telecaster', 'Other', 'Unknown']} />
+            <Select value={form.body_shape_analogue} onChange={set('body_shape_analogue')} options={['Superstrat', 'Explorer-Mockingbird', 'Les Paul', 'Single Cutaway', 'PRS', 'Telecaster', 'Superbass', 'Other', 'Unknown']} />
           </Field>
         </Section>
 

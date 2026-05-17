@@ -1200,9 +1200,21 @@ function SubmitForm() {
 
         <Section title="Photos">
           <div className="sm:col-span-2">
-            <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57', marginBottom: '16px', lineHeight: 1.6 }}>
-              Upload a photo for each position where possible. Clear, well-lit shots on a plain background help with verification.
+            <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57', marginBottom: '10px', lineHeight: 1.6 }}>
+              Upload a photo for each position where possible. Clear, well-lit shots help with verification and make your entry stand out in the registry.
             </p>
+            <div style={{ marginBottom: '16px', padding: '12px 14px', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '4px', background: 'rgba(255,255,255,0.02)' }}>
+              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: '#c8a96e', marginBottom: '8px' }}>
+                Photo tips
+              </p>
+              <ul style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#5c5a57', lineHeight: 1.8, listStyle: 'none', padding: 0, margin: 0 }}>
+                <li>— Natural or soft diffused light works best — avoid direct flash</li>
+                <li>— Plain backgrounds help: a light-coloured carpet or rug laid flat is ideal</li>
+                <li>— A guitar stand in front of a neutral wall works well for full-length shots</li>
+                <li>— Wall hangers provide a clean, consistent angle for front and rear views</li>
+                <li>— Keep the guitar centred and fill the frame — avoid wide empty borders</li>
+              </ul>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
               {imageSlots.map((slot, i) => (
                 <div key={slot.position} style={{ position: 'relative' }}>

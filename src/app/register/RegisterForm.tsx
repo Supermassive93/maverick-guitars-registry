@@ -41,12 +41,9 @@ export default function RegisterForm() {
     if (!USERNAME_REGEX.test(value)) { setUsernameStatus('invalid'); return }
     setUsernameStatus('checking')
     const supabase = createSupabaseBrowserClient()
-    const { data } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('username', value.toLowerCase())
-      .maybeSingle()
-    setUsernameStatus(data ? 'taken' : 'available')
+    const { data: available } = await supabase
+      .rpc('is_username_available', { check_username: value.toLowerCase() })
+    setUsernameStatus(available ? 'available' : 'taken')
   }
 
   async function handleRegister(e: React.FormEvent) {
@@ -65,13 +62,10 @@ export default function RegisterForm() {
 
     const supabase = createSupabaseBrowserClient()
 
-    const { data: existing } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('username', username.toLowerCase())
-      .maybeSingle()
+    const { data: stillAvailable } = await supabase
+      .rpc('is_username_available', { check_username: username.toLowerCase() })
 
-    if (existing) {
+    if (!stillAvailable) {
       setError('That username was just taken — please choose another.')
       setLoading(false)
       return

@@ -31,7 +31,8 @@ export default async function RegisterPage() {
   }
 
   const supabase = await createSupabaseServerClient()
-  const { data } = await supabase.from('site_settings').select('registration_open').maybeSingle()
+  const { data: settingsRaw } = await supabase.from('site_settings').select('registration_open').maybeSingle()
+  const data = settingsRaw as { registration_open: boolean } | null
 
   if (data && !data.registration_open) {
     return (

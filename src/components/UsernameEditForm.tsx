@@ -30,12 +30,9 @@ export default function UsernameEditForm({ userId, currentUsername }: { userId: 
     if (!USERNAME_REGEX.test(v)) { setStatus('invalid'); return }
     setStatus('checking')
     const supabase = createSupabaseBrowserClient()
-    const { data } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('username', v.toLowerCase())
-      .maybeSingle()
-    setStatus(data ? 'taken' : 'available')
+    const { data: available } = await supabase
+      .rpc('is_username_available', { check_username: v.toLowerCase() })
+    setStatus(available ? 'available' : 'taken')
   }
 
   async function handleSave() {

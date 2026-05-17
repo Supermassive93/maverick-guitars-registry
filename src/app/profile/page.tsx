@@ -22,10 +22,11 @@ export default async function ProfilePage() {
   const role = profile?.role ?? 'user'
   const isAdmin = ['admin', 'user_admin', 'super_admin'].includes(role)
 
-  const { data: siteSettings } = await supabase
+  const { data: siteSettingsRaw } = await supabase
     .from('site_settings')
     .select('submissions_open, registration_open, contributions_open')
     .maybeSingle()
+  const siteSettings = siteSettingsRaw as { submissions_open: boolean; registration_open: boolean; contributions_open: boolean } | null
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: guitarsRaw } = await supabase

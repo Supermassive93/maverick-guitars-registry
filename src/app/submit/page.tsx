@@ -27,7 +27,8 @@ export default async function SubmitPage() {
   }
 
   const supabase = await createSupabaseServerClient()
-  const { data } = await supabase.from('site_settings').select('submissions_open').maybeSingle()
+  const { data: settingsRaw } = await supabase.from('site_settings').select('submissions_open').maybeSingle()
+  const data = settingsRaw as { submissions_open: boolean } | null
 
   if (data && !data.submissions_open) {
     return (

@@ -1042,7 +1042,7 @@ function SubmitForm() {
             <Select value={form.body_wood} onChange={set('body_wood')} options={['Canadian Basswood', 'Alder', 'Mahogany', 'Basswood', 'Unknown']} />
           </Field>
           <Field label="Body shape analogue" prefilled={prefilledFields.has('body_shape_analogue')}>
-            <Select value={form.body_shape_analogue} onChange={set('body_shape_analogue')} options={['Superstrat', 'Explorer-Mockingbird', 'Les Paul', 'Single Cutaway', 'PRS', 'Telecaster', 'Superbass', 'Other', 'Unknown']} />
+            <Select value={form.body_shape_analogue} onChange={set('body_shape_analogue')} options={['Superstrat', 'Semi-Superstrat', 'Explorer-Mockingbird', 'Single Cut - LP style', 'Telecaster', 'Superbass', 'Other', 'Unknown']} />
           </Field>
         </Section>
 

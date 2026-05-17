@@ -247,7 +247,7 @@ function SubmitForm() {
     const supabase = createSupabaseBrowserClient()
     const { data } = await supabase
       .from('catalogue_models')
-      .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, pickup_colour, headstock_face')
+      .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, pickup_colour, headstock_face, fretboard_wood')
       .eq('model', model)
       .order('catalogue_year', { ascending: false })
       .limit(1)
@@ -288,6 +288,10 @@ function SubmitForm() {
     if (data.headstock_face) {
       updates.headstock_face = data.headstock_face
       filled.add('headstock_face')
+    }
+    if (data.fretboard_wood) {
+      updates.fretboard_wood = data.fretboard_wood
+      filled.add('fretboard_wood')
     }
 
     updates.tuner_style = 'Factory - Maverick/Wilkinson'
@@ -1052,7 +1056,7 @@ function SubmitForm() {
           <Field label="Fret count" prefilled={prefilledFields.has('fret_count')}>
             <Select value={form.fret_count} onChange={set('fret_count')} options={['19', '21', '22', '24', 'Unknown']} />
           </Field>
-          <Field label="Fretboard wood">
+          <Field label="Fretboard wood" prefilled={prefilledFields.has('fretboard_wood')}>
             <Select value={form.fretboard_wood} onChange={set('fretboard_wood')} options={['AAA Indian Rosewood', 'Maple', 'Ebony', 'Split — Rosewood & Maple', 'Unknown']} />
           </Field>
           <Field label="Neck binding" prefilled={prefilledFields.has('neck_binding')}>

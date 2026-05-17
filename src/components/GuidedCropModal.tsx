@@ -121,11 +121,12 @@ export default function GuidedCropModal({ file, position, bodyShape, headstockSt
     const handler = (e: TouchEvent) => {
       e.preventDefault()
       if (e.touches.length === 1 && drag.current) {
+        const { startTx, startTy, startX, startY } = drag.current
         const t = e.touches[0]
         setTransform(prev => ({
           ...prev,
-          x: drag.current!.startTx + (t.clientX - drag.current!.startX),
-          y: drag.current!.startTy + (t.clientY - drag.current!.startY),
+          x: startTx + (t.clientX - startX),
+          y: startTy + (t.clientY - startY),
         }))
       } else if (e.touches.length === 2 && lastPinchDist.current !== null) {
         const dx = e.touches[0].clientX - e.touches[1].clientX
@@ -150,10 +151,11 @@ export default function GuidedCropModal({ file, position, bodyShape, headstockSt
 
   const onMouseMove = useCallback((e: React.MouseEvent) => {
     if (!drag.current) return
+    const { startTx, startTy, startX, startY } = drag.current
     setTransform(prev => ({
       ...prev,
-      x: drag.current!.startTx + (e.clientX - drag.current!.startX),
-      y: drag.current!.startTy + (e.clientY - drag.current!.startY),
+      x: startTx + (e.clientX - startX),
+      y: startTy + (e.clientY - startY),
     }))
   }, [])
 

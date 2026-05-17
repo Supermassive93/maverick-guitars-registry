@@ -133,7 +133,7 @@ export default function RegistrySection({ guitars }: Props) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-dm-mono)', fontSize: '13px' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
-              {['MGR ID', 'Serial', 'Model', 'Generation', 'Colour', 'Location', 'Source'].map(h => (
+              {['MGR ID', 'Serial', 'Model', 'Generation', 'Colour', 'Location', 'Source', 'Owner'].map(h => (
                 <th key={h} style={{
                   textAlign: 'left', color: '#5c5a57', fontSize: '11px',
                   letterSpacing: '2px', textTransform: 'uppercase',
@@ -147,7 +147,7 @@ export default function RegistrySection({ guitars }: Props) {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{
+                <td colSpan={8} style={{
                   textAlign: 'center', padding: '64px 14px',
                   color: '#5c5a57', fontSize: '13px', letterSpacing: '1px',
                   border: '1px dashed rgba(255,255,255,0.08)',
@@ -187,6 +187,9 @@ export default function RegistrySection({ guitars }: Props) {
                 </td>
                 <td style={{ padding: '13px 14px', color: '#9e9b96' }}>
                   {g.specification_source ?? '—'}
+                </td>
+                <td style={{ padding: '13px 14px', color: '#5c5a57', fontStyle: g.registered_by === 'Guest' ? 'italic' : 'normal' }}>
+                  {g.registered_by ?? 'Guest'}
                 </td>
               </tr>
             ))}

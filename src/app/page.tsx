@@ -7,7 +7,7 @@ export const revalidate = 60
 async function getGuitars(): Promise<Guitar[]> {
   const { data, error } = await supabase
     .from('guitars')
-    .select('id, mgr_id, model, serial, series, generation, factory_colour, last_known_city, last_known_country, specification_source, primary_image_url, status')
+    .select('id, mgr_id, model, serial, series, generation, factory_colour, last_known_city, last_known_country, specification_source, registered_by, primary_image_url, status')
     .eq('status', 'Approved')
     .order('mgr_id', { ascending: true })
   if (error) { console.error(error); return [] }

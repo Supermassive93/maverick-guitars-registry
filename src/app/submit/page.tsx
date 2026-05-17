@@ -321,9 +321,9 @@ function SubmitForm() {
       if (key === 'bridge_logo' && value !== 'Aftermarket branded') setBridgeLogoBrand('')
       if (key === 'neck_construction') {
         if (value === 'Factory - Bolt-on 2-piece scarf joint' || value === 'Factory - Bolt-on 1-piece') {
-          setPrefilledFields(prev => new Set([...prev, 'skunk_stripe' as keyof FormState, 'neck_binding' as keyof FormState]))
+          setPrefilledFields(prev => new Set([...prev, 'skunk_stripe' as keyof FormState, 'neck_binding' as keyof FormState, 'fret_count' as keyof FormState]))
         } else {
-          setPrefilledFields(prev => { const n = new Set(prev); n.delete('skunk_stripe'); n.delete('neck_binding'); return n })
+          setPrefilledFields(prev => { const n = new Set(prev); n.delete('skunk_stripe'); n.delete('neck_binding'); n.delete('fret_count'); return n })
         }
       }
       if (key === 'skunk_stripe') {
@@ -331,6 +331,9 @@ function SubmitForm() {
       }
       if (key === 'neck_binding') {
         setPrefilledFields(prev => { const n = new Set(prev); n.delete('neck_binding'); return n })
+      }
+      if (key === 'fret_count') {
+        setPrefilledFields(prev => { const n = new Set(prev); n.delete('fret_count'); return n })
       }
       // If user overrides a prefilled (catalogue-known) field, auto-switch to Modified
       if (prefilledFields.has(key as keyof FormState) && value !== form[key as keyof FormState]) {
@@ -345,18 +348,23 @@ function SubmitForm() {
           if (value === 'Factory - Bolt-on 2-piece scarf joint') {
             next.skunk_stripe = 'Factory - Skunk stripe'
             next.neck_binding = 'Factory - No Binding'
+            next.fret_count = '24'
           } else if (value === 'Factory - Bolt-on 1-piece') {
             next.skunk_stripe = 'Factory - No skunk stripe'
             next.neck_binding = 'Factory - Cream Binding'
+            next.fret_count = '24'
           } else if (value === 'Set neck' || value === 'Through neck') {
             next.skunk_stripe = 'Unknown'
             next.neck_binding = 'Unknown'
+            next.fret_count = ''
           } else if (value === 'Aftermarket replacement neck') {
             next.skunk_stripe = 'Aftermarket replacement neck'
             next.neck_binding = 'Unknown'
+            next.fret_count = ''
           } else {
             next.skunk_stripe = ''
             next.neck_binding = ''
+            next.fret_count = ''
           }
         }
         return next
@@ -1041,7 +1049,7 @@ function SubmitForm() {
           <Field label="Neck construction">
             <Select value={form.neck_construction} onChange={set('neck_construction')} options={['Factory - Bolt-on 2-piece scarf joint', 'Factory - Bolt-on 1-piece', 'Set neck', 'Through neck', 'Aftermarket replacement neck', 'Unknown']} />
           </Field>
-          <Field label="Fret count">
+          <Field label="Fret count" prefilled={prefilledFields.has('fret_count')}>
             <Select value={form.fret_count} onChange={set('fret_count')} options={['19', '21', '22', '24', 'Unknown']} />
           </Field>
           <Field label="Fretboard wood">

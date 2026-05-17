@@ -270,66 +270,76 @@ function SubmitForm() {
 
   async function prefillFromModel(model: string) {
     const supabase = createSupabaseBrowserClient()
-    const { data } = await supabase
-      .from('catalogue_models')
-      .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, body_wood, pickup_colour, headstock_face, headstock_style, fretboard_wood, scale_length, locking_nut')
-      .eq('model', model)
-      .order('catalogue_year', { ascending: false })
-      .limit(1)
-      .single()
 
-    if (!data) return
+    const [{ data }, { data: shapeData }] = await Promise.all([
+      supabase
+        .from('catalogue_models')
+        .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, body_wood, pickup_colour, headstock_face, headstock_style, fretboard_wood, scale_length, locking_nut')
+        .eq('model', model)
+        .order('catalogue_year', { ascending: false })
+        .limit(1)
+        .single(),
+      supabase
+        .from('model_shape_registry')
+        .select('body_shape_analogue, headstock_style')
+        .eq('model', model)
+        .single(),
+    ])
+
+    if (!data && !shapeData) return
 
     const updates: Partial<FormState> = {}
     const filled = new Set<keyof FormState>()
 
-    if (data.pickup_configuration) {
+    if (data?.pickup_configuration) {
       updates.pickup_configuration = data.pickup_configuration
       filled.add('pickup_configuration')
     }
-    if (data.bridge_type) {
+    if (data?.bridge_type) {
       updates.bridge_configuration = data.bridge_type
       filled.add('bridge_configuration')
       if (!TREMOLO_BRIDGES.includes(data.bridge_type)) updates.whammy_bar = ''
     }
-    if (data.switch_type) {
+    if (data?.switch_type) {
       updates.switch_type = data.switch_type
       filled.add('switch_type')
     }
-    if (data.potentiometers) {
+    if (data?.potentiometers) {
       updates.potentiometers = data.potentiometers
       filled.add('potentiometers')
     }
-    if (data.body_shape_analogue) {
-      updates.body_shape_analogue = data.body_shape_analogue
+    // model_shape_registry takes precedence for shape fields
+    const bodyShape = shapeData?.body_shape_analogue ?? data?.body_shape_analogue
+    if (bodyShape) {
+      updates.body_shape_analogue = bodyShape
       filled.add('body_shape_analogue')
     }
-    if (data.body_wood) {
+    if (data?.body_wood) {
       updates.body_wood = data.body_wood
       filled.add('body_wood')
     }
-
-    if (data.pickup_colour) {
+    if (data?.pickup_colour) {
       updates.pickup_colours = data.pickup_colour
       filled.add('pickup_colours')
     }
-    if (data.headstock_face) {
+    if (data?.headstock_face) {
       updates.headstock_face = data.headstock_face
       filled.add('headstock_face')
     }
-    if (data.fretboard_wood) {
+    if (data?.fretboard_wood) {
       updates.fretboard_wood = data.fretboard_wood
       filled.add('fretboard_wood')
     }
-    if (data.headstock_style) {
-      updates.headstock_style = data.headstock_style
+    const headstockStyle = shapeData?.headstock_style ?? data?.headstock_style
+    if (headstockStyle) {
+      updates.headstock_style = headstockStyle
       filled.add('headstock_style')
     }
-    if (data.scale_length) {
+    if (data?.scale_length) {
       updates.scale_length = data.scale_length
       filled.add('scale_length')
     }
-    if (data.locking_nut) {
+    if (data?.locking_nut) {
       updates.nut_type = data.locking_nut
       filled.add('nut_type')
     }

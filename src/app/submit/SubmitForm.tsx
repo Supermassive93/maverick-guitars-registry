@@ -478,7 +478,7 @@ export default function SubmitForm() {
       const uploadedMap = hasImages ? await uploadImages() : new Map<string, string>()
       const imageUrls = IMAGE_SCHEMA.map(p => uploadedMap.get(p)).filter((u): u is string => Boolean(u))
 
-      let registeredBy = 'Anonymous'
+      let registeredBy = 'Guest'
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')

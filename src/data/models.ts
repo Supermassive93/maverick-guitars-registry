@@ -177,6 +177,8 @@ export const MODEL_CATALOGUE: ModelData[] = [
       { key: 'Bridge', value: 'Tune-o-matic - String Through' },
       { key: 'Headstock', value: '3-aside' },
       { key: 'Frets', value: '24' },
+      { key: 'Potentiometers', value: 'Factory Standard Through Body Pots' },
+      { key: 'Switch', value: 'Factory 5 Way Blade Switch' },
     ],
     rarity: 'Pre-production — never in commercial production',
   },

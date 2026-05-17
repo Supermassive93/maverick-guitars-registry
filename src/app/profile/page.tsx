@@ -4,6 +4,7 @@ import type { Guitar } from '@/lib/types'
 import Link from 'next/link'
 import SignOutButton from '@/components/SignOutButton'
 import UsernameEditForm from '@/components/UsernameEditForm'
+import SiteSettingsPanel from '@/components/SiteSettingsPanel'
 
 export default async function ProfilePage() {
   const supabase = await createSupabaseServerClient()
@@ -12,12 +13,19 @@ export default async function ProfilePage() {
 
   const { data: profileRaw } = await supabase
     .from('profiles')
-    .select('username')
+    .select('username, role')
     .eq('id', user.id)
     .single()
 
-  const profile = profileRaw as { username: string | null } | null
+  const profile = profileRaw as { username: string | null; role: string | null } | null
   const username = profile?.username ?? 'unknown'
+  const role = profile?.role ?? 'user'
+  const isAdmin = ['admin', 'user_admin', 'super_admin'].includes(role)
+
+  const { data: siteSettings } = await supabase
+    .from('site_settings')
+    .select('submissions_open, registration_open, contributions_open')
+    .maybeSingle()
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: guitarsRaw } = await supabase
@@ -182,6 +190,67 @@ export default async function ProfilePage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {isAdmin && (
+        <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <p style={{
+            fontSize: '10px',
+            fontFamily: 'var(--font-dm-mono)',
+            color: '#c8a96e',
+            letterSpacing: '2px',
+            textTransform: 'uppercase',
+            marginBottom: '16px',
+          }}>
+            Admin tools
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+            <Link
+              href="/admin"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: '#f0ede8',
+                fontSize: '13px',
+                fontFamily: 'var(--font-dm-mono)',
+                textDecoration: 'none',
+                padding: '10px 16px',
+                border: '1px solid rgba(200,169,110,0.25)',
+                background: 'rgba(200,169,110,0.05)',
+              }}
+            >
+              <span style={{ color: '#c8a96e' }}>→</span>
+              Review submissions
+            </Link>
+          </div>
+
+          <p style={{
+            fontSize: '10px',
+            fontFamily: 'var(--font-dm-mono)',
+            color: '#5c5a57',
+            letterSpacing: '2px',
+            textTransform: 'uppercase',
+            marginBottom: '10px',
+          }}>
+            Site controls
+          </p>
+          <SiteSettingsPanel initial={{
+            submissions_open:  siteSettings?.submissions_open  ?? true,
+            registration_open: siteSettings?.registration_open ?? true,
+            contributions_open: siteSettings?.contributions_open ?? true,
+          }} />
+
+          <p style={{
+            fontSize: '10px',
+            fontFamily: 'var(--font-dm-mono)',
+            color: '#3a3835',
+            letterSpacing: '1px',
+            marginTop: '12px',
+          }}>
+            Role: {role}
+          </p>
         </div>
       )}
 

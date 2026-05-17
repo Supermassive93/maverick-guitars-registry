@@ -18,6 +18,7 @@ const inputStyle: React.CSSProperties = {
 
 export default function UsernameEditForm({ userId, currentUsername }: { userId: string; currentUsername: string }) {
   const [editing, setEditing] = useState(false)
+  const [displayedUsername, setDisplayedUsername] = useState(currentUsername)
   const [value, setValue] = useState(currentUsername)
   const [status, setStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle')
   const [saving, setSaving] = useState(false)
@@ -54,6 +55,7 @@ export default function UsernameEditForm({ userId, currentUsername }: { userId: 
     if (updateError) {
       setError(updateError.message)
     } else {
+      setDisplayedUsername(value.toLowerCase())
       setSaved(true)
       setEditing(false)
       setTimeout(() => setSaved(false), 3000)
@@ -76,13 +78,13 @@ export default function UsernameEditForm({ userId, currentUsername }: { userId: 
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <span style={{ color: '#9e9b96', fontSize: '13px', fontFamily: 'var(--font-dm-mono)' }}>
-          {currentUsername}
+          {displayedUsername}
         </span>
         {saved && (
           <span style={{ color: '#27ae60', fontSize: '11px', fontFamily: 'var(--font-dm-mono)' }}>Saved</span>
         )}
         <button
-          onClick={() => { setEditing(true); setValue(currentUsername); setStatus('idle'); setError('') }}
+          onClick={() => { setEditing(true); setValue(displayedUsername); setStatus('idle'); setError('') }}
           style={{
             background: 'none',
             border: '1px solid rgba(255,255,255,0.12)',

@@ -267,6 +267,7 @@ export default function GuidedCropModal({ file, position, bodyShape, headstockSt
               top: transform.y,
               width: imgRef.current.naturalWidth * transform.scale,
               height: imgRef.current.naturalHeight * transform.scale,
+              maxWidth: 'none',
               pointerEvents: 'none',
               userSelect: 'none',
             }}

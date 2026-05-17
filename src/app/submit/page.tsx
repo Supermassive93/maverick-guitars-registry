@@ -1209,7 +1209,8 @@ function SubmitForm() {
               </p>
               <ul style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#5c5a57', lineHeight: 1.8, listStyle: 'none', padding: 0, margin: 0 }}>
                 <li>— Natural or soft diffused light works best — avoid direct flash</li>
-                <li>— Plain backgrounds help: a light-coloured carpet or rug laid flat is ideal</li>
+                <li>— Plain backgrounds help: a light-coloured carpet, rug, or clean towel laid flat is ideal</li>
+                <li>— Plain wrapping paper or a roll of craft paper makes an easy portable backdrop</li>
                 <li>— A guitar stand in front of a neutral wall works well for full-length shots</li>
                 <li>— Wall hangers provide a clean, consistent angle for front and rear views</li>
                 <li>— Keep the guitar centred and fill the frame — avoid wide empty borders</li>

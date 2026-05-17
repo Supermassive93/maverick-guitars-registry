@@ -29,8 +29,8 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
   'B1':               { series: 'B-Series',      prefix: 'B1-' },
   'S4':               { series: 'S-Series',      prefix: 'S4-' },
   'S5':               { series: 'S-Series',      prefix: 'S5-' },
-  'JR4':              { series: 'JR-Series',      prefix: 'JR4-' },
-  'Unknown':          { series: 'Unknown',        prefix: '' },
+  'JR4':              { series: 'JR-Series',     prefix: 'JR4-' },
+  'Unknown':          { series: 'Unknown',       prefix: '' },
 }
 
 const MODEL_GROUPS: Record<string, string[]> = Object.entries(MODEL_CONFIG).reduce(
@@ -54,6 +54,26 @@ const FACTORY_COLOURS = [
 
 const CUSTOM_COLOURS = ['BW — Black & White (Zebra)', 'BR — Black & Red (DTM)', 'Custom Airbrushed', 'Unknown']
 
+const TREMOLO_BRIDGES = ['Maverick Floyd Rose - Licensed', 'Floyd Rose - Aftermarket', 'Synchronised Tremolo - Fender Style']
+
+type PickupPositions = { bridge: string | null; middle: string | null; neck: string | null }
+const PICKUP_CONFIG_MAP: Record<string, PickupPositions> = {
+  'HH':      { bridge: 'Humbucker',   middle: null,          neck: 'Humbucker'   },
+  'HSH':     { bridge: 'Humbucker',   middle: 'Single Coil', neck: 'Humbucker'   },
+  'HSS':     { bridge: 'Humbucker',   middle: 'Single Coil', neck: 'Single Coil' },
+  'HS':      { bridge: 'Humbucker',   middle: 'Single Coil', neck: null          },
+  'H':       { bridge: 'Humbucker',   middle: null,          neck: null          },
+  'SS':      { bridge: 'Single Coil', middle: null,          neck: 'Single Coil' },
+  'SSS':     { bridge: 'Single Coil', middle: 'Single Coil', neck: 'Single Coil' },
+}
+
+const WHAMMY_OPTIONS = [
+  'Factory — With O-ring grips',
+  'Factory — Without O-ring grips',
+  'Aftermarket',
+  'Missing',
+]
+
 type FormState = {
   serial: string
   serial_status: string
@@ -73,6 +93,8 @@ type FormState = {
   headstock_logo: string
   bridge_logo: string
   pickup_surrounds: string
+  pickup_colours: string
+  tuner_style: string
   neck_binding: string
   switch_type: string
   switch_knob: string
@@ -97,17 +119,36 @@ const INITIAL: FormState = {
   body_wood: '', body_shape_analogue: '', pickup_configuration: '',
   neck_pickup: '', middle_pickup: '', bridge_pickup: '', bridge_configuration: '',
   hardware_colour: '', headstock_face: '', headstock_logo: '', bridge_logo: '', pickup_surrounds: '',
+  pickup_colours: '', tuner_style: '',
   neck_binding: '', switch_type: '', switch_knob: '', potentiometers: '',
   whammy_bar: '', neck_construction: '', skunk_stripe: '', headstock_break_angle: '',
   neck_pitch: '', source_type: '', source_url: '', last_price: '',
   submitter_email: '', submission_notes: '',
 }
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+// Map catalogue_models DB values → form dropdown values
+
+function mapBodyShape(db: string | null): string {
+  if (!db) return ''
+  if (db === 'Explorer/Mockingbird') return 'Explorer-Mockingbird'
+  return db
+}
+
+
+function Field({ label, required, prefilled, children }: {
+  label: string; required?: boolean; prefilled?: boolean; children: React.ReactNode
+}) {
   return (
     <div>
-      <label className="block text-sm text-zinc-400 mb-1">
-        {label}{required && <span className="text-red-500 ml-1">*</span>}
+      <label className="block text-sm text-zinc-400 mb-1" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <span>{label}{required && <span className="text-red-500 ml-1">*</span>}</span>
+        {prefilled && (
+          <span style={{
+            fontSize: '9px', color: '#c8a96e',
+            fontFamily: 'var(--font-dm-mono)', letterSpacing: '1px',
+            textTransform: 'uppercase',
+          }}>pre-filled</span>
+        )}
       </label>
       {children}
     </div>
@@ -176,6 +217,9 @@ function SubmitForm() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const [isModified, setIsModified] = useState(false)
+  const [prefilledFields, setPrefilledFields] = useState(new Set<keyof FormState>())
+  const [bridgeLogoBrand, setBridgeLogoBrand] = useState('')
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()
@@ -191,14 +235,88 @@ function SubmitForm() {
     })
   }, [])
 
+  async function prefillFromModel(model: string) {
+    const supabase = createSupabaseBrowserClient()
+    const { data } = await supabase
+      .from('catalogue_models')
+      .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, pickup_colour, headstock_face')
+      .eq('model', model)
+      .order('catalogue_year', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (!data) return
+
+    const updates: Partial<FormState> = {}
+    const filled = new Set<keyof FormState>()
+
+    if (data.pickup_configuration) {
+      updates.pickup_configuration = data.pickup_configuration
+      filled.add('pickup_configuration')
+    }
+    if (data.bridge_type) {
+      updates.bridge_configuration = data.bridge_type
+      filled.add('bridge_configuration')
+      if (!TREMOLO_BRIDGES.includes(data.bridge_type)) updates.whammy_bar = ''
+    }
+    if (data.switch_type) {
+      updates.switch_type = data.switch_type
+      filled.add('switch_type')
+    }
+    if (data.potentiometers) {
+      updates.potentiometers = data.potentiometers
+      filled.add('potentiometers')
+    }
+    const mappedShape = mapBodyShape(data.body_shape_analogue)
+    if (mappedShape) {
+      updates.body_shape_analogue = mappedShape
+      filled.add('body_shape_analogue')
+    }
+
+    if (data.pickup_colour) {
+      updates.pickup_colours = data.pickup_colour
+      filled.add('pickup_colours')
+    }
+    if (data.headstock_face) {
+      updates.headstock_face = data.headstock_face
+      filled.add('headstock_face')
+    }
+
+    updates.tuner_style = 'Factory - Maverick/Wilkinson'
+    filled.add('tuner_style')
+
+    setForm(prev => ({ ...prev, ...updates }))
+    setPrefilledFields(filled)
+  }
+
+  function handleModelChange(model: string) {
+    setSerialDigits('')
+    setPrefilledFields(new Set())
+    setForm(prev => ({ ...prev, model, serial: '', serial_status: '' }))
+    if (!isModified && model && model !== 'Unknown') {
+      prefillFromModel(model)
+    }
+  }
+
+  function handleToggleModified(modified: boolean) {
+    setIsModified(modified)
+    if (modified) {
+      setPrefilledFields(new Set())
+    } else if (form.model && form.model !== 'Unknown') {
+      prefillFromModel(form.model)
+    }
+  }
+
   function set(key: keyof FormState) {
     return (value: string) => setForm(prev => {
       const next = { ...prev, [key]: value }
-      if (key === 'model') { next.serial = ''; setSerialDigits('') }
       if (key === 'finish_type') { next.factory_colour = ''; next.custom_shop_colour = '' }
+      if (key === 'bridge_configuration' && !TREMOLO_BRIDGES.includes(value)) { next.whammy_bar = '' }
+      if (key === 'bridge_logo' && value !== 'Aftermarket branded') { setBridgeLogoBrand('') }
       return next
     })
   }
+
 
   function handleSerialDigits(raw: string) {
     const digits = raw.replace(/\D/g, '').slice(0, 5)
@@ -249,6 +367,7 @@ function SubmitForm() {
         registeredBy = profile?.username ?? split_email_prefix(user.email ?? '')
       }
 
+      const notesPrefix = isModified ? '[Modified] ' : ''
       const payload = {
         user_id: user?.id ?? null,
         registered_by: registeredBy,
@@ -271,8 +390,12 @@ function SubmitForm() {
         hardware_colour: form.hardware_colour || null,
         headstock_face: form.headstock_face || null,
         headstock_logo: form.headstock_logo || null,
-        bridge_logo: form.bridge_logo || null,
+        bridge_logo: form.bridge_logo === 'Aftermarket branded' && bridgeLogoBrand
+          ? `Aftermarket branded — ${bridgeLogoBrand}`
+          : form.bridge_logo || null,
         pickup_surrounds: form.pickup_surrounds || null,
+        pickup_colours: form.pickup_colours || null,
+        tuner_style: form.tuner_style || null,
         neck_binding: form.neck_binding || null,
         switch_type: form.switch_type || null,
         switch_knob: form.switch_knob || null,
@@ -287,7 +410,7 @@ function SubmitForm() {
         source_url: form.source_url || null,
         last_price: form.last_price ? parseFloat(form.last_price) : null,
         submitter_email: form.submitter_email,
-        submission_notes: form.submission_notes || null,
+        submission_notes: `${notesPrefix}${form.submission_notes}`.trim() || null,
         image_urls: imageUrls.length > 0 ? imageUrls : null,
         primary_image_url: imageUrls[0] ?? null,
         status: 'Pending',
@@ -483,7 +606,7 @@ function SubmitForm() {
             <Field label="Model *">
               <select
                 value={form.model}
-                onChange={e => set('model')(e.target.value)}
+                onChange={e => handleModelChange(e.target.value)}
                 required
                 className={selectCls}
               >
@@ -564,12 +687,50 @@ function SubmitForm() {
             </Field>
           </div>
 
-          {/* Serial status — only shown when no digits entered (e.g. None Visible / Prefix only) */}
+          {/* Serial status — only shown when no digits entered */}
           {!serialDigits && (
             <Field label="Serial status">
               <Select value={form.serial_status} onChange={set('serial_status')} options={['Prefix only', 'None Visible']} placeholder="Unknown / not entered" />
             </Field>
           )}
+
+          {/* Factory / Modified toggle */}
+          <div className="sm:col-span-2">
+            <label className="block text-sm text-zinc-400 mb-2">Guitar spec</label>
+            <div style={{ display: 'inline-flex', border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden' }}>
+              {(['Factory', 'Modified'] as const).map(val => {
+                const active = val === 'Factory' ? !isModified : isModified
+                return (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => handleToggleModified(val === 'Modified')}
+                    style={{
+                      padding: '8px 28px',
+                      fontFamily: 'var(--font-dm-mono)',
+                      fontSize: '12px',
+                      letterSpacing: '1px',
+                      textTransform: 'uppercase',
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: active ? '#c8a96e' : 'transparent',
+                      color: active ? '#000' : '#5c5a57',
+                      transition: 'background 0.15s, color 0.15s',
+                    }}
+                  >
+                    {val}
+                  </button>
+                )
+              })}
+            </div>
+            <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#3a3835', marginTop: '6px' }}>
+              {isModified
+                ? 'Fill in the spec as it currently is — hardware fields will not be auto-filled.'
+                : form.model && form.model !== 'Unknown'
+                  ? 'Catalogue spec has been pre-filled. Update any fields that differ on your guitar.'
+                  : 'Select a model to auto-fill catalogue spec — update anything that differs.'}
+            </p>
+          </div>
 
           <div>
             <label className="block text-sm text-zinc-400 mb-1">Handed</label>
@@ -646,67 +807,113 @@ function SubmitForm() {
               </p>
             </Field>
           )}
+          <Field label="Headstock face colour" prefilled={prefilledFields.has('headstock_face')}>
+            <Select value={form.headstock_face} onChange={set('headstock_face')} options={['Gloss Black', 'Matches body colour', 'Other']} />
+          </Field>
+          <Field label="Headstock logo">
+            <Select value={form.headstock_logo} onChange={set('headstock_logo')} options={['Reflective metal inlay', 'Cream silkscreen', 'Unknown']} />
+          </Field>
           <Field label="Body wood">
             <Select value={form.body_wood} onChange={set('body_wood')} options={['Canadian Basswood', 'Alder', 'Mahogany', 'Basswood', 'Unknown']} />
           </Field>
-          <Field label="Body shape analogue">
+          <Field label="Body shape analogue" prefilled={prefilledFields.has('body_shape_analogue')}>
             <Select value={form.body_shape_analogue} onChange={set('body_shape_analogue')} options={['Superstrat', 'Explorer-Mockingbird', 'Les Paul', 'Single Cutaway', 'PRS', 'Telecaster', 'Other', 'Unknown']} />
           </Field>
         </Section>
 
         <Section title="Hardware & electronics">
-          <Field label="Pickup configuration">
-            <Select value={form.pickup_configuration} onChange={set('pickup_configuration')} options={['HH', 'HSH', 'HSS', 'HS', 'H', 'SS', 'SSS', 'Other', 'Unknown']} />
-          </Field>
-          <Field label="Bridge">
-            <Select value={form.bridge_configuration} onChange={set('bridge_configuration')} options={['Maverick Floyd Rose - Licensed', 'Floyd Rose - Aftermarket', 'Maverick/Wilkinson Hardtail', 'Hardtail - Aftermarket', 'Tune-o-matic - String Through', 'Standard Tune-o-matic - Nashville', 'Wraparound', 'Synchronised Tremolo', 'Unknown']} />
-          </Field>
-          <Field label="Hardware colour">
-            <Select value={form.hardware_colour} onChange={set('hardware_colour')} options={['Chrome', 'Gold', 'Black', 'Nickel', 'Unknown']} />
-          </Field>
-          <Field label="Switch type">
-            <Select value={form.switch_type} onChange={set('switch_type')} options={['Factory 5 Way Blade Switch', 'Factory 3 Way Blade Switch', 'Factory 3 Way Toggle Switch', 'Aftermarket Switch', 'Unknown']} />
-          </Field>
-          <Field label="Switch knob">
-            <Select value={form.switch_knob} onChange={set('switch_knob')} options={['Cylindrical with O-ring', 'Tapered', 'Aftermarket Replacement', 'Unknown']} />
-          </Field>
-          <Field label="Potentiometers">
-            <Select value={form.potentiometers} onChange={set('potentiometers')} options={['Factory Patented Evolution Roller Pots', 'Factory Standard Through Body Pots', 'Aftermarket Replacement', 'Unknown']} />
-          </Field>
-          <Field label="Neck pickup">
-            <input type="text" value={form.neck_pickup} onChange={e => set('neck_pickup')(e.target.value)} placeholder="e.g. A-Type custom humbucker" className={inputCls} />
-          </Field>
-          <Field label="Bridge pickup">
-            <input type="text" value={form.bridge_pickup} onChange={e => set('bridge_pickup')(e.target.value)} placeholder="e.g. A-Type custom humbucker" className={inputCls} />
-          </Field>
           <div className="sm:col-span-2">
-            <Field label="Whammy bar">
-              <input type="text" value={form.whammy_bar} onChange={e => set('whammy_bar')(e.target.value)} placeholder="e.g. Original with O-ring grips" className={inputCls} />
-            </Field>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+              {/* Hardware */}
+              <div className="flex flex-col gap-4">
+                <Field label="Bridge" prefilled={prefilledFields.has('bridge_configuration')}>
+                  <Select value={form.bridge_configuration} onChange={set('bridge_configuration')} options={['Maverick Floyd Rose - Licensed', 'Floyd Rose - Aftermarket', 'Maverick/Wilkinson Hardtail', 'Hardtail - Aftermarket', 'Tune-o-matic - String Through', 'Standard Tune-o-matic - Nashville', 'Wraparound', 'Synchronised Tremolo - Fender Style', 'Unknown']} />
+                </Field>
+                <Field label="Bridge logo">
+                  <Select value={form.bridge_logo} onChange={set('bridge_logo')} options={['Maverick Italic script logo', 'Maverick Stencil script logo', 'No logo', 'Aftermarket branded', 'Unknown']} />
+                  {form.bridge_logo === 'Aftermarket branded' && (
+                    <input
+                      type="text"
+                      value={bridgeLogoBrand}
+                      onChange={e => setBridgeLogoBrand(e.target.value.slice(0, 60))}
+                      placeholder="Brand name, e.g. Floyd Rose, Gotoh…"
+                      maxLength={60}
+                      className={inputCls}
+                      style={{ marginTop: '6px' }}
+                    />
+                  )}
+                </Field>
+                {TREMOLO_BRIDGES.includes(form.bridge_configuration) && (
+                  <Field label="Whammy bar">
+                    <Select value={form.whammy_bar} onChange={set('whammy_bar')} options={WHAMMY_OPTIONS} />
+                  </Field>
+                )}
+                <Field label="Humbucker surrounds">
+                  <Select value={form.pickup_surrounds} onChange={set('pickup_surrounds')} options={['Factory - No Surrounds', 'Factory - Metal Surrounds', 'Factory - Plastic Surrounds', 'Aftermarket Surrounds', 'Unknown']} />
+                </Field>
+                <Field label="Hardware colour">
+                  <Select value={form.hardware_colour} onChange={set('hardware_colour')} options={['Gold', 'Black', 'Nickel', 'Unknown']} />
+                </Field>
+                <Field label="Switch knob">
+                  <Select value={form.switch_knob} onChange={set('switch_knob')} options={['Factory - Cylindrical with O-rings', 'Factory - Tapered', 'Aftermarket Replacement', 'Unknown']} />
+                </Field>
+                <Field label="Tuner style" prefilled={prefilledFields.has('tuner_style')}>
+                  <Select value={form.tuner_style} onChange={set('tuner_style')} options={['Factory - Maverick/Wilkinson', 'Standard Die-Cast', 'Locking Tuners', 'Grover', 'Schaller', 'Gotoh', 'Aftermarket', 'Unknown']} />
+                </Field>
+              </div>
+
+              {/* Electronics */}
+              <div className="flex flex-col gap-4">
+                <Field label="Pickup configuration" prefilled={prefilledFields.has('pickup_configuration')}>
+                  <Select value={form.pickup_configuration} onChange={set('pickup_configuration')} options={['HH', 'HSH', 'HSS', 'HS', 'H', 'SS', 'SSS', 'Other', 'Unknown']} />
+                </Field>
+                {(() => {
+                  const pos = PICKUP_CONFIG_MAP[form.pickup_configuration]
+                  const bridgeLabel = pos?.bridge ? `Bridge pickup — ${pos.bridge}` : 'Bridge pickup'
+                  const middleLabel = pos?.middle ? `Middle pickup — ${pos.middle}` : 'Middle pickup'
+                  const neckLabel   = pos?.neck   ? `Neck pickup — ${pos.neck}`     : 'Neck pickup'
+                  const hasMiddle   = pos ? pos.middle !== null : true
+                  return (
+                    <>
+                      <Field label={bridgeLabel}>
+                        <input type="text" value={form.bridge_pickup} onChange={e => set('bridge_pickup')(e.target.value)} placeholder="e.g. Duncan Designed HB-102" className={inputCls} />
+                      </Field>
+                      {hasMiddle && (
+                        <Field label={middleLabel}>
+                          <input type="text" value={form.middle_pickup} onChange={e => set('middle_pickup')(e.target.value)} placeholder="e.g. Wilkinson single coil" className={inputCls} />
+                        </Field>
+                      )}
+                      <Field label={neckLabel}>
+                        <input type="text" value={form.neck_pickup} onChange={e => set('neck_pickup')(e.target.value)} placeholder="e.g. Duncan Designed HB-102" className={inputCls} />
+                      </Field>
+                    </>
+                  )
+                })()}
+                <Field label="Pickup colours" prefilled={prefilledFields.has('pickup_colours')}>
+                  <Select value={form.pickup_colours} onChange={set('pickup_colours')} options={['All Black', 'All Cream', 'Zebra — Black/Cream', 'All White', 'Nickel Covers', 'Unknown']} />
+                </Field>
+                <Field label="Switch type" prefilled={prefilledFields.has('switch_type')}>
+                  <Select value={form.switch_type} onChange={set('switch_type')} options={['Factory 5 Way Blade Switch', 'Factory 3 Way Blade Switch', 'Factory 3 Way Toggle Switch', 'Aftermarket Switch', 'Unknown']} />
+                </Field>
+                <Field label="Potentiometers" prefilled={prefilledFields.has('potentiometers')}>
+                  <Select value={form.potentiometers} onChange={set('potentiometers')} options={['Factory Patented Evolution Roller Pots', 'Factory Standard Through Body Pots', 'Aftermarket Replacement', 'Unknown']} />
+                </Field>
+              </div>
+
+            </div>
           </div>
         </Section>
 
         <Section title="Neck & construction">
           <Field label="Neck construction">
-            <Select value={form.neck_construction} onChange={set('neck_construction')} options={['Bolt-on — 2 piece scarf joint', 'Bolt-on — 1 piece', 'Set neck', 'Through neck', 'Unknown']} />
-          </Field>
-          <Field label="Pickup surrounds">
-            <Select value={form.pickup_surrounds} onChange={set('pickup_surrounds')} options={['Absent', 'Present', 'Unknown']} />
+            <Select value={form.neck_construction} onChange={set('neck_construction')} options={['Factory - Bolt-on 2-piece scarf joint', 'Factory - Bolt-on 1-piece', 'Set neck', 'Through neck', 'Aftermarket replacement neck', 'Unknown']} />
           </Field>
           <Field label="Neck binding">
             <Select value={form.neck_binding} onChange={set('neck_binding')} options={['Absent', 'Present', 'Unknown']} />
           </Field>
           <Field label="Skunk stripe">
             <Select value={form.skunk_stripe} onChange={set('skunk_stripe')} options={['Present', 'Absent', 'Unknown']} />
-          </Field>
-          <Field label="Headstock face colour">
-            <Select value={form.headstock_face} onChange={set('headstock_face')} options={['Gloss Black', 'Matches body colour', 'Other']} />
-          </Field>
-          <Field label="Headstock logo">
-            <Select value={form.headstock_logo} onChange={set('headstock_logo')} options={['Reflective metal inlay', 'Cream silkscreen', 'Unknown']} />
-          </Field>
-          <Field label="Bridge logo">
-            <Select value={form.bridge_logo} onChange={set('bridge_logo')} options={['Italic script', 'Stencil block', 'Unknown']} />
           </Field>
           <Field label="Headstock break angle (degrees)">
             <input type="number" step="0.1" value={form.headstock_break_angle} onChange={e => set('headstock_break_angle')(e.target.value)} placeholder="e.g. 13" className={inputCls} />

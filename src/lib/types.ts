@@ -6,7 +6,7 @@ export type SerialStatus = 'Complete' | 'Partial' | 'Prefix only' | 'None Visibl
 export type Series = 'F-Series' | 'X-Series' | 'X-Treme' | 'Species' | 'Chaos' | 'S-Series' | 'Streetfighter' | 'Matrix' | 'G-Series' | 'B-Series' | 'JR-Series' | 'Unknown'
 export type Generation = 'Gen 1' | 'Gen 2' | 'Gen 3' | 'Unknown'
 export type FinishType = 'Factory Finish' | 'Custom Shop Finish' | 'Refinished' | 'Unknown'
-export type GuitarStatus = 'Pending' | 'Approved' | 'Rejected'
+export type GuitarStatus = 'Pending' | 'Approved' | 'Rejected' | 'Pre-populated'
 export type SpecSource = 'Catalogue Confirmed' | 'Press Confirmed' | 'Registry Derived' | 'Owner Confirmed' | 'Unverified'
 
 export interface Guitar {
@@ -35,6 +35,8 @@ export interface Guitar {
   headstock_logo: string | null
   bridge_logo: string | null
   pickup_surrounds: string | null
+  pickup_colours: string | null
+  tuner_style: string | null
   neck_binding: string | null
   switch_type: string | null
   switch_knob: string | null

@@ -1145,7 +1145,7 @@ function SubmitForm() {
             <Select value={form.neck_construction} onChange={set('neck_construction')} options={['Factory - Bolt-on 2-piece scarf joint', 'Factory - Bolt-on 1-piece', 'Factory - Set neck', 'Factory - Through neck', 'Aftermarket replacement neck', 'Unknown']} />
           </Field>
           <Field label="Headstock style" prefilled={prefilledFields.has('headstock_style')}>
-            <Select value={form.headstock_style} onChange={set('headstock_style')} options={['6-aside', '6-aside reversed', '4-aside', '3+2 (3 tuners standard side, 2 opposing edge)', 'Unknown']} />
+            <Select value={form.headstock_style} onChange={set('headstock_style')} options={['6-aside', '6-aside reversed', '3+3', '4-aside', '3+2 (3 tuners standard side, 2 opposing edge)', 'Unknown']} />
           </Field>
           <Field label="Scale length" prefilled={prefilledFields.has('scale_length')}>
             <Select value={form.scale_length} onChange={set('scale_length')} options={['25" (Maverick / PRS Core)', '25.5" (Fender / Ibanez)', '24.75" (Gibson)', '24.724" (PRS SE)', 'Unknown']} />

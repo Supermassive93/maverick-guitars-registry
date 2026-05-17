@@ -204,7 +204,9 @@ export const MODEL_CATALOGUE: ModelData[] = [
     description: 'Maverick\'s take on the Les Paul format. Set-neck construction departs from the bolt-on superstrat approach of the F-Series. Rarer than the F-Series models.',
     specs: [
       { key: 'Body style', value: 'Single Cut - LP style' },
+      { key: 'Pickup config', value: 'HH' },
       { key: 'Bridge', value: 'Wraparound' },
+      { key: 'Headstock', value: '3+3' },
     ],
     rarity: 'Low production',
   },
@@ -214,7 +216,9 @@ export const MODEL_CATALOGUE: ModelData[] = [
     description: 'Second variant in the G-Series. Complements the G1 within the set-neck, humbucker-driven side of the Maverick catalogue.',
     specs: [
       { key: 'Body style', value: 'Single Cut - LP style' },
+      { key: 'Pickup config', value: 'HH' },
       { key: 'Bridge', value: 'Wraparound' },
+      { key: 'Headstock', value: '3+3' },
     ],
     rarity: 'Low production',
   },

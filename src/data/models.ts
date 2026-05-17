@@ -68,11 +68,11 @@ export const MODEL_CATALOGUE: ModelData[] = [
   {
     model: 'F4',
     series: 'F-Series',
-    description: 'HSS configuration with Wilkinson hardtail. Features a composite neck profile morphing from vintage V at the nut to D-shape at the body join — delivering a dynamic playing feel across the full range.',
+    description: 'HSS configuration with Synchronised Tremolo. Features a composite neck profile morphing from vintage V at the nut to D-shape at the body join — delivering a dynamic playing feel across the full range.',
     specs: [
       { key: 'Body style', value: 'Semi-Superstrat' },
       { key: 'Pickup config', value: 'HSS' },
-      { key: 'Bridge', value: 'Maverick/Wilkinson Hardtail' },
+      { key: 'Bridge', value: 'Synchronised Tremolo - Fender Style' },
     ],
   },
   {

@@ -308,13 +308,52 @@ function SubmitForm() {
   }
 
   function set(key: keyof FormState) {
-    return (value: string) => setForm(prev => {
-      const next = { ...prev, [key]: value }
-      if (key === 'finish_type') { next.factory_colour = ''; next.custom_shop_colour = '' }
-      if (key === 'bridge_configuration' && !TREMOLO_BRIDGES.includes(value)) { next.whammy_bar = '' }
-      if (key === 'bridge_logo' && value !== 'Aftermarket branded') { setBridgeLogoBrand('') }
-      return next
-    })
+    return (value: string) => {
+      // Side effects outside setState
+      if (key === 'bridge_logo' && value !== 'Aftermarket branded') setBridgeLogoBrand('')
+      if (key === 'neck_construction') {
+        if (value === 'Factory - Bolt-on 2-piece scarf joint' || value === 'Factory - Bolt-on 1-piece') {
+          setPrefilledFields(prev => new Set([...prev, 'skunk_stripe' as keyof FormState, 'neck_binding' as keyof FormState]))
+        } else {
+          setPrefilledFields(prev => { const n = new Set(prev); n.delete('skunk_stripe'); n.delete('neck_binding'); return n })
+        }
+      }
+      if (key === 'skunk_stripe') {
+        setPrefilledFields(prev => { const n = new Set(prev); n.delete('skunk_stripe'); return n })
+      }
+      if (key === 'neck_binding') {
+        setPrefilledFields(prev => { const n = new Set(prev); n.delete('neck_binding'); return n })
+      }
+      // If user overrides a prefilled (catalogue-known) field, auto-switch to Modified
+      if (prefilledFields.has(key as keyof FormState) && value !== form[key as keyof FormState]) {
+        setIsModified(true)
+        setPrefilledFields(prev => { const n = new Set(prev); n.delete(key as keyof FormState); return n })
+      }
+      setForm(prev => {
+        const next = { ...prev, [key]: value }
+        if (key === 'finish_type') { next.factory_colour = ''; next.custom_shop_colour = '' }
+        if (key === 'bridge_configuration' && !TREMOLO_BRIDGES.includes(value)) { next.whammy_bar = '' }
+        if (key === 'neck_construction') {
+          if (value === 'Factory - Bolt-on 2-piece scarf joint') {
+            next.skunk_stripe = 'Factory - Skunk stripe'
+            next.neck_binding = 'Factory - No Binding'
+          } else if (value === 'Factory - Bolt-on 1-piece') {
+            next.skunk_stripe = 'Factory - No skunk stripe'
+            next.neck_binding = 'Factory - Cream Binding'
+          } else if (value === 'Set neck' || value === 'Through neck') {
+            next.skunk_stripe = 'Unknown'
+            next.neck_binding = 'Unknown'
+          } else if (value === 'Aftermarket replacement neck') {
+            next.skunk_stripe = 'Aftermarket replacement neck'
+            next.neck_binding = 'Unknown'
+          } else {
+            next.skunk_stripe = ''
+            next.neck_binding = ''
+          }
+        }
+        return next
+      })
+    }
   }
 
 
@@ -690,8 +729,32 @@ function SubmitForm() {
           {/* Serial status — only shown when no digits entered */}
           {!serialDigits && (
             <Field label="Serial status">
-              <Select value={form.serial_status} onChange={set('serial_status')} options={['Prefix only', 'None Visible']} placeholder="Unknown / not entered" />
+              <Select
+                value={form.serial_status}
+                onChange={set('serial_status')}
+                options={['Prefix only', 'None Visible', 'Paper label', 'Hand label']}
+                placeholder="Unknown / not entered"
+              />
             </Field>
+          )}
+
+          {/* Label content — shown when a label-based serial is indicated */}
+          {(form.serial_status === 'Paper label' || form.serial_status === 'Hand label') && (
+            <div className="sm:col-span-2">
+              <Field label="Label content">
+                <input
+                  type="text"
+                  value={form.serial}
+                  onChange={e => setForm(prev => ({ ...prev, serial: e.target.value.slice(0, 60) }))}
+                  placeholder="Describe or transcribe the label — e.g. 'Prototype 003', handwritten number…"
+                  maxLength={60}
+                  className={inputCls}
+                />
+                <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#3a3835', marginTop: '5px' }}>
+                  May indicate a pre-production or prototype instrument. Record exactly what is written.
+                </p>
+              </Field>
+            </div>
           )}
 
           {/* Factory / Modified toggle */}
@@ -909,11 +972,11 @@ function SubmitForm() {
           <Field label="Neck construction">
             <Select value={form.neck_construction} onChange={set('neck_construction')} options={['Factory - Bolt-on 2-piece scarf joint', 'Factory - Bolt-on 1-piece', 'Set neck', 'Through neck', 'Aftermarket replacement neck', 'Unknown']} />
           </Field>
-          <Field label="Neck binding">
-            <Select value={form.neck_binding} onChange={set('neck_binding')} options={['Absent', 'Present', 'Unknown']} />
+          <Field label="Neck binding" prefilled={prefilledFields.has('neck_binding')}>
+            <Select value={form.neck_binding} onChange={set('neck_binding')} options={['Factory - No Binding', 'Factory - Cream Binding', 'Refinished Binding', 'Unknown']} />
           </Field>
-          <Field label="Skunk stripe">
-            <Select value={form.skunk_stripe} onChange={set('skunk_stripe')} options={['Present', 'Absent', 'Unknown']} />
+          <Field label="Skunk stripe" prefilled={prefilledFields.has('skunk_stripe')}>
+            <Select value={form.skunk_stripe} onChange={set('skunk_stripe')} options={['Factory - Skunk stripe', 'Factory - No skunk stripe', 'Aftermarket replacement neck', 'Unknown']} />
           </Field>
           <Field label="Headstock break angle (degrees)">
             <input type="number" step="0.1" value={form.headstock_break_angle} onChange={e => set('headstock_break_angle')(e.target.value)} placeholder="e.g. 13" className={inputCls} />

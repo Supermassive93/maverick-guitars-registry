@@ -2,9 +2,9 @@ export type BodyContouring = 'Full Maverick contouring' | 'Partial contouring' |
 export type SourceMaterialType = 'Catalogue' | 'Magazine' | 'Advertisement' | 'Receipt' | 'Photograph' | 'Video' | 'Audio' | 'Other'
 export type ArticleType = 'Article' | 'Testimonial' | 'Interview' | 'News'
 
-export type SerialStatus = 'Complete' | 'Partial' | 'Prefix only' | 'None Visible'
+export type SerialStatus = 'Complete' | 'Partial' | 'Prefix only' | 'None Visible' | 'Paper label' | 'Hand label'
 export type Series = 'F-Series' | 'X-Series' | 'X-Treme' | 'Species' | 'Chaos' | 'S-Series' | 'Streetfighter' | 'Matrix' | 'G-Series' | 'B-Series' | 'JR-Series' | 'Unknown'
-export type Generation = 'Gen 1' | 'Gen 2' | 'Gen 3' | 'Unknown'
+export type Generation = 'Gen 1' | 'Gen 2' | 'Gen 3' | 'Pre-production' | 'Unknown'
 export type FinishType = 'Factory Finish' | 'Custom Shop Finish' | 'Refinished' | 'Unknown'
 export type GuitarStatus = 'Pending' | 'Approved' | 'Rejected' | 'Pre-populated'
 export type SpecSource = 'Catalogue Confirmed' | 'Press Confirmed' | 'Registry Derived' | 'Owner Confirmed' | 'Unverified'

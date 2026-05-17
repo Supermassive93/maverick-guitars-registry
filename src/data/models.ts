@@ -70,7 +70,7 @@ export const MODEL_CATALOGUE: ModelData[] = [
     series: 'F-Series',
     description: 'HSS configuration with Wilkinson hardtail. Features a composite neck profile morphing from vintage V at the nut to D-shape at the body join — delivering a dynamic playing feel across the full range.',
     specs: [
-      { key: 'Body style', value: 'Superstrat' },
+      { key: 'Body style', value: 'Semi-Superstrat' },
       { key: 'Pickup config', value: 'HSS' },
       { key: 'Bridge', value: 'Maverick/Wilkinson Hardtail' },
     ],
@@ -203,7 +203,7 @@ export const MODEL_CATALOGUE: ModelData[] = [
     series: 'G-Series',
     description: 'Maverick\'s take on the Les Paul format. Set-neck construction departs from the bolt-on superstrat approach of the F-Series. Rarer than the F-Series models.',
     specs: [
-      { key: 'Body style', value: 'Les Paul' },
+      { key: 'Body style', value: 'Single Cut - LP style' },
     ],
     rarity: 'Low production',
   },
@@ -212,7 +212,7 @@ export const MODEL_CATALOGUE: ModelData[] = [
     series: 'G-Series',
     description: 'Second variant in the G-Series. Complements the G1 within the set-neck, humbucker-driven side of the Maverick catalogue.',
     specs: [
-      { key: 'Body style', value: 'Les Paul' },
+      { key: 'Body style', value: 'Single Cut - LP style' },
     ],
     rarity: 'Low production',
   },

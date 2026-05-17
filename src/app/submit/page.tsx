@@ -55,6 +55,7 @@ const FACTORY_COLOURS = [
 const CUSTOM_COLOURS = ['BW — Black & White (Zebra)', 'BR — Black & Red (DTM)', 'Custom Airbrushed', 'Unknown']
 
 const TREMOLO_BRIDGES = ['Maverick Floyd Rose - Licensed', 'Floyd Rose - Aftermarket', 'Synchronised Tremolo - Fender Style']
+const FLOYD_ROSE_BRIDGES = ['Maverick Floyd Rose - Licensed', 'Floyd Rose - Aftermarket']
 
 type PickupPositions = { bridge: string | null; middle: string | null; neck: string | null }
 const PICKUP_CONFIG_MAP: Record<string, PickupPositions> = {
@@ -73,6 +74,10 @@ const WHAMMY_OPTIONS = [
   'Aftermarket',
   'Missing',
 ]
+
+function valueIndicatesModified(value: string): boolean {
+  return value.includes('Aftermarket') || value === 'Refinished'
+}
 
 type FormState = {
   serial: string
@@ -101,6 +106,7 @@ type FormState = {
   switch_knob: string
   potentiometers: string
   whammy_bar: string
+  nut_type: string
   fret_count: string
   fretboard_wood: string
   scale_length: string
@@ -128,7 +134,7 @@ const INITIAL: FormState = {
   hardware_colour: '', headstock_face: '', headstock_style: '', headstock_logo: '', bridge_logo: '', pickup_surrounds: '',
   pickup_colours: '', tuner_style: '',
   neck_binding: '', switch_type: '', switch_knob: '', potentiometers: '',
-  whammy_bar: '', fret_count: '', fretboard_wood: '', scale_length: '',
+  nut_type: '', whammy_bar: '', fret_count: '', fretboard_wood: '', scale_length: '',
   neck_construction: '', skunk_stripe: '', headstock_break_angle: '',
   neck_pitch: '', last_known_country: '', last_known_region: '', last_known_city: '',
   source_type: '', source_url: '', last_price: '',
@@ -219,6 +225,7 @@ function SubmitForm() {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [isModified, setIsModified] = useState(false)
+  const [catalogueValues, setCatalogueValues] = useState<Partial<FormState>>({})
   const [prefilledFields, setPrefilledFields] = useState(new Set<keyof FormState>())
   const [bridgeLogoBrand, setBridgeLogoBrand] = useState('')
 
@@ -236,11 +243,22 @@ function SubmitForm() {
     })
   }, [])
 
+  useEffect(() => {
+    const hasAftermarket = Object.values(form).some(
+      v => typeof v === 'string' && valueIndicatesModified(v)
+    )
+    const hasCatalogueDeviation = Object.entries(catalogueValues).some(([key, catalogueValue]) => {
+      const formValue = form[key as keyof FormState]
+      return Boolean(catalogueValue && formValue && formValue !== catalogueValue)
+    })
+    setIsModified(hasAftermarket || hasCatalogueDeviation)
+  }, [form, catalogueValues])
+
   async function prefillFromModel(model: string) {
     const supabase = createSupabaseBrowserClient()
     const { data } = await supabase
       .from('catalogue_models')
-      .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, pickup_colour, headstock_face, headstock_style, fretboard_wood, scale_length')
+      .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, pickup_colour, headstock_face, headstock_style, fretboard_wood, scale_length, locking_nut')
       .eq('model', model)
       .order('catalogue_year', { ascending: false })
       .limit(1)
@@ -293,25 +311,30 @@ function SubmitForm() {
       updates.scale_length = data.scale_length
       filled.add('scale_length')
     }
+    if (data.locking_nut) {
+      updates.nut_type = data.locking_nut
+      filled.add('nut_type')
+    }
 
     updates.tuner_style = 'Factory - Maverick/Wilkinson'
     filled.add('tuner_style')
 
     setForm(prev => ({ ...prev, ...updates }))
+    setCatalogueValues(updates)
     setPrefilledFields(filled)
   }
 
   function handleModelChange(model: string) {
     setSerialDigits('')
     setPrefilledFields(new Set())
+    setCatalogueValues({})
     setForm(prev => ({ ...prev, model, serial: '', serial_status: '' }))
-    if (!isModified && model && model !== 'Unknown') {
+    if (model && model !== 'Unknown') {
       prefillFromModel(model)
     }
   }
 
   function handleToggleModified(modified: boolean) {
-    setIsModified(modified)
     if (modified) {
       setPrefilledFields(new Set())
     } else if (form.model && form.model !== 'Unknown') {
@@ -339,15 +362,27 @@ function SubmitForm() {
       if (key === 'fret_count') {
         setPrefilledFields(prev => { const n = new Set(prev); n.delete('fret_count'); return n })
       }
-      // If user overrides a prefilled (catalogue-known) field, auto-switch to Modified
+      if (key === 'bridge_configuration') {
+        if (FLOYD_ROSE_BRIDGES.includes(value) || (value && value !== 'Unknown' && !TREMOLO_BRIDGES.includes(value))) {
+          setPrefilledFields(prev => new Set([...prev, 'nut_type' as keyof FormState]))
+        } else {
+          setPrefilledFields(prev => { const n = new Set(prev); n.delete('nut_type'); return n })
+        }
+      }
       if (prefilledFields.has(key as keyof FormState) && value !== form[key as keyof FormState]) {
-        setIsModified(true)
         setPrefilledFields(prev => { const n = new Set(prev); n.delete(key as keyof FormState); return n })
       }
       setForm(prev => {
         const next = { ...prev, [key]: value }
         if (key === 'finish_type') { next.factory_colour = ''; next.custom_shop_colour = '' }
-        if (key === 'bridge_configuration' && !TREMOLO_BRIDGES.includes(value)) { next.whammy_bar = '' }
+        if (key === 'bridge_configuration') {
+          if (!TREMOLO_BRIDGES.includes(value)) next.whammy_bar = ''
+          if (FLOYD_ROSE_BRIDGES.includes(value)) {
+            next.nut_type = 'Factory - Locking nut'
+          } else if (value && value !== 'Unknown' && !TREMOLO_BRIDGES.includes(value)) {
+            next.nut_type = 'Factory - Standard nut'
+          }
+        }
         if (key === 'neck_construction') {
           if (value === 'Factory - Bolt-on 2-piece scarf joint') {
             next.skunk_stripe = 'Factory - Skunk stripe'
@@ -461,6 +496,7 @@ function SubmitForm() {
         switch_knob: form.switch_knob || null,
         potentiometers: form.potentiometers || null,
         whammy_bar: form.whammy_bar || null,
+        nut_type: form.nut_type || null,
         fret_count: form.fret_count || null,
         fretboard_wood: form.fretboard_wood || null,
         scale_length: form.scale_length || null,
@@ -877,7 +913,7 @@ function SubmitForm() {
           <div>
             <label className="block text-sm text-zinc-400 mb-1">Handed</label>
             <div style={{ display: 'inline-flex', border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden' }}>
-              {(['No', 'Yes', 'Unknown'] as const).map(val => {
+              {(['No', 'Yes'] as const).map(val => {
                 const active = form.left_handed === val
                 return (
                   <button
@@ -897,7 +933,7 @@ function SubmitForm() {
                       transition: 'background 0.15s, color 0.15s',
                     }}
                   >
-                    {val === 'No' ? 'Right handed' : val === 'Yes' ? 'Left handed' : 'Unknown'}
+                    {val === 'No' ? 'Right handed' : 'Left handed'}
                   </button>
                 )
               })}
@@ -1062,6 +1098,9 @@ function SubmitForm() {
           </Field>
           <Field label="Fretboard wood" prefilled={prefilledFields.has('fretboard_wood')}>
             <Select value={form.fretboard_wood} onChange={set('fretboard_wood')} options={['AAA Indian Rosewood', 'Maple', 'Ebony', 'Split — Rosewood & Maple', 'Unknown']} />
+          </Field>
+          <Field label="Nut type" prefilled={prefilledFields.has('nut_type')}>
+            <Select value={form.nut_type} onChange={set('nut_type')} options={['Factory - Standard nut', 'Factory - Locking nut', 'Aftermarket - GraphTech nut', 'Aftermarket - Bone nut', 'Aftermarket - Standard nut', 'Aftermarket - Locking nut', 'Aftermarket - Other nut', 'Unknown']} />
           </Field>
           <Field label="Neck binding" prefilled={prefilledFields.has('neck_binding')}>
             <Select value={form.neck_binding} onChange={set('neck_binding')} options={['Factory - No Binding', 'Factory - Cream Binding', 'Refinished Binding', 'Unknown']} />

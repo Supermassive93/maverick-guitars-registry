@@ -46,6 +46,7 @@ export interface Guitar {
   switch_knob: string | null
   potentiometers: string | null
   whammy_bar: string | null
+  nut_type: string | null
   fret_count: string | null
   fretboard_wood: string | null
   scale_length: string | null

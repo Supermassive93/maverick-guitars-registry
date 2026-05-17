@@ -79,6 +79,18 @@ function valueIndicatesModified(value: string): boolean {
   return value.includes('Aftermarket') || value === 'Refinished'
 }
 
+const IMAGE_SCHEMA = [
+  'Full front', 'Full rear',
+  'Body front', 'Body rear',
+  'Headstock front', 'Headstock rear',
+]
+
+type ImageSlot = { position: string; file: File | null; preview: string | null }
+
+function makeInitialSlots(): ImageSlot[] {
+  return IMAGE_SCHEMA.map(position => ({ position, file: null, preview: null }))
+}
+
 type FormState = {
   serial: string
   serial_status: string
@@ -137,7 +149,7 @@ const INITIAL: FormState = {
   nut_type: '', whammy_bar: '', fret_count: '', fretboard_wood: '', scale_length: '',
   neck_construction: '', skunk_stripe: '', headstock_break_angle: '',
   neck_pitch: '', last_known_country: '', last_known_region: '', last_known_city: '',
-  source_type: '', source_url: '', last_price: '',
+  source_type: 'Owner registration', source_url: '', last_price: '',
   submitter_email: '', submission_notes: '',
 }
 
@@ -220,7 +232,7 @@ function SubmitForm() {
   const [gateState, setGateState] = useState<GateState>('checking')
   const [form, setForm] = useState<FormState>(INITIAL)
   const [serialDigits, setSerialDigits] = useState('')
-  const [images, setImages] = useState<File[]>([])
+  const [imageSlots, setImageSlots] = useState<ImageSlot[]>(makeInitialSlots)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
@@ -258,7 +270,7 @@ function SubmitForm() {
     const supabase = createSupabaseBrowserClient()
     const { data } = await supabase
       .from('catalogue_models')
-      .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, pickup_colour, headstock_face, headstock_style, fretboard_wood, scale_length, locking_nut')
+      .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, body_wood, pickup_colour, headstock_face, headstock_style, fretboard_wood, scale_length, locking_nut')
       .eq('model', model)
       .order('catalogue_year', { ascending: false })
       .limit(1)
@@ -289,6 +301,10 @@ function SubmitForm() {
     if (data.body_shape_analogue) {
       updates.body_shape_analogue = data.body_shape_analogue
       filled.add('body_shape_analogue')
+    }
+    if (data.body_wood) {
+      updates.body_wood = data.body_wood
+      filled.add('body_wood')
     }
 
     if (data.pickup_colour) {
@@ -428,16 +444,26 @@ function SubmitForm() {
     }
   }
 
-  async function uploadImages(): Promise<string[]> {
-    const urls: string[] = []
-    for (const file of images) {
+  function handleSlotFile(index: number, file: File | null) {
+    setImageSlots(prev => prev.map((slot, i) => {
+      if (i !== index) return slot
+      if (slot.preview) URL.revokeObjectURL(slot.preview)
+      if (!file) return { ...slot, file: null, preview: null }
+      return { ...slot, file, preview: URL.createObjectURL(file) }
+    }))
+  }
+
+  async function uploadImages(): Promise<Map<string, string>> {
+    const result = new Map<string, string>()
+    for (const slot of imageSlots) {
+      if (!slot.file) continue
       const fd = new FormData()
-      fd.append('image', file)
+      fd.append('image', slot.file)
       const res = await fetch('/api/upload-image', { method: 'POST', body: fd })
       const data = await res.json()
-      if (data.url) urls.push(data.url)
+      if (data.url) result.set(slot.position, data.url)
     }
-    return urls
+    return result
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -449,7 +475,9 @@ function SubmitForm() {
     try {
       const supabase = createSupabaseBrowserClient()
       const { data: { user } } = await supabase.auth.getUser()
-      const imageUrls = images.length > 0 ? await uploadImages() : []
+      const hasImages = imageSlots.some(s => s.file)
+      const uploadedMap = hasImages ? await uploadImages() : new Map<string, string>()
+      const imageUrls = IMAGE_SCHEMA.map(p => uploadedMap.get(p)).filter((u): u is string => Boolean(u))
 
       let registeredBy = 'Anonymous'
       if (user) {
@@ -514,7 +542,7 @@ function SubmitForm() {
         submitter_email: form.submitter_email,
         submission_notes: `${notesPrefix}${form.submission_notes}`.trim() || null,
         image_urls: imageUrls.length > 0 ? imageUrls : null,
-        primary_image_url: imageUrls[0] ?? null,
+        primary_image_url: uploadedMap.get('Full front') ?? imageUrls[0] ?? null,
         status: 'Pending',
       }
 
@@ -726,9 +754,12 @@ function SubmitForm() {
                 setSubmitted(false)
                 setForm(INITIAL)
                 setSerialDigits('')
-                setImages([])
-                setIsModified(false)
+                setImageSlots(prev => {
+                  prev.forEach(s => { if (s.preview) URL.revokeObjectURL(s.preview) })
+                  return makeInitialSlots()
+                })
                 setPrefilledFields(new Set())
+                setCatalogueValues({})
                 setBridgeLogoBrand('')
               }}
               style={{
@@ -1118,7 +1149,17 @@ function SubmitForm() {
 
         <Section title="Provenance">
           <Field label="Source type">
-            <Select value={form.source_type} onChange={set('source_type')} options={['Owner registration', 'eBay listing', 'Reverb listing', 'Gumtree', 'Forum post', 'Other']} />
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              background: '#141414', border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '4px', padding: '8px 12px',
+            }}>
+              <span style={{ color: '#f0ede8', fontSize: '14px' }}>Owner registration</span>
+              <span style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '9px',
+                letterSpacing: '1px', textTransform: 'uppercase', color: '#3a3835',
+              }}>locked</span>
+            </div>
           </Field>
           <Field label="Last known price (£)">
             <input type="number" step="0.01" value={form.last_price} onChange={e => set('last_price')(e.target.value)} placeholder="e.g. 250" className={inputCls} />
@@ -1143,18 +1184,74 @@ function SubmitForm() {
 
         <Section title="Photos">
           <div className="sm:col-span-2">
-            <Field label="Upload photos (optional)">
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={e => setImages(Array.from(e.target.files ?? []))}
-                className="w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-zinc-800 file:text-zinc-300 hover:file:bg-zinc-700"
-              />
-              {images.length > 0 && (
-                <p className="text-zinc-500 text-xs mt-2">{images.length} file{images.length > 1 ? 's' : ''} selected</p>
-              )}
-            </Field>
+            <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57', marginBottom: '16px', lineHeight: 1.6 }}>
+              Upload a photo for each position where possible. Clear, well-lit shots on a plain background help with verification.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+              {imageSlots.map((slot, i) => (
+                <div key={slot.position} style={{ position: 'relative' }}>
+                  <label style={{ display: 'block', cursor: 'pointer' }}>
+                    <div style={{
+                      position: 'relative',
+                      aspectRatio: '3 / 4',
+                      border: `1px solid ${slot.file ? 'rgba(200,169,110,0.35)' : 'rgba(255,255,255,0.08)'}`,
+                      borderRadius: '4px',
+                      overflow: 'hidden',
+                      background: '#0d0d0d',
+                      transition: 'border-color 0.15s',
+                    }}>
+                      {slot.preview ? (
+                        <img src={slot.preview} alt={slot.position} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                          <span style={{ color: '#2a2a2a', fontSize: '28px', lineHeight: 1 }}>+</span>
+                        </div>
+                      )}
+                      <div style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                        padding: '5px 8px',
+                        background: 'linear-gradient(transparent, rgba(0,0,0,0.85))',
+                      }}>
+                        <span style={{
+                          fontFamily: 'var(--font-dm-mono)', fontSize: '8px',
+                          letterSpacing: '1px', textTransform: 'uppercase',
+                          color: slot.file ? '#c8a96e' : '#3a3835',
+                        }}>
+                          {slot.position}
+                        </span>
+                      </div>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={e => handleSlotFile(i, e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                  {slot.file && (
+                    <button
+                      type="button"
+                      onClick={() => handleSlotFile(i, null)}
+                      style={{
+                        position: 'absolute', top: '6px', right: '6px',
+                        background: 'rgba(0,0,0,0.75)', border: 'none',
+                        borderRadius: '2px', width: '22px', height: '22px',
+                        cursor: 'pointer', color: '#9e9b96',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '16px', lineHeight: 1,
+                      }}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {imageSlots.some(s => s.file) && (
+              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57', marginTop: '12px' }}>
+                {imageSlots.filter(s => s.file).length} of {IMAGE_SCHEMA.length} positions filled
+              </p>
+            )}
           </div>
         </Section>
 

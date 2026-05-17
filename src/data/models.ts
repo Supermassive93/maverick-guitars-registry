@@ -109,6 +109,24 @@ export const MODEL_CATALOGUE: ModelData[] = [
     ],
     rarity: 'Extremely rare',
   },
+  // JR-Series — Jim Root prototype signature
+  {
+    model: 'JR4',
+    series: 'JR-Series',
+    description: 'A limited production guitar with a direct tie to Jim Root of Stone Sour and Slipknot. Maverick provided Root with several prototypes to test, and he played them live — including at the 2002 Reading Festival. The signature relationship was never formalised and Root moved on, but Maverick went ahead and produced a limited run for the market regardless. Superstrat body with full Maverick contouring, no pickup surrounds, and a hardtail bridge. 24-fret rosewood fingerboard with centralised inlays. Headstock matches body colour — observed in Pewter/Silver. Controls are a single through-body pot (likely push-pull volume/tone) and a 5-way blade switch mounted below the bridge, with no Evolution roller pots. Factory pickups were Duncan Designed or Wilkinson Alnico V humbuckers as standard across the Maverick range — many owners have since upgraded to EMG 81/85 actives.',
+    specs: [
+      { key: 'Config', value: 'HH' },
+      { key: 'Bridge', value: 'Hardtail' },
+      { key: 'Frets', value: '24' },
+      { key: 'Fingerboard', value: 'Rosewood' },
+      { key: 'Inlays', value: 'Centralised' },
+      { key: 'Headstock', value: 'Body-matched colour' },
+      { key: 'Controls', value: '1x pot (push-pull), 5-way blade' },
+      { key: 'Observed colour', value: 'Pewter / Silver' },
+    ],
+    rarity: 'Limited production',
+    notes: 'Not an official signature — Jim Root tested prototypes and played them live (2002 Reading Festival) but did not pursue the endorsement. Maverick produced a limited market run regardless. One of the most historically significant models in the Maverick catalogue.',
+  },
   // Matrix — standalone model
   {
     model: 'Matrix',
@@ -230,6 +248,7 @@ export const SERIES_ORDER = [
   'X-Treme',
   'Streetfighter',
   'Matrix',
+  'JR-Series',
   'Species',
   'Chaos',
   'G-Series',

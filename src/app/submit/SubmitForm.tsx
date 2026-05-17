@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import GuidedCropModal from '@/components/GuidedCropModal'
 
@@ -205,6 +206,10 @@ function split_email_prefix(email: string) {
 type GateState = 'checking' | 'gate' | 'form'
 
 export default function SubmitForm() {
+  const searchParams = useSearchParams()
+  const claimModel  = searchParams.get('model')  ?? ''
+  const claimSerial = searchParams.get('serial') ?? ''
+
   const [gateState, setGateState] = useState<GateState>('checking')
   const [form, setForm] = useState<FormState>(INITIAL)
   const [serialDigits, setSerialDigits] = useState('')
@@ -231,6 +236,18 @@ export default function SubmitForm() {
       }
     })
   }, [])
+
+  const claimApplied = useRef(false)
+  useEffect(() => {
+    if (gateState !== 'form' || claimApplied.current) return
+    if (!claimModel || !MODEL_CONFIG[claimModel]) return
+    claimApplied.current = true
+    const prefix = MODEL_CONFIG[claimModel].prefix
+    const digits = claimSerial.startsWith(prefix) ? claimSerial.slice(prefix.length) : claimSerial
+    setForm(prev => ({ ...prev, model: claimModel, serial: claimSerial, serial_status: 'Complete' }))
+    setSerialDigits(digits)
+    if (claimModel !== 'Unknown') prefillFromModel(claimModel)
+  }, [gateState, claimModel, claimSerial])
 
   useEffect(() => {
     const hasAftermarket = Object.values(form).some(

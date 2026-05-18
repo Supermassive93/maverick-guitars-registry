@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { Guitar } from '@/lib/types'
+import { getModelName } from '@/lib/types'
 import Link from 'next/link'
 import SignOutButton from '@/components/SignOutButton'
 import UsernameEditForm from '@/components/UsernameEditForm'
@@ -31,7 +32,7 @@ export default async function ProfilePage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: guitarsRaw } = await supabase
     .from('guitars')
-    .select('id, mgr_id, model, serial, series, generation, status, date_submitted, primary_image_url')
+    .select('id, mgr_id, model_id, serial, series, generation, status, date_submitted, primary_image_url, model_specifications(model)')
     .eq('user_id', user.id)
     .order('date_submitted', { ascending: false })
   const guitars = guitarsRaw as Guitar[] | null
@@ -86,7 +87,7 @@ export default async function ProfilePage() {
           }
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ color: '#f0ede8', fontSize: '14px', fontWeight: 500 }}>{guitar.model ?? 'Unknown model'}</p>
+          <p style={{ color: '#f0ede8', fontSize: '14px', fontWeight: 500 }}>{getModelName(guitar as Guitar)}</p>
           {guitar.serial && <p style={{ color: '#5c5a57', fontSize: '11px', fontFamily: 'var(--font-dm-mono)' }}>{guitar.serial}</p>}
         </div>
         <span style={{ color: '#5c5a57', fontSize: '11px', fontFamily: 'var(--font-dm-mono)' }} className="hidden sm:block">

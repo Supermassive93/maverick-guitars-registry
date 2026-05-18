@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { getRefValues } from '@/lib/ref-values'
 import type { Guitar } from '@/lib/types'
 import RegistrySection from '@/components/RegistrySection'
 
@@ -7,16 +8,15 @@ export const revalidate = 60
 async function getGuitars(): Promise<Guitar[]> {
   const { data, error } = await supabase
     .from('guitars')
-    .select('id, mgr_id, model, serial, serial_number_only, series, generation, factory_colour, last_known_city, last_known_country, specification_source, registered_by, primary_image_url, status')
+    .select('id, mgr_id, model_id, serial, serial_number_only, series, generation, factory_colour, last_known_city, last_known_country, specification_source, registered_by, primary_image_url, status, model_specifications(model)')
     .in('status', ['Approved', 'Pending', 'Pre-populated'])
-    .order('model', { ascending: true })
     .order('serial_number_only', { ascending: true, nullsFirst: false })
   if (error) { console.error(error); return [] }
   return data as Guitar[]
 }
 
 export default async function RegistryPage() {
-  const guitars = await getGuitars()
+  const [guitars, refMap] = await Promise.all([getGuitars(), getRefValues()])
 
   return (
     <>
@@ -109,7 +109,7 @@ export default async function RegistryPage() {
       </section>
 
       {/* REGISTRY */}
-      <RegistrySection guitars={guitars} />
+      <RegistrySection guitars={guitars} refMap={refMap} />
     </>
   )
 }

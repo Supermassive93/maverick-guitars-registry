@@ -4,13 +4,11 @@ export type ExtractionStatus = 'pending' | 'processing' | 'complete' | 'failed'
 export type IndicatorStatus = 'draft' | 'confirmed' | 'retired'
 export type IndicatorConfidence = 'Low' | 'Medium' | 'High'
 export type ArticleType = 'Article' | 'Testimonial' | 'Interview' | 'News'
-
 export type SerialStatus = 'Complete' | 'Partial' | 'Prefix only' | 'None Visible' | 'Paper label' | 'Hand label'
-export type Series = 'F-Series' | 'X-Series' | 'X-Treme' | 'Species' | 'Chaos' | 'S-Series' | 'Streetfighter' | 'Matrix' | 'G-Series' | 'B-Series' | 'JR-Series' | 'Unknown'
-export type Generation = 'Gen 1' | 'Gen 2' | 'Gen 3' | 'Pre-production' | 'Unknown'
-export type FinishType = 'Factory Finish' | 'Custom Shop Finish' | 'Refinished' | 'Unknown'
 export type GuitarStatus = 'Pending' | 'Approved' | 'Rejected' | 'Pre-populated'
-export type SpecSource = 'Catalogue Confirmed' | 'Press Confirmed' | 'Registry Derived' | 'Owner Confirmed' | 'Unverified'
+
+// Lookup map returned by getRefValues() — id → display_name
+export type RefMap = Record<string, string>
 
 export interface Guitar {
   id: string
@@ -19,20 +17,23 @@ export interface Guitar {
   serial: string | null
   serial_number_only: number | null
   serial_status: SerialStatus | null
-  series: Series | null
-  model: string | null
-  generation: Generation | null
-  finish_type: FinishType | null
+  // ref IDs — resolve via RefMap
+  series: string | null
+  generation: string | null
+  finish_type: string | null
   factory_colour: string | null
   custom_shop_colour: string | null
   catalogue_year: string | null
   body_shape_analogue: string | null
   body_wood: string | null
+  body_construction: string | null
+  body_bookmatched: string | null
   pickup_configuration: string | null
+  instrument_type: string | null
   neck_pickup: string | null
   middle_pickup: string | null
   bridge_pickup: string | null
-  bridge_configuration: string | null
+  bridge_type: string | null           // was bridge_configuration
   hardware_colour: string | null
   headstock_face: string | null
   headstock_style: string | null
@@ -49,12 +50,15 @@ export interface Guitar {
   nut_type: string | null
   fret_count: string | null
   fretboard_wood: string | null
+  neck_wood: string | null
+  neck_profile: string | null
   scale_length: string | null
   neck_construction: string | null
   skunk_stripe: string | null
+  left_handed_available: string | null // was left_handed
   headstock_break_angle: number | null
   neck_pitch: number | null
-  specification_source: SpecSource | null
+  specification_source: string | null
   source_type: string | null
   source_url: string | null
   last_known_country: string | null
@@ -62,7 +66,7 @@ export interface Guitar {
   last_known_city: string | null
   last_price: number | null
   original_rrp: number | null
-  left_handed: string | null
+  model_id: string                     // UUID FK → model_specifications.id
   date_submitted: string | null
   date_approved: string | null
   last_updated: string | null
@@ -74,38 +78,46 @@ export interface Guitar {
   submission_notes: string | null
   submitter_email: string | null
   registered_by: string | null
+  // joined field — present when query includes model_specifications(model)
+  model_specifications?: { model: string } | null
+}
+
+export function getModelName(guitar: Pick<Guitar, 'model_specifications'>): string {
+  return guitar.model_specifications?.model ?? 'Unknown model'
 }
 
 export interface CatalogueModel {
   id: string
-  catalogue_year: string
+  catalogue_year: string            // now a CYR ref ID
   model: string
-  series: string | null
+  series: string | null             // now a SER ref ID
   available_colours: string[] | null
-  pickup_configuration: string | null
-  bridge_type: string | null
-  body_wood: string | null
-  neck_wood: string | null
-  fretboard_wood: string | null
-  neck_profile: string | null
-  neck_construction: string | null
-  fret_count: string | null
-  scale_length: string | null
-  hardware_colour: string | null
-  pickup_surrounds: string | null
-  pickup_colour: string | null
+  pickup_configuration: string | null  // PCG ref ID
+  bridge_type: string | null           // BRG ref ID
+  body_wood: string | null             // BWD ref ID
+  body_construction: string | null     // BCN ref ID
+  body_bookmatched: string | null
+  neck_wood: string | null             // NWD ref ID
+  fretboard_wood: string | null        // FWD ref ID
+  neck_profile: string | null          // NPR ref ID
+  neck_construction: string | null     // NCK ref ID
+  fret_count: string | null            // FRT ref ID
+  scale_length: string | null          // SCL ref ID
+  hardware_colour: string | null       // HWC ref ID
+  pickup_surrounds: string | null      // PSR ref ID
+  pickup_colour: string | null         // PKC ref ID
   pickup_covers: string | null
-  switch_type: string | null
-  potentiometers: string | null
+  switch_type: string | null           // SWT ref ID
+  potentiometers: string | null        // POT ref ID
   locking_nut: string | null
-  headstock_style: string | null
-  headstock_face: string | null
-  headstock_logo: string | null
+  headstock_style: string | null       // HST ref ID
+  headstock_face: string | null        // HDF ref ID
+  headstock_logo: string | null        // HGL ref ID
   string_count: string | null
-  body_shape_analogue: string | null
+  body_shape_analogue: string | null   // BSA ref ID
   body_contouring: BodyContouring | null
   fret_markers: string | null
-  left_handed_available: boolean | null
+  left_handed_available: string | null // LHA ref ID (was boolean)
   original_rrp: number | null
   left_handed_rrp: number | null
   notes: string | null
@@ -116,11 +128,13 @@ export interface CatalogueModel {
 export interface ModelSpec {
   id: string
   model: string
-  series: Series | null
+  series: string | null             // SER ref ID
   serial_prefix: string | null
-  catalogue_year: string | null
+  catalogue_year: string | null     // CYR ref ID
   body_shape_analogue: string | null
   body_wood: string | null
+  body_construction: string | null
+  body_bookmatched: string | null
   neck_wood: string | null
   fretboard_wood: string | null
   neck_profile: string | null
@@ -134,7 +148,7 @@ export interface ModelSpec {
   left_handed_available: string | null
   original_rrp: number | null
   left_handed_rrp: number | null
-  specification_source: SpecSource | null
+  specification_source: string | null
   catalogue_page: string | null
   press_references: string | null
   notes: string | null

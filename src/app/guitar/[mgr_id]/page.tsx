@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { getRefValues, r } from '@/lib/ref-values'
 import type { Guitar } from '@/lib/types'
+import { getModelName } from '@/lib/types'
 import Link from 'next/link'
 
 export const revalidate = 60
@@ -8,7 +10,7 @@ export const revalidate = 60
 async function getGuitar(mgr_id: number): Promise<Guitar | null> {
   const { data } = await supabase
     .from('guitars')
-    .select('*')
+    .select('*, model_specifications(model)')
     .eq('mgr_id', mgr_id)
     .eq('status', 'Approved')
     .single()
@@ -80,9 +82,10 @@ export default async function GuitarPage({ params }: { params: Promise<{ mgr_id:
   const id = parseInt(mgr_id)
   if (isNaN(id)) notFound()
 
-  const guitar = await getGuitar(id)
+  const [guitar, refMap] = await Promise.all([getGuitar(id), getRefValues()])
   if (!guitar) notFound()
 
+  const modelName = getModelName(guitar)
   const images = guitar.image_urls ?? []
 
   return (
@@ -106,7 +109,7 @@ export default async function GuitarPage({ params }: { params: Promise<{ mgr_id:
               <img
                 key={i}
                 src={url}
-                alt={`${guitar.model} photo ${i + 1}`}
+                alt={`${modelName} photo ${i + 1}`}
                 style={{ width: '100%', border: '1px solid rgba(255,255,255,0.08)', display: 'block' }}
               />
             ))
@@ -140,7 +143,7 @@ export default async function GuitarPage({ params }: { params: Promise<{ mgr_id:
             lineHeight: 1,
             marginBottom: '8px',
           }}>
-            {guitar.model ?? 'Unknown model'}
+            {modelName}
           </h1>
 
           {guitar.serial && (
@@ -150,9 +153,11 @@ export default async function GuitarPage({ params }: { params: Promise<{ mgr_id:
           )}
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '24px' }}>
-            {guitar.generation && <Tag label={guitar.generation} />}
-            {guitar.series && <Tag label={guitar.series} />}
-            {guitar.left_handed === 'Yes — Factory' && <Tag label="Left handed" />}
+            {guitar.generation && <Tag label={r(refMap, guitar.generation) ?? ''} />}
+            {guitar.series && <Tag label={r(refMap, guitar.series) ?? ''} />}
+            {(guitar.left_handed_available === 'LHA-0001' || guitar.left_handed_available === 'LHA-0002') && (
+              <Tag label="Left handed" />
+            )}
           </div>
 
           {(guitar.last_known_city || guitar.last_known_country) && (
@@ -181,27 +186,34 @@ export default async function GuitarPage({ params }: { params: Promise<{ mgr_id:
             }}>
               Specification
             </p>
-            <Field label="Catalogue year"       value={guitar.catalogue_year} />
-            <Field label="Finish"               value={guitar.finish_type} />
-            <Field label="Colour"               value={guitar.factory_colour ?? guitar.custom_shop_colour} />
-            <Field label="Body"                 value={guitar.body_wood} />
-            <Field label="Body shape"           value={guitar.body_shape_analogue} />
-            <Field label="Pickup configuration" value={guitar.pickup_configuration} />
+            <Field label="Catalogue year"       value={r(refMap, guitar.catalogue_year)} />
+            <Field label="Finish"               value={r(refMap, guitar.finish_type)} />
+            <Field label="Colour"               value={r(refMap, guitar.factory_colour) ?? guitar.custom_shop_colour} />
+            <Field label="Body"                 value={r(refMap, guitar.body_wood)} />
+            <Field label="Body shape"           value={r(refMap, guitar.body_shape_analogue)} />
+            <Field label="Body construction"    value={r(refMap, guitar.body_construction)} />
+            <Field label="Pickup configuration" value={r(refMap, guitar.pickup_configuration)} />
             <Field label="Neck pickup"          value={guitar.neck_pickup} />
             <Field label="Middle pickup"        value={guitar.middle_pickup} />
             <Field label="Bridge pickup"        value={guitar.bridge_pickup} />
-            <Field label="Bridge"               value={guitar.bridge_configuration} />
-            <Field label="Hardware"             value={guitar.hardware_colour} />
-            <Field label="Switch"               value={guitar.switch_type} />
+            <Field label="Bridge"               value={r(refMap, guitar.bridge_type)} />
+            <Field label="Hardware"             value={r(refMap, guitar.hardware_colour)} />
+            <Field label="Switch"               value={r(refMap, guitar.switch_type)} />
             <Field label="Switch knob"          value={guitar.switch_knob} />
-            <Field label="Potentiometers"       value={guitar.potentiometers} />
+            <Field label="Potentiometers"       value={r(refMap, guitar.potentiometers)} />
             <Field label="Whammy bar"           value={guitar.whammy_bar} />
-            <Field label="Neck construction"    value={guitar.neck_construction} />
-            <Field label="Pickup surrounds"     value={guitar.pickup_surrounds} />
-            <Field label="Neck binding"         value={guitar.neck_binding} />
-            <Field label="Headstock logo"       value={guitar.headstock_logo} />
+            <Field label="Neck construction"    value={r(refMap, guitar.neck_construction)} />
+            <Field label="Fretboard"            value={r(refMap, guitar.fretboard_wood)} />
+            <Field label="Fret count"           value={r(refMap, guitar.fret_count)} />
+            <Field label="Scale length"         value={r(refMap, guitar.scale_length)} />
+            <Field label="Pickup surrounds"     value={r(refMap, guitar.pickup_surrounds)} />
+            <Field label="Pickup colour"        value={r(refMap, guitar.pickup_colours)} />
+            <Field label="Neck binding"         value={r(refMap, guitar.neck_binding)} />
+            <Field label="Headstock logo"       value={r(refMap, guitar.headstock_logo)} />
+            <Field label="Headstock face"       value={r(refMap, guitar.headstock_face)} />
             <Field label="Bridge logo"          value={guitar.bridge_logo} />
-            <Field label="Skunk stripe"         value={guitar.skunk_stripe} />
+            <Field label="Skunk stripe"         value={r(refMap, guitar.skunk_stripe)} />
+            <Field label="Nut"                  value={r(refMap, guitar.nut_type)} />
             <Field label="Headstock angle"      value={guitar.headstock_break_angle != null ? `${guitar.headstock_break_angle}°` : null} />
             <Field label="Neck pitch"           value={guitar.neck_pitch != null ? `${guitar.neck_pitch}mm packing` : null} />
           </div>

@@ -2,7 +2,9 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import type { Guitar } from '@/lib/types'
+import type { Guitar, RefMap } from '@/lib/types'
+import { getModelName } from '@/lib/types'
+import { r } from '@/lib/ref-values'
 
 function PendingModal({ serial, model, onClose }: { serial: string; model: string; onClose: () => void }) {
   return (
@@ -56,6 +58,7 @@ function PendingModal({ serial, model, onClose }: { serial: string; model: strin
 
 interface Props {
   guitars: Guitar[]
+  refMap: RefMap
 }
 
 function formatMgrId(id: number) {
@@ -72,31 +75,33 @@ const inputStyle = {
   outline: 'none',
 }
 
-export default function RegistrySection({ guitars }: Props) {
+export default function RegistrySection({ guitars, refMap }: Props) {
   const [search, setSearch] = useState('')
   const [filterModel, setFilterModel] = useState('')
   const [filterGen, setFilterGen] = useState('')
 
   const models = useMemo(() => {
-    const set = new Set(guitars.map(g => g.model).filter(Boolean))
-    return Array.from(set).sort() as string[]
+    const set = new Set(guitars.map(g => getModelName(g)).filter(n => n !== 'Unknown model'))
+    return Array.from(set).sort()
   }, [guitars])
 
   const generations = useMemo(() => {
-    const set = new Set(guitars.map(g => g.generation).filter(Boolean))
-    return Array.from(set).sort() as string[]
+    const set = new Set(guitars.map(g => g.generation).filter(Boolean) as string[])
+    return Array.from(set).sort()
   }, [guitars])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
     return guitars.filter(g => {
-      if (filterModel && g.model !== filterModel) return false
+      const modelName = getModelName(g)
+      if (filterModel && modelName !== filterModel) return false
       if (filterGen && g.generation !== filterGen) return false
       if (!q) return true
-      return [g.serial, g.model, g.factory_colour, g.last_known_city, g.last_known_country]
+      const colourDisplay = r(refMap, g.factory_colour) ?? ''
+      return [g.serial, modelName, colourDisplay, g.last_known_city, g.last_known_country]
         .some(v => v?.toLowerCase().includes(q))
     })
-  }, [guitars, search, filterModel, filterGen])
+  }, [guitars, search, filterModel, filterGen, refMap])
 
   const [pendingModal, setPendingModal] = useState<{ serial: string; model: string } | null>(null)
 
@@ -104,8 +109,8 @@ export default function RegistrySection({ guitars }: Props) {
   const isPending      = (g: Guitar) => g.status === 'Pending'
 
   const approved = guitars.filter(g => g.status === 'Approved')
-  const gen1 = approved.filter(g => g.generation === 'Gen 1').length
-  const gen2 = approved.filter(g => g.generation === 'Gen 2').length
+  const gen1 = approved.filter(g => g.generation === 'GEN-0001').length
+  const gen2 = approved.filter(g => g.generation === 'GEN-0002').length
 
   return (
     <section id="registry" style={{ padding: '6rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -172,7 +177,9 @@ export default function RegistrySection({ guitars }: Props) {
           style={inputStyle}
         >
           <option value="">All generations</option>
-          {generations.map(g => <option key={g} value={g}>{g}</option>)}
+          {generations.map(id => (
+            <option key={id} value={id}>{r(refMap, id) ?? id}</option>
+          ))}
         </select>
         <Link href="/submit" style={{
           background: '#c8a96e', color: '#000',
@@ -215,6 +222,7 @@ export default function RegistrySection({ guitars }: Props) {
               const pre     = isPrePopulated(g)
               const pending = isPending(g)
               const approved = g.status === 'Approved'
+              const modelName = getModelName(g)
 
               const rowOpacity = pre ? 0.45 : pending ? 0.7 : 1
               const rowCursor  = approved ? 'pointer' : pending ? 'pointer' : 'default'
@@ -225,6 +233,13 @@ export default function RegistrySection({ guitars }: Props) {
                 ? { label: 'Pending',      color: '#c8a96e', bg: 'rgba(200,169,110,0.08)',  border: 'rgba(200,169,110,0.25)' }
                 : { label: 'Unregistered', color: '#3a3835', bg: 'rgba(255,255,255,0.03)',  border: 'rgba(255,255,255,0.06)' }
 
+              const genDisplay = g.generation ? r(refMap, g.generation) : null
+              const isGen1 = g.generation === 'GEN-0001'
+
+              const colourDisplay = !pre && g.factory_colour
+                ? (r(refMap, g.factory_colour)?.split(' — ')[0] ?? '—')
+                : '—'
+
               return (
                 <tr
                   key={g.id}
@@ -232,7 +247,7 @@ export default function RegistrySection({ guitars }: Props) {
                   className={approved ? 'registry-row' : undefined}
                   onClick={
                     approved ? () => window.location.href = `/guitar/${g.mgr_id}`
-                    : pending ? () => setPendingModal({ serial: g.serial ?? '', model: g.model ?? '' })
+                    : pending ? () => setPendingModal({ serial: g.serial ?? '', model: modelName })
                     : undefined
                   }
                 >
@@ -240,17 +255,17 @@ export default function RegistrySection({ guitars }: Props) {
                     {approved ? formatMgrId(g.mgr_id) : '—'}
                   </td>
                   <td style={{ padding: '13px 14px', color: pre ? '#5c5a57' : '#f0ede8' }}>{g.serial ?? '—'}</td>
-                  <td style={{ padding: '13px 14px', color: pre ? '#5c5a57' : '#f0ede8' }}>{g.model ?? '—'}</td>
+                  <td style={{ padding: '13px 14px', color: pre ? '#5c5a57' : '#f0ede8' }}>{modelName}</td>
                   <td style={{ padding: '13px 14px' }}>
-                    {g.generation ? (
+                    {genDisplay ? (
                       <span style={{
                         display: 'inline-block', fontSize: '10px', letterSpacing: '1px',
                         padding: '3px 8px', textTransform: 'uppercase',
-                        background: g.generation.includes('1') ? 'rgba(200,169,110,0.15)' : 'rgba(100,160,220,0.1)',
-                        color:      g.generation.includes('1') ? '#c8a96e' : '#6aafd4',
-                        border:     `1px solid ${g.generation.includes('1') ? 'rgba(200,169,110,0.3)' : 'rgba(100,160,220,0.25)'}`,
+                        background: isGen1 ? 'rgba(200,169,110,0.15)' : 'rgba(100,160,220,0.1)',
+                        color:      isGen1 ? '#c8a96e' : '#6aafd4',
+                        border:     `1px solid ${isGen1 ? 'rgba(200,169,110,0.3)' : 'rgba(100,160,220,0.25)'}`,
                       }}>
-                        {g.generation}
+                        {genDisplay}
                       </span>
                     ) : <span style={{ color: '#3a3835' }}>—</span>}
                   </td>
@@ -264,16 +279,14 @@ export default function RegistrySection({ guitars }: Props) {
                       {statusBadge.label}
                     </span>
                   </td>
-                  <td style={{ padding: '13px 14px', color: '#9e9b96' }}>
-                    {!pre ? (g.factory_colour ? g.factory_colour.split(' — ')[0] : '—') : '—'}
-                  </td>
+                  <td style={{ padding: '13px 14px', color: '#9e9b96' }}>{colourDisplay}</td>
                   <td style={{ padding: '13px 14px', color: '#9e9b96' }}>
                     {!pre ? ([g.last_known_city, g.last_known_country].filter(Boolean).join(', ') || '—') : '—'}
                   </td>
                   <td style={{ padding: '13px 14px' }}>
                     {pre ? (
                       <Link
-                        href={`/submit?model=${encodeURIComponent(g.model ?? '')}&serial=${encodeURIComponent(g.serial ?? '')}`}
+                        href={`/submit?model=${encodeURIComponent(modelName)}&serial=${encodeURIComponent(g.serial ?? '')}`}
                         style={{ color: '#c8a96e', fontSize: '12px', fontFamily: 'var(--font-dm-mono)', textDecoration: 'none', letterSpacing: '0.5px' }}
                         onClick={e => e.stopPropagation()}
                       >

@@ -1,13 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import type { Guitar } from '@/lib/types'
+import type { Guitar, RefMap } from '@/lib/types'
+import { getModelName } from '@/lib/types'
+import { r } from '@/lib/ref-values'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 
 interface Props {
   pending: Guitar[]
   recent: Guitar[]
+  refMap: RefMap
 }
 
 function formatMgrId(id: number) {
@@ -25,7 +28,7 @@ function Row({ label, value }: { label: string; value?: string | number | string
   )
 }
 
-function GuitarPanel({ guitar, onAction }: { guitar: Guitar; onAction: () => void }) {
+function GuitarPanel({ guitar, refMap, onAction }: { guitar: Guitar; refMap: RefMap; onAction: () => void }) {
   const [open, setOpen] = useState(false)
   const [adminNotes, setAdminNotes] = useState(guitar.admin_notes ?? '')
   const [loading, setLoading] = useState(false)
@@ -61,9 +64,9 @@ function GuitarPanel({ guitar, onAction }: { guitar: Guitar; onAction: () => voi
       >
         <div className="flex items-center gap-4">
           <span className="font-mono text-xs text-zinc-500">{formatMgrId(guitar.mgr_id)}</span>
-          <span className="font-semibold text-white">{guitar.model ?? 'Unknown model'}</span>
+          <span className="font-semibold text-white">{getModelName(guitar)}</span>
           {guitar.serial && <span className="text-zinc-400 text-sm font-mono">{guitar.serial}</span>}
-          {guitar.generation && <span className="text-xs text-zinc-600">{guitar.generation}</span>}
+          {guitar.generation && <span className="text-xs text-zinc-600">{r(refMap, guitar.generation) ?? guitar.generation}</span>}
         </div>
         <span className="text-zinc-600 text-xs">{open ? '▲' : '▼'}</span>
       </button>
@@ -73,33 +76,33 @@ function GuitarPanel({ guitar, onAction }: { guitar: Guitar; onAction: () => voi
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
             <Row label="Serial" value={guitar.serial} />
             <Row label="Serial status" value={guitar.serial_status} />
-            <Row label="Series" value={guitar.series} />
-            <Row label="Model" value={guitar.model} />
-            <Row label="Generation" value={guitar.generation} />
-            <Row label="Catalogue year" value={guitar.catalogue_year} />
-            <Row label="Finish type" value={guitar.finish_type} />
-            <Row label="Factory colour" value={guitar.factory_colour} />
+            <Row label="Model" value={getModelName(guitar)} />
+            <Row label="Series" value={r(refMap, guitar.series)} />
+            <Row label="Generation" value={r(refMap, guitar.generation)} />
+            <Row label="Catalogue year" value={r(refMap, guitar.catalogue_year)} />
+            <Row label="Finish type" value={r(refMap, guitar.finish_type)} />
+            <Row label="Factory colour" value={r(refMap, guitar.factory_colour)} />
             <Row label="Custom Shop colour" value={guitar.custom_shop_colour} />
-            <Row label="Body wood" value={guitar.body_wood} />
-            <Row label="Body shape" value={guitar.body_shape_analogue} />
-            <Row label="Pickup config" value={guitar.pickup_configuration} />
+            <Row label="Body wood" value={r(refMap, guitar.body_wood)} />
+            <Row label="Body shape" value={r(refMap, guitar.body_shape_analogue)} />
+            <Row label="Pickup config" value={r(refMap, guitar.pickup_configuration)} />
             <Row label="Neck pickup" value={guitar.neck_pickup} />
             <Row label="Bridge pickup" value={guitar.bridge_pickup} />
-            <Row label="Bridge" value={guitar.bridge_configuration} />
-            <Row label="Hardware colour" value={guitar.hardware_colour} />
-            <Row label="Headstock logo" value={guitar.headstock_logo} />
+            <Row label="Bridge" value={r(refMap, guitar.bridge_type)} />
+            <Row label="Hardware colour" value={r(refMap, guitar.hardware_colour)} />
+            <Row label="Headstock logo" value={r(refMap, guitar.headstock_logo)} />
             <Row label="Bridge logo" value={guitar.bridge_logo} />
-            <Row label="Pickup surrounds" value={guitar.pickup_surrounds} />
-            <Row label="Neck binding" value={guitar.neck_binding} />
-            <Row label="Switch type" value={guitar.switch_type} />
+            <Row label="Pickup surrounds" value={r(refMap, guitar.pickup_surrounds)} />
+            <Row label="Neck binding" value={r(refMap, guitar.neck_binding)} />
+            <Row label="Switch type" value={r(refMap, guitar.switch_type)} />
             <Row label="Switch knob" value={guitar.switch_knob} />
-            <Row label="Potentiometers" value={guitar.potentiometers} />
+            <Row label="Potentiometers" value={r(refMap, guitar.potentiometers)} />
             <Row label="Whammy bar" value={guitar.whammy_bar} />
-            <Row label="Neck construction" value={guitar.neck_construction} />
-            <Row label="Skunk stripe" value={guitar.skunk_stripe} />
+            <Row label="Neck construction" value={r(refMap, guitar.neck_construction)} />
+            <Row label="Skunk stripe" value={r(refMap, guitar.skunk_stripe)} />
             <Row label="Headstock angle" value={guitar.headstock_break_angle != null ? `${guitar.headstock_break_angle}°` : null} />
             <Row label="Neck pitch" value={guitar.neck_pitch != null ? `${guitar.neck_pitch}mm` : null} />
-            <Row label="Left handed" value={guitar.left_handed} />
+            <Row label="Left handed" value={r(refMap, guitar.left_handed_available)} />
             <Row label="Source type" value={guitar.source_type} />
             <Row label="Last price" value={guitar.last_price != null ? `£${guitar.last_price}` : null} />
             <Row label="Submitter email" value={guitar.submitter_email} />
@@ -145,7 +148,7 @@ function GuitarPanel({ guitar, onAction }: { guitar: Guitar; onAction: () => voi
   )
 }
 
-export default function AdminDashboard({ pending, recent }: Props) {
+export default function AdminDashboard({ pending, recent, refMap }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<'pending' | 'recent'>('pending')
 
@@ -195,6 +198,7 @@ export default function AdminDashboard({ pending, recent }: Props) {
             <GuitarPanel
               key={g.id}
               guitar={g}
+              refMap={refMap}
               onAction={() => router.refresh()}
             />
           ))}

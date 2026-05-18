@@ -1,8 +1,11 @@
 import Link from 'next/link'
-import type { Guitar } from '@/lib/types'
+import type { Guitar, RefMap } from '@/lib/types'
+import { getModelName } from '@/lib/types'
+import { r } from '@/lib/ref-values'
 
 interface Props {
   guitar: Guitar
+  refMap: RefMap
 }
 
 function formatMgrId(id: number) {
@@ -34,7 +37,10 @@ function ConfidenceBadge({ source }: { source: string | null }) {
   )
 }
 
-export default function GuitarCard({ guitar }: Props) {
+export default function GuitarCard({ guitar, refMap }: Props) {
+  const modelName = getModelName(guitar)
+  const colourDisplay = r(refMap, guitar.factory_colour)?.split(' — ')[0] ?? null
+
   return (
     <Link
       href={`/guitar/${guitar.mgr_id}`}
@@ -54,7 +60,7 @@ export default function GuitarCard({ guitar }: Props) {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={guitar.primary_image_url}
-            alt={`${guitar.model ?? 'Guitar'} ${guitar.serial ?? ''}`}
+            alt={`${modelName} ${guitar.serial ?? ''}`}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
@@ -84,11 +90,11 @@ export default function GuitarCard({ guitar }: Props) {
       <div style={{ padding: '14px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
           <p style={{ color: '#f0ede8', fontSize: '14px', fontWeight: 500 }}>
-            {guitar.model ?? 'Unknown model'}
+            {modelName}
           </p>
           {guitar.generation && (
             <span style={{ color: '#5c5a57', fontSize: '11px', fontFamily: 'var(--font-dm-mono)', whiteSpace: 'nowrap' }}>
-              {guitar.generation}
+              {r(refMap, guitar.generation)}
             </span>
           )}
         </div>
@@ -100,7 +106,7 @@ export default function GuitarCard({ guitar }: Props) {
         )}
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '8px' }}>
-          {guitar.factory_colour && (
+          {colourDisplay && (
             <span style={{
               fontSize: '11px',
               color: '#9e9b96',
@@ -108,7 +114,7 @@ export default function GuitarCard({ guitar }: Props) {
               padding: '2px 8px',
               fontFamily: 'var(--font-dm-mono)',
             }}>
-              {guitar.factory_colour.split(' — ')[0]}
+              {colourDisplay}
             </span>
           )}
           <ConfidenceBadge source={guitar.specification_source} />

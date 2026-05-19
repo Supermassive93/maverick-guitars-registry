@@ -9,12 +9,31 @@ export const metadata: Metadata = {
 }
 
 const subNav = [
-  { href: '#range', label: 'Model Guide' },
+  { href: '#range',   label: 'Model Guide' },
   { href: '#identify', label: 'Generation Guide' },
+  { href: '#colours', label: 'Colour Guide' },
 ]
 
 export default async function ModelsPage() {
   const supabase = await createSupabaseServerClient()
+
+  type ColourRow = {
+    id: string
+    category: string
+    display_name: string
+    descriptor: string | null
+    metadata: {
+      hex: string | null
+      hex_note: string | null
+      hex_primary: string | null
+      hex_secondary: string | null
+      pattern: string | null
+      pattern_description: string | null
+      aka: string | null
+      colour_source: string | null
+      source_year: number | null
+    } | null
+  }
 
   type SpecRow = {
     id: string
@@ -32,7 +51,7 @@ export default async function ModelsPage() {
     description: string | null
     rarity: string | null
   }
-  const [{ data: rawSpecRows }, { data: rawCounts }, { data: rawRefValues }] = await Promise.all([
+  const [{ data: rawSpecRows }, { data: rawCounts }, { data: rawRefValues }, { data: rawColours }] = await Promise.all([
     supabase
       .from('model_specifications')
       .select('id, model, parent_model_id, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type, description, rarity'),
@@ -43,6 +62,12 @@ export default async function ModelsPage() {
     supabase
       .from('ref_values')
       .select('id, display_name'),
+    supabase
+      .from('ref_values')
+      .select('id, category, display_name, descriptor, metadata')
+      .in('category', ['COL', 'CSC'])
+      .eq('is_active', true)
+      .order('sort_order'),
   ])
 
   const specByModel = new Map<string, SpecRow>()
@@ -70,6 +95,11 @@ export default async function ModelsPage() {
   for (const row of (rawRefValues ?? []) as { id: string; display_name: string }[]) {
     refMap.set(row.id, row.display_name)
   }
+
+  const colourRows = (rawColours ?? []) as ColourRow[]
+  const col2001  = colourRows.filter(r => r.category === 'COL' && r.metadata?.source_year === 2001)
+  const col2002  = colourRows.filter(r => r.category === 'COL' && r.metadata?.source_year === 2002)
+  const cscRows  = colourRows.filter(r => r.category === 'CSC' && r.id !== 'CSC-0004')
 
   function resolveRef(val: string | null): string | null {
     if (!val) return null
@@ -111,6 +141,31 @@ export default async function ModelsPage() {
 
   function seriesModels(series: string) {
     return MODEL_CATALOGUE.filter(m => m.series === series)
+  }
+
+  function swatchBg(row: ColourRow): string {
+    const m = row.metadata
+    if (!m) return 'rgba(255,255,255,0.05)'
+    const { hex, hex_primary, hex_secondary, pattern } = m
+    if (pattern === 'Striped' && hex_primary && hex_secondary)
+      return `repeating-linear-gradient(0deg, ${hex_primary} 0px, ${hex_primary} 22px, ${hex_secondary} 22px, ${hex_secondary} 44px)`
+    if (pattern === 'Burst' && hex) {
+      const centre = row.id === 'COL-0013' ? '#C4903C' : '#F0C030'
+      return `radial-gradient(ellipse at center, ${centre} 0%, ${hex} 72%)`
+    }
+    if (pattern === 'Natural Grain' && hex)
+      return `repeating-linear-gradient(92deg, rgba(0,0,0,0.07) 0px, rgba(0,0,0,0.07) 1px, transparent 1px, transparent 7px), ${hex}`
+    if (pattern === 'Gloss Metallic' && hex)
+      return `linear-gradient(135deg, rgba(255,255,255,0.20) 0%, transparent 50%, rgba(255,255,255,0.06) 100%), ${hex}`
+    if (hex) return hex
+    return 'repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 8px)'
+  }
+
+  function swatchLabel(displayName: string): { code: string; name: string } {
+    const parts = displayName.split(' — ')
+    return parts.length >= 2
+      ? { code: parts[0], name: parts.slice(1).join(' — ') }
+      : { code: '', name: displayName }
   }
 
   function SeriesSection({ series, bass = false }: { series: string; bass?: boolean }) {
@@ -546,6 +601,181 @@ export default async function ModelsPage() {
             ))}
           </div>
         </div>
+      </section>
+      {/* ── COLOUR GUIDE ── */}
+      <section id="colours" style={{ scrollMarginTop: '100px' }}>
+
+        {/* Section header */}
+        <div style={{
+          padding: '5rem 4rem 4rem',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          position: 'relative', overflow: 'hidden',
+          background: 'rgba(255,255,255,0.01)',
+        }}>
+          <div style={{
+            position: 'absolute', inset: 0,
+            backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(255,255,255,0.015) 60px),repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(255,255,255,0.015) 60px)',
+            pointerEvents: 'none',
+          }} />
+          <div style={{ position: 'relative' }}>
+            <p style={{
+              fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+              color: '#c8a96e', textTransform: 'uppercase', marginBottom: '16px',
+            }}>Colour Guide</p>
+            <h2 style={{
+              fontFamily: 'var(--font-bebas)',
+              fontSize: 'clamp(52px, 7vw, 88px)',
+              letterSpacing: '3px', lineHeight: 0.92,
+              color: '#f0ede8', marginBottom: '24px',
+            }}>THE PALETTE</h2>
+            <p style={{ maxWidth: '600px', color: '#9e9b96', fontSize: '16px', lineHeight: 1.7 }}>
+              All known Maverick body finishes — factory catalogue colours and confirmed custom shop options.
+              Grouped by source material.
+            </p>
+          </div>
+        </div>
+
+        {/* Disclaimer */}
+        <div style={{
+          padding: '1.25rem 4rem',
+          background: 'rgba(200,169,110,0.04)',
+          borderBottom: '1px solid rgba(200,169,110,0.12)',
+        }}>
+          <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: '#8b6e3f', lineHeight: 1.7, maxWidth: '820px' }}>
+            <span style={{ color: '#c8a96e', letterSpacing: '1px', textTransform: 'uppercase', marginRight: '10px' }}>Note</span>
+            Swatches are approximate — sampled from printed catalogue material and rendered as flat colour.
+            Metallic, burst, and natural-grain finishes will differ significantly in person.
+          </p>
+        </div>
+
+        {/* Factory colours — 2001 Brochure */}
+        {col2001.length > 0 && (
+          <div style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <p style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+                color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
+              }}>Factory Colours · {col2001.length} colours</p>
+              <h3 style={{
+                fontFamily: 'var(--font-bebas)', fontSize: 'clamp(28px, 3vw, 44px)',
+                letterSpacing: '2px', color: '#c8a96e', lineHeight: 1,
+              }}>2001 Brochure</h3>
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+              gap: '1px', background: 'rgba(255,255,255,0.06)',
+            }}>
+              {col2001.map(row => {
+                const { code, name } = swatchLabel(row.display_name)
+                return (
+                  <div key={row.id} style={{ background: '#161616' }}>
+                    <div
+                      title={row.metadata?.hex_note ?? undefined}
+                      style={{ height: '100px', background: swatchBg(row) }}
+                    />
+                    <div style={{ padding: '12px 14px' }}>
+                      {code && <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '20px', letterSpacing: '2px', color: '#c8a96e', lineHeight: 1, marginBottom: '3px' }}>{code}</div>}
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96', lineHeight: 1.4 }}>{name}</div>
+                      {row.metadata?.pattern && (
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: '#3a3835', marginTop: '6px' }}>
+                          {row.metadata.pattern}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Factory colours — 2002 Catalogue */}
+        {col2002.length > 0 && (
+          <div style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <p style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+                color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
+              }}>Factory Colours · {col2002.length} colours</p>
+              <h3 style={{
+                fontFamily: 'var(--font-bebas)', fontSize: 'clamp(28px, 3vw, 44px)',
+                letterSpacing: '2px', color: '#c8a96e', lineHeight: 1,
+              }}>2002 Catalogue</h3>
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+              gap: '1px', background: 'rgba(255,255,255,0.06)',
+            }}>
+              {col2002.map(row => {
+                const { code, name } = swatchLabel(row.display_name)
+                return (
+                  <div key={row.id} style={{ background: '#161616' }}>
+                    <div
+                      title={row.metadata?.hex_note ?? undefined}
+                      style={{ height: '100px', background: swatchBg(row) }}
+                    />
+                    <div style={{ padding: '12px 14px' }}>
+                      {code && <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '20px', letterSpacing: '2px', color: '#c8a96e', lineHeight: 1, marginBottom: '3px' }}>{code}</div>}
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96', lineHeight: 1.4 }}>{name}</div>
+                      {row.metadata?.pattern && (
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: '#3a3835', marginTop: '6px' }}>
+                          {row.metadata.pattern}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Custom shop colours */}
+        {cscRows.length > 0 && (
+          <div style={{ padding: '3rem 4rem' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <p style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+                color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
+              }}>Custom Shop · {cscRows.length} options</p>
+              <h3 style={{
+                fontFamily: 'var(--font-bebas)', fontSize: 'clamp(28px, 3vw, 44px)',
+                letterSpacing: '2px', color: '#9e9b96', lineHeight: 1,
+              }}>Custom Shop Colours</h3>
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+              gap: '1px', background: 'rgba(255,255,255,0.06)',
+            }}>
+              {cscRows.map(row => {
+                const { code, name } = swatchLabel(row.display_name)
+                return (
+                  <div key={row.id} style={{ background: '#161616' }}>
+                    <div
+                      title={row.metadata?.hex_note ?? undefined}
+                      style={{ height: '100px', background: swatchBg(row) }}
+                    />
+                    <div style={{ padding: '12px 14px' }}>
+                      {code && <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '20px', letterSpacing: '2px', color: '#9e9b96', lineHeight: 1, marginBottom: '3px' }}>{code}</div>}
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96', lineHeight: 1.4 }}>{name}</div>
+                      {row.metadata?.aka && (
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#5c5a57', marginTop: '4px' }}>
+                          {row.metadata.aka}
+                        </div>
+                      )}
+                      {row.metadata?.pattern && (
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: '#3a3835', marginTop: '6px' }}>
+                          {row.metadata.pattern}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
       </section>
     </>
   )

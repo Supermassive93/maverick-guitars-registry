@@ -22,8 +22,9 @@ const sections: NavSection[] = [
     label: 'Models',
     basePath: '/models',
     items: [
-      { href: '/models#range', label: 'Model Guide', description: '22 models across 9 series' },
+      { href: '/models#range',    label: 'Model Guide',      description: '22 models across 9 series' },
       { href: '/models#identify', label: 'Generation Guide', description: 'Identify Gen 1, Gen 2 and beyond' },
+      { href: '/models#colours',  label: 'Colour Guide',     description: 'All known factory and custom shop finishes' },
     ],
   },
   {

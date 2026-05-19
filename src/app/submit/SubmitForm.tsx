@@ -97,10 +97,11 @@ const FACTORY_COLOUR_OPTS: SelectOpt[] = [
 ]
 
 const CUSTOM_COLOUR_OPTS: SelectOpt[] = [
-  { value: 'BW — Black & White (Zebra)', label: 'BW — Black & White (Zebra)' },
-  { value: 'BR — Black & Red (DTM)',     label: 'BR — Black & Red (DTM)' },
-  { value: 'Custom Airbrushed',          label: 'Custom Airbrushed' },
-  { value: 'Unknown',                    label: 'Unknown' },
+  { value: 'CSC-0001', label: 'BW — Black & White (Zebra)' },
+  { value: 'CSC-0002', label: 'BR — Black & Red (Denis the Menace)' },
+  { value: 'CSC-0005', label: 'NY — Neon Yellow' },
+  { value: 'CSC-0003', label: 'Custom Airbrushed' },
+  { value: 'CSC-0004', label: 'Unknown' },
 ]
 
 const HEADSTOCK_FACE_OPTS: SelectOpt[] = [

@@ -162,11 +162,12 @@ function SpecBlock({
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const { data: spec } = await supabase
+  const { data } = await supabase
     .from('model_specifications')
     .select('model, description')
     .eq('model', slug.toUpperCase())
     .single()
+  const spec = data as Pick<ModelSpec, 'model' | 'description'> | null
   if (!spec) return { title: 'Model Not Found — Maverick Guitars Registry' }
   return {
     title: `${spec.model} — Maverick Guitars Registry`,

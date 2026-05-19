@@ -89,18 +89,8 @@ function ColourSwatches({ colours, colourMetaMap, refMap }: {
   )
 }
 
-// Full spec block — same field list for both universal and gen rows
-function SpecBlock({
-  spec,
-  refMap,
-  colourMetaMap,
-  isGenRow = false,
-}: {
-  spec: Partial<ModelSpec & ModelGenSpec>
-  refMap: Record<string, string>
-  colourMetaMap: Record<string, ColourMeta>
-  isGenRow?: boolean
-}) {
+// Universal specification — all fields that apply across all generations
+function SpecBlock({ spec, refMap }: { spec: Partial<ModelSpec>; refMap: Record<string, string> }) {
   return (
     <div>
       <SpecGroup label="Body" />
@@ -111,37 +101,52 @@ function SpecBlock({
       <SpecGroup label="Pickups & electronics" />
       <SpecRow label="Pickup configuration" value={r(refMap, spec.pickup_configuration)} />
       <SpecRow label="Switch type"          value={r(refMap, spec.switch_type)} />
-      {isGenRow && <SpecRow label="Switch knob" value={r(refMap, spec.switch_knob)} />}
       <SpecRow label="Potentiometers"       value={r(refMap, spec.potentiometers)} />
-      {isGenRow && <SpecRow label="Pickup surrounds" value={r(refMap, spec.pickup_surrounds)} />}
       <SpecRow label="Pickup colours"       value={r(refMap, spec.pickup_colours)} />
 
       <SpecGroup label="Hardware" />
       <SpecRow label="Bridge"               value={r(refMap, spec.bridge_type)} />
-      {isGenRow && <SpecRow label="Bridge logo" value={r(refMap, (spec as Partial<ModelGenSpec>).bridge_logo)} />}
       <SpecRow label="Hardware colour"      value={r(refMap, spec.hardware_colour)} />
       <SpecRow label="Tuner style"          value={r(refMap, spec.tuner_style)} />
 
       <SpecGroup label="Neck" />
-      {isGenRow && <SpecRow label="Neck construction" value={r(refMap, spec.neck_construction)} />}
       <SpecRow label="Neck wood"            value={r(refMap, spec.neck_wood)} />
       <SpecRow label="Neck profile"         value={r(refMap, spec.neck_profile)} />
       <SpecRow label="Fretboard"            value={r(refMap, spec.fretboard_wood)} />
       <SpecRow label="Fret count"           value={r(refMap, spec.fret_count)} />
       <SpecRow label="Scale length"         value={r(refMap, spec.scale_length)} />
-      {isGenRow && <SpecRow label="Neck binding" value={r(refMap, spec.neck_binding)} />}
-      {isGenRow && <SpecRow label="Skunk stripe" value={r(refMap, spec.skunk_stripe)} />}
       <SpecRow label="Nut type"             value={r(refMap, spec.nut_type)} />
 
       <SpecGroup label="Headstock" />
       <SpecRow label="Headstock style"      value={r(refMap, spec.headstock_style)} />
       <SpecRow label="Headstock face"       value={r(refMap, spec.headstock_face)} />
-      {isGenRow && <SpecRow label="Headstock logo" value={r(refMap, spec.headstock_logo)} />}
 
       <SpecGroup label="Other" />
       <SpecRow label="Left handed"          value={r(refMap, spec.left_handed_available)} />
-      {!isGenRow && <SpecRow label="Serial prefix" value={(spec as ModelSpec).serial_prefix} />}
-      {!isGenRow && <SpecRow label="Original RRP" value={spec.original_rrp != null ? `£${spec.original_rrp}` : null} />}
+      <SpecRow label="Serial prefix"        value={spec.serial_prefix} />
+      <SpecRow label="Original RRP"         value={spec.original_rrp != null ? `£${spec.original_rrp}` : null} />
+    </div>
+  )
+}
+
+// Generational indicators only — fields confirmed to vary between Gen 1 and Gen 2
+function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refMap: Record<string, string> }) {
+  return (
+    <div>
+      <SpecGroup label="Pickups & electronics" />
+      <SpecRow label="Switch knob"      value={r(refMap, spec.switch_knob)} />
+      <SpecRow label="Pickup surrounds" value={r(refMap, spec.pickup_surrounds)} />
+
+      <SpecGroup label="Hardware" />
+      <SpecRow label="Bridge logo"      value={r(refMap, spec.bridge_logo)} />
+
+      <SpecGroup label="Neck" />
+      <SpecRow label="Neck construction" value={r(refMap, spec.neck_construction)} />
+      <SpecRow label="Neck binding"      value={r(refMap, spec.neck_binding)} />
+      <SpecRow label="Skunk stripe"      value={r(refMap, spec.skunk_stripe)} />
+
+      <SpecGroup label="Headstock" />
+      <SpecRow label="Headstock logo"   value={r(refMap, spec.headstock_logo)} />
     </div>
   )
 }
@@ -305,7 +310,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
       {/* Universal specification */}
       <div style={{ marginBottom: '48px', paddingBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         {sectionHead('Universal Specification')}
-        <SpecBlock spec={spec} refMap={refMap} colourMetaMap={colourMetaMap} />
+        <SpecBlock spec={spec} refMap={refMap} />
       </div>
 
       {/* HT Variants */}
@@ -359,7 +364,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
             return (
               <div key={genId}>
                 {sectionHead(r(refMap, genId) ?? genId)}
-                <SpecBlock spec={gs ?? {}} refMap={refMap} colourMetaMap={colourMetaMap} isGenRow />
+                <GenIndicatorBlock spec={gs ?? {}} refMap={refMap} />
               </div>
             )
           })}

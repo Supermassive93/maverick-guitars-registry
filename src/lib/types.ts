@@ -128,6 +128,7 @@ export interface CatalogueModel {
 export interface ModelSpec {
   id: string
   model: string
+  parent_model_id: string | null
   series: string | null             // SER ref ID
   serial_prefix: string | null
   catalogue_year: string | null     // CYR ref ID

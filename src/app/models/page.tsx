@@ -19,6 +19,7 @@ export default async function ModelsPage() {
   type SpecRow = {
     id: string
     model: string
+    parent_model_id: string | null
     body_shape_analogue: string | null
     body_wood: string | null
     pickup_configuration: string | null
@@ -48,7 +49,7 @@ export default async function ModelsPage() {
   const [{ data: rawSpecRows }, { data: rawCatalogueRows }, { data: rawShapeRows }, { data: rawCounts }, { data: rawRefValues }] = await Promise.all([
     supabase
       .from('model_specifications')
-      .select('id, model, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type, description, rarity'),
+      .select('id, model, parent_model_id, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type, description, rarity'),
     supabase
       .from('catalogue_models')
       .select('model_id, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type')
@@ -68,6 +69,15 @@ export default async function ModelsPage() {
   const specByModel = new Map<string, SpecRow>()
   for (const row of (rawSpecRows ?? []) as SpecRow[]) {
     specByModel.set(row.model, row)
+  }
+
+  // parent id → HT variants
+  const variantsByParentId = new Map<string, SpecRow[]>()
+  for (const row of (rawSpecRows ?? []) as SpecRow[]) {
+    if (!row.parent_model_id) continue
+    const list = variantsByParentId.get(row.parent_model_id) ?? []
+    list.push(row)
+    variantsByParentId.set(row.parent_model_id, list)
   }
 
   // catalogue_models: keep only the most recent row per model as fallback, keyed by model_id UUID
@@ -242,6 +252,39 @@ export default async function ModelsPage() {
                     </div>
                   )
                 })}
+
+                {/* HT variants */}
+                {(variantsByParentId.get(spec?.id ?? '') ?? []).map(variant => (
+                  <div key={variant.model} style={{
+                    marginTop: '14px',
+                    paddingTop: '14px',
+                    borderTop: '1px solid rgba(255,255,255,0.08)',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <span style={{
+                        fontFamily: 'var(--font-dm-mono)', fontSize: '9px',
+                        letterSpacing: '2px', textTransform: 'uppercase',
+                        color: accentColor,
+                        background: bass ? 'rgba(255,255,255,0.04)' : 'rgba(200,169,110,0.08)',
+                        padding: '2px 6px',
+                      }}>HT Variant</span>
+                      <span style={{
+                        fontFamily: 'var(--font-bebas)', fontSize: '22px',
+                        color: accentColor, letterSpacing: '2px', lineHeight: 1,
+                      }}>{variant.model}</span>
+                    </div>
+                    <div style={{
+                      display: 'flex', justifyContent: 'space-between', gap: '12px',
+                      fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
+                      padding: '4px 0',
+                    }}>
+                      <span style={{ color: '#5c5a57', flexShrink: 0 }}>Bridge</span>
+                      <span style={{ color: '#f0ede8', textAlign: 'right' }}>
+                        {resolveRef(variant.bridge_type) ?? 'Maverick/Wilkinson Hardtail'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
             )

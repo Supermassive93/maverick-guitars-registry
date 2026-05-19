@@ -128,7 +128,7 @@ SELECT
   model_id, 'GEN-0003',
   available_colours, original_rrp, left_handed_rrp,
   body_shape_analogue, body_wood, body_construction,
-  pickup_configuration, switch_type, potentiometers, pickup_surrounds, pickup_colours,
+  pickup_configuration, switch_type, potentiometers, pickup_surrounds, pickup_colour,
   bridge_type, hardware_colour,
   neck_construction, neck_wood, neck_profile, fretboard_wood, fret_count, scale_length, nut_type,
   headstock_style, headstock_face, headstock_logo,

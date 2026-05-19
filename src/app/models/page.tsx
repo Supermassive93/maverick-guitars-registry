@@ -94,7 +94,7 @@ export default async function ModelsPage() {
     return raw
   }
 
-  const SPEC_FIELD_MAP: Record<string, keyof CatalogueRow> = {
+  const SPEC_FIELD_MAP: Record<string, keyof Omit<CatalogueRow, 'model_id'>> = {
     'Body style':    'body_shape_analogue',
     'Body wood':     'body_wood',
     'Pickup config': 'pickup_configuration',

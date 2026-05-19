@@ -13,11 +13,12 @@ async function getGuitars(modelFilter?: string): Promise<Guitar[]> {
     .order('serial_number_only', { ascending: true, nullsFirst: false })
 
   if (modelFilter) {
-    const { data: ms } = await supabase
+    const { data } = await supabase
       .from('model_specifications')
       .select('id')
       .eq('model', modelFilter.toUpperCase())
       .single()
+    const ms = data as { id: string } | null
     if (ms?.id) query = query.eq('model_id', ms.id)
   }
 

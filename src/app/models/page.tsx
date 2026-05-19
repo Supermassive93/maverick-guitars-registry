@@ -19,6 +19,7 @@ export default async function ModelsPage() {
   const supabase = await createSupabaseServerClient()
 
   type SpecRow = {
+    id: string
     model: string
     body_shape_analogue: string | null
     body_wood: string | null
@@ -32,23 +33,34 @@ export default async function ModelsPage() {
     description: string | null
     rarity: string | null
   }
-  type CatalogueRow = Omit<SpecRow, 'description' | 'rarity'>
+  type CatalogueRow = {
+    model_id: string
+    body_shape_analogue: string | null
+    body_wood: string | null
+    pickup_configuration: string | null
+    bridge_type: string | null
+    headstock_style: string | null
+    fret_count: string | null
+    fretboard_wood: string | null
+    potentiometers: string | null
+    switch_type: string | null
+  }
   type ShapeRow = { model: string; body_shape_analogue: string | null; headstock_style: string | null }
 
   const [{ data: rawSpecRows }, { data: rawCatalogueRows }, { data: rawShapeRows }, { data: rawCounts }] = await Promise.all([
     supabase
       .from('model_specifications')
-      .select('model, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type, description, rarity'),
+      .select('id, model, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type, description, rarity'),
     supabase
       .from('catalogue_models')
-      .select('model, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type')
+      .select('model_id, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type')
       .order('catalogue_year', { ascending: false }),
     supabase
       .from('model_shape_registry')
       .select('model, body_shape_analogue, headstock_style'),
     supabase
       .from('guitars')
-      .select('model')
+      .select('model_id')
       .eq('status', 'Approved'),
   ])
 
@@ -57,10 +69,10 @@ export default async function ModelsPage() {
     specByModel.set(row.model, row)
   }
 
-  // catalogue_models: keep only the most recent row per model as fallback
+  // catalogue_models: keep only the most recent row per model as fallback, keyed by model_id UUID
   const catalogueByModel = new Map<string, CatalogueRow>()
   for (const row of (rawCatalogueRows ?? []) as CatalogueRow[]) {
-    if (!catalogueByModel.has(row.model)) catalogueByModel.set(row.model, row)
+    if (!catalogueByModel.has(row.model_id)) catalogueByModel.set(row.model_id, row)
   }
 
   const shapeByModel = new Map<string, ShapeRow>()
@@ -68,11 +80,11 @@ export default async function ModelsPage() {
     shapeByModel.set(row.model, row)
   }
 
-  // Only show rarity once ≥ 3 approved guitars exist for the model
+  // Only show rarity once ≥ 3 approved guitars exist for the model, keyed by model_id UUID
   const registryCountByModel = new Map<string, number>()
-  for (const row of (rawCounts ?? []) as { model: string | null }[]) {
-    if (!row.model) continue
-    registryCountByModel.set(row.model, (registryCountByModel.get(row.model) ?? 0) + 1)
+  for (const row of (rawCounts ?? []) as { model_id: string | null }[]) {
+    if (!row.model_id) continue
+    registryCountByModel.set(row.model_id, (registryCountByModel.get(row.model_id) ?? 0) + 1)
   }
 
   function normaliseHeadstock(raw: string): string {
@@ -95,8 +107,8 @@ export default async function ModelsPage() {
   }
 
   function getSpec(modelName: string, key: string, staticSpecs: { key: string; value: string }[]): string | null {
-    const spec = specByModel.get(modelName)
-    const cat  = catalogueByModel.get(modelName)
+    const spec  = specByModel.get(modelName)
+    const cat   = catalogueByModel.get(spec?.id ?? '')
     const shape = shapeByModel.get(modelName)
     const field = SPEC_FIELD_MAP[key]
 
@@ -168,7 +180,7 @@ export default async function ModelsPage() {
             const spec = specByModel.get(m.model)
             const description = spec?.description ?? m.description
             const rarityRaw = spec?.rarity ?? m.rarity
-            const rarity = (registryCountByModel.get(m.model) ?? 0) >= 3 ? rarityRaw : null
+            const rarity = (registryCountByModel.get(spec?.id ?? '') ?? 0) >= 3 ? rarityRaw : null
             return (
             <div key={m.model} style={{ background: '#161616', padding: '2rem', display: 'flex', flexDirection: 'column' }}>
               <div style={{

@@ -89,7 +89,7 @@ export function getModelName(guitar: Pick<Guitar, 'model_specifications'>): stri
 export interface CatalogueModel {
   id: string
   catalogue_year: string            // now a CYR ref ID
-  model: string
+  model_id: string
   series: string | null             // now a SER ref ID
   available_colours: string[] | null
   pickup_configuration: string | null  // PCG ref ID
@@ -109,7 +109,7 @@ export interface CatalogueModel {
   pickup_covers: string | null
   switch_type: string | null           // SWT ref ID
   potentiometers: string | null        // POT ref ID
-  locking_nut: string | null
+  nut_type: string | null              // NUT ref ID
   headstock_style: string | null       // HST ref ID
   headstock_face: string | null        // HDF ref ID
   headstock_logo: string | null        // HGL ref ID
@@ -121,7 +121,7 @@ export interface CatalogueModel {
   original_rrp: number | null
   left_handed_rrp: number | null
   notes: string | null
-  source: string | null
+  specification_source: string | null  // SPC ref ID
   created_at: string | null
 }
 

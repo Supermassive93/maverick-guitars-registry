@@ -482,11 +482,20 @@ export default function SubmitForm() {
   async function prefillFromModel(model: string) {
     const supabase = createSupabaseBrowserClient()
 
-    const [{ data }, { data: shapeData }, { data: msData }] = await Promise.all([
+    const { data: msData } = await supabase
+      .from('model_specifications')
+      .select('id')
+      .eq('model', model)
+      .single()
+
+    if (msData?.id) setModelId(msData.id)
+    if (!msData?.id) return
+
+    const [{ data }, { data: shapeData }] = await Promise.all([
       supabase
         .from('catalogue_models')
-        .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, body_wood, pickup_colour, headstock_face, headstock_style, fretboard_wood, scale_length, locking_nut')
-        .eq('model', model)
+        .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, body_wood, pickup_colour, headstock_face, headstock_style, fretboard_wood, scale_length, nut_type')
+        .eq('model_id', msData.id)
         .order('catalogue_year', { ascending: false })
         .limit(1)
         .single(),
@@ -495,14 +504,7 @@ export default function SubmitForm() {
         .select('body_shape_analogue, headstock_style')
         .eq('model', model)
         .single(),
-      supabase
-        .from('model_specifications')
-        .select('id')
-        .eq('model', model)
-        .single(),
     ])
-
-    if (msData?.id) setModelId(msData.id)
 
     if (!data && !shapeData) return
 
@@ -556,9 +558,8 @@ export default function SubmitForm() {
       updates.scale_length = data.scale_length
       filled.add('scale_length')
     }
-    if (data?.locking_nut) {
-      const isLocking = !['No', 'no', 'false', ''].includes(data.locking_nut)
-      updates.nut_type = isLocking ? 'NUT-0001' : 'NUT-0002'
+    if (data?.nut_type) {
+      updates.nut_type = data.nut_type
       filled.add('nut_type')
     }
 

@@ -251,7 +251,7 @@ export default async function GuitarPage({ params }: { params: Promise<{ mgr_id:
             <Field label="Bridge"               value={r(refMap, guitar.bridge_type)} />
             <Field label="Hardware"             value={r(refMap, guitar.hardware_colour)} />
             <Field label="Switch"               value={r(refMap, guitar.switch_type)} />
-            <Field label="Switch knob"          value={guitar.switch_knob} />
+            <Field label="Switch knob"          value={r(refMap, guitar.switch_knob)} />
             <Field label="Potentiometers"       value={r(refMap, guitar.potentiometers)} />
             <Field label="Whammy bar"           value={guitar.whammy_bar} />
             <Field label="Neck construction"    value={r(refMap, guitar.neck_construction)} />

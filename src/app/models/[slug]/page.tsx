@@ -126,7 +126,7 @@ function SpecBlock({
       <SpecRow label="Switch type"          value={r(refMap, spec.switch_type)} />
       {isGenRow && <SpecRow label="Switch knob" value={r(refMap, spec.switch_knob)} />}
       <SpecRow label="Potentiometers"       value={r(refMap, spec.potentiometers)} />
-      <SpecRow label="Pickup surrounds"     value={r(refMap, spec.pickup_surrounds)} />
+      {isGenRow && <SpecRow label="Pickup surrounds" value={r(refMap, spec.pickup_surrounds)} />}
       <SpecRow label="Pickup colours"       value={r(refMap, spec.pickup_colours)} />
 
       <SpecGroup label="Hardware" />

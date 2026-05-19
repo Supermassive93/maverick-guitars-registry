@@ -86,43 +86,49 @@ export function getModelName(guitar: Pick<Guitar, 'model_specifications'>): stri
   return guitar.model_specifications?.model ?? 'Unknown model'
 }
 
-export interface CatalogueModel {
+export interface ModelGenSpec {
   id: string
-  catalogue_year: string            // now a CYR ref ID
-  model_id: string
-  series: string | null             // now a SER ref ID
-  available_colours: string[] | null
-  pickup_configuration: string | null  // PCG ref ID
-  bridge_type: string | null           // BRG ref ID
+  model_id: string                     // UUID FK → model_specifications.id
+  generation: string                   // GEN ref ID (GEN-0001 … GEN-0005)
+
+  available_colours: string[] | null   // array of COL/CSC ref IDs
+  original_rrp: number | null
+  left_handed_rrp: number | null
+
+  body_shape_analogue: string | null   // BSA ref ID
   body_wood: string | null             // BWD ref ID
   body_construction: string | null     // BCN ref ID
-  body_bookmatched: string | null
-  neck_wood: string | null             // NWD ref ID
-  fretboard_wood: string | null        // FWD ref ID
-  neck_profile: string | null          // NPR ref ID
+
+  pickup_configuration: string | null  // PCG ref ID
+  switch_type: string | null           // SWT ref ID
+  switch_knob: string | null           // SKN ref ID
+  potentiometers: string | null        // POT ref ID
+  pickup_surrounds: string | null      // PSR ref ID
+  pickup_colours: string | null        // PKC ref ID
+
+  bridge_type: string | null           // BRG ref ID
+  hardware_colour: string | null       // HWC ref ID
+  tuner_style: string | null           // TNR ref ID
+
   neck_construction: string | null     // NCK ref ID
+  neck_wood: string | null             // NWD ref ID
+  neck_profile: string | null          // NPR ref ID
+  fretboard_wood: string | null        // FWD ref ID
   fret_count: string | null            // FRT ref ID
   scale_length: string | null          // SCL ref ID
-  hardware_colour: string | null       // HWC ref ID
-  pickup_surrounds: string | null      // PSR ref ID
-  pickup_colour: string | null         // PKC ref ID
-  pickup_covers: string | null
-  switch_type: string | null           // SWT ref ID
-  potentiometers: string | null        // POT ref ID
+  neck_binding: string | null          // NKB ref ID
+  skunk_stripe: string | null          // SKS ref ID
   nut_type: string | null              // NUT ref ID
+
   headstock_style: string | null       // HST ref ID
   headstock_face: string | null        // HDF ref ID
   headstock_logo: string | null        // HGL ref ID
-  string_count: string | null
-  body_shape_analogue: string | null   // BSA ref ID
-  body_contouring: BodyContouring | null
-  fret_markers: string | null
-  left_handed_available: string | null // LHA ref ID (was boolean)
-  original_rrp: number | null
-  left_handed_rrp: number | null
-  notes: string | null
+
+  left_handed_available: string | null // LHA ref ID
   specification_source: string | null  // SPC ref ID
+  notes: string | null
   created_at: string | null
+  updated_at: string | null
 }
 
 export interface ModelSpec {
@@ -131,25 +137,50 @@ export interface ModelSpec {
   parent_model_id: string | null
   series: string | null             // SER ref ID
   serial_prefix: string | null
-  catalogue_year: string | null     // CYR ref ID
-  body_shape_analogue: string | null
-  body_wood: string | null
-  body_construction: string | null
+  catalogue_year: string | null     // CYR ref ID (legacy — kept for reference)
+
+  // Body
+  body_shape_analogue: string | null   // BSA ref ID
+  body_wood: string | null             // BWD ref ID
+  body_construction: string | null     // BCN ref ID
   body_bookmatched: string | null
-  neck_wood: string | null
-  fretboard_wood: string | null
-  neck_profile: string | null
-  neck_construction: string | null
-  fret_count: string | null
-  scale_length: string | null
-  pickup_configuration: string | null
-  bridge_type: string | null
-  potentiometers: string | null
-  switch_type: string | null
-  left_handed_available: string | null
+
+  // Pickups & electronics
+  pickup_configuration: string | null  // PCG ref ID
+  switch_type: string | null           // SWT ref ID
+  switch_knob: string | null           // SKN ref ID
+  potentiometers: string | null        // POT ref ID
+  pickup_surrounds: string | null      // PSR ref ID
+  pickup_colours: string | null        // PKC ref ID
+
+  // Hardware
+  bridge_type: string | null           // BRG ref ID
+  hardware_colour: string | null       // HWC ref ID
+  tuner_style: string | null           // TNR ref ID
+
+  // Neck
+  neck_construction: string | null     // NCK ref ID
+  neck_wood: string | null             // NWD ref ID
+  neck_profile: string | null          // NPR ref ID
+  fretboard_wood: string | null        // FWD ref ID
+  fret_count: string | null            // FRT ref ID
+  scale_length: string | null          // SCL ref ID
+  neck_binding: string | null          // NKB ref ID
+  skunk_stripe: string | null          // SKS ref ID
+  nut_type: string | null              // NUT ref ID
+
+  // Headstock
+  headstock_style: string | null       // HST ref ID
+  headstock_face: string | null        // HDF ref ID
+  headstock_logo: string | null        // HGL ref ID
+
+  // Other
+  left_handed_available: string | null // LHA ref ID
   original_rrp: number | null
   left_handed_rrp: number | null
-  specification_source: string | null
+
+  // Metadata
+  specification_source: string | null  // SPC ref ID
   catalogue_page: string | null
   press_references: string | null
   notes: string | null
@@ -231,10 +262,10 @@ export interface Database {
         Insert: Omit<ModelSpec, 'id'>
         Update: Partial<Omit<ModelSpec, 'id'>>
       }
-      catalogue_models: {
-        Row: CatalogueModel
-        Insert: Omit<CatalogueModel, 'id' | 'created_at'>
-        Update: Partial<Omit<CatalogueModel, 'id' | 'created_at'>>
+      model_gen_specs: {
+        Row: ModelGenSpec
+        Insert: Omit<ModelGenSpec, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<ModelGenSpec, 'id' | 'created_at'>>
       }
       profiles: {
         Row: Profile

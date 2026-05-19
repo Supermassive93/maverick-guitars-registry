@@ -521,80 +521,99 @@ export default function SubmitForm() {
     if (msData?.id) setModelId(msData.id)
     if (!msData?.id) return
 
-    const [{ data }, { data: shapeData }] = await Promise.all([
-      supabase
-        .from('catalogue_models')
-        .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, body_wood, pickup_colour, headstock_face, headstock_style, fretboard_wood, scale_length, nut_type')
-        .eq('model_id', msData.id)
-        .order('catalogue_year', { ascending: false })
-        .limit(1)
-        .single(),
-      supabase
-        .from('model_shape_registry')
-        .select('body_shape_analogue, headstock_style')
-        .eq('model', model)
-        .single(),
-    ])
+    // Prefer most recent gen spec (highest GEN ref ID = most recent generation)
+    const { data } = await supabase
+      .from('model_gen_specs')
+      .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, body_wood, pickup_colours, headstock_face, headstock_style, fretboard_wood, scale_length, nut_type, hardware_colour, neck_construction, neck_wood, neck_profile, fret_count, neck_binding, skunk_stripe, pickup_surrounds, tuner_style')
+      .eq('model_id', msData.id)
+      .not('generation', 'eq', 'GEN-0005')  // exclude Unknown
+      .order('generation', { ascending: false })
+      .limit(1)
+      .single()
 
-    if (!data && !shapeData) return
+    // Fall back to universal spec from model_specifications for shape/headstock
+    const { data: msSpec } = await supabase
+      .from('model_specifications')
+      .select('body_shape_analogue, headstock_style, bridge_type, pickup_configuration, body_wood, fretboard_wood, scale_length, potentiometers, switch_type, headstock_face, nut_type, hardware_colour, neck_construction, neck_wood, neck_profile, fret_count, neck_binding, skunk_stripe, pickup_surrounds, tuner_style, pickup_colours')
+      .eq('id', msData.id)
+      .single()
+
+    if (!data && !msSpec) return
 
     const updates: Partial<FormState> = {}
     const filled = new Set<keyof FormState>()
 
-    if (data?.pickup_configuration) {
-      updates.pickup_configuration = data.pickup_configuration
-      filled.add('pickup_configuration')
-    }
-    if (data?.bridge_type) {
-      updates.bridge_type = data.bridge_type
-      filled.add('bridge_type')
-      if (!TREMOLO_BRIDGES.has(data.bridge_type)) updates.whammy_bar = ''
-    }
-    if (data?.switch_type) {
-      updates.switch_type = data.switch_type
-      filled.add('switch_type')
-    }
-    if (data?.potentiometers) {
-      updates.potentiometers = data.potentiometers
-      filled.add('potentiometers')
-    }
-    const bodyShape = shapeData?.body_shape_analogue ?? data?.body_shape_analogue
-    if (bodyShape) {
-      updates.body_shape_analogue = bodyShape
-      filled.add('body_shape_analogue')
-    }
-    if (data?.body_wood) {
-      updates.body_wood = data.body_wood
-      filled.add('body_wood')
-    }
-    if (data?.pickup_colour) {
-      updates.pickup_colours = data.pickup_colour
-      filled.add('pickup_colours')
-    }
-    if (data?.headstock_face) {
-      updates.headstock_face = data.headstock_face
-      filled.add('headstock_face')
-    }
-    if (data?.fretboard_wood) {
-      updates.fretboard_wood = data.fretboard_wood
-      filled.add('fretboard_wood')
-    }
-    const headstockStyle = shapeData?.headstock_style ?? data?.headstock_style
-    if (headstockStyle) {
-      updates.headstock_style = headstockStyle
-      filled.add('headstock_style')
-    }
-    if (data?.scale_length) {
-      updates.scale_length = data.scale_length
-      filled.add('scale_length')
-    }
-    if (data?.nut_type) {
-      updates.nut_type = data.nut_type
-      filled.add('nut_type')
+    // Helper: prefer gen-specific value, fall back to universal spec
+    function pick<K extends string>(field: K): string | null {
+      return (data as Record<string, string | null> | null)?.[field] ?? (msSpec as Record<string, string | null> | null)?.[field] ?? null
     }
 
-    updates.tuner_style = 'TNR-0001'
-    filled.add('tuner_style')
+    const pickupConfig = pick('pickup_configuration')
+    if (pickupConfig) { updates.pickup_configuration = pickupConfig; filled.add('pickup_configuration') }
+
+    const bridge = pick('bridge_type')
+    if (bridge) {
+      updates.bridge_type = bridge
+      filled.add('bridge_type')
+      if (!TREMOLO_BRIDGES.has(bridge)) updates.whammy_bar = ''
+    }
+
+    const switchType = pick('switch_type')
+    if (switchType) { updates.switch_type = switchType; filled.add('switch_type') }
+
+    const pots = pick('potentiometers')
+    if (pots) { updates.potentiometers = pots; filled.add('potentiometers') }
+
+    const bodyShape = pick('body_shape_analogue')
+    if (bodyShape) { updates.body_shape_analogue = bodyShape; filled.add('body_shape_analogue') }
+
+    const bodyWood = pick('body_wood')
+    if (bodyWood) { updates.body_wood = bodyWood; filled.add('body_wood') }
+
+    const pickupColours = pick('pickup_colours')
+    if (pickupColours) { updates.pickup_colours = pickupColours; filled.add('pickup_colours') }
+
+    const headstockFace = pick('headstock_face')
+    if (headstockFace) { updates.headstock_face = headstockFace; filled.add('headstock_face') }
+
+    const headstockStyle = pick('headstock_style')
+    if (headstockStyle) { updates.headstock_style = headstockStyle; filled.add('headstock_style') }
+
+    const fretboard = pick('fretboard_wood')
+    if (fretboard) { updates.fretboard_wood = fretboard; filled.add('fretboard_wood') }
+
+    const scale = pick('scale_length')
+    if (scale) { updates.scale_length = scale; filled.add('scale_length') }
+
+    const nut = pick('nut_type')
+    if (nut) { updates.nut_type = nut; filled.add('nut_type') }
+
+    const hardwareColour = pick('hardware_colour')
+    if (hardwareColour) { updates.hardware_colour = hardwareColour; filled.add('hardware_colour') }
+
+    const neckConstruction = pick('neck_construction')
+    if (neckConstruction) { updates.neck_construction = neckConstruction; filled.add('neck_construction') }
+
+    const neckWood = pick('neck_wood')
+    if (neckWood) { updates.neck_wood = neckWood; filled.add('neck_wood') }
+
+    const neckProfile = pick('neck_profile')
+    if (neckProfile) { updates.neck_profile = neckProfile; filled.add('neck_profile') }
+
+    const fretCount = pick('fret_count')
+    if (fretCount) { updates.fret_count = fretCount; filled.add('fret_count') }
+
+    const neckBinding = pick('neck_binding')
+    if (neckBinding) { updates.neck_binding = neckBinding; filled.add('neck_binding') }
+
+    const skunkStripe = pick('skunk_stripe')
+    if (skunkStripe) { updates.skunk_stripe = skunkStripe; filled.add('skunk_stripe') }
+
+    const pickupSurrounds = pick('pickup_surrounds')
+    if (pickupSurrounds) { updates.pickup_surrounds = pickupSurrounds; filled.add('pickup_surrounds') }
+
+    const tuner = pick('tuner_style')
+    if (tuner) { updates.tuner_style = tuner; filled.add('tuner_style') }
 
     setForm(prev => ({ ...prev, ...updates }))
     setCatalogueValues(updates)

@@ -5,18 +5,30 @@ import RegistrySection from '@/components/RegistrySection'
 
 export const revalidate = 60
 
-async function getGuitars(): Promise<Guitar[]> {
-  const { data, error } = await supabase
+async function getGuitars(modelFilter?: string): Promise<Guitar[]> {
+  let query = supabase
     .from('guitars')
     .select('id, mgr_id, model_id, serial, serial_number_only, series, generation, factory_colour, last_known_city, last_known_country, specification_source, registered_by, primary_image_url, status, model_specifications(model)')
     .in('status', ['Approved', 'Pending', 'Pre-populated'])
     .order('serial_number_only', { ascending: true, nullsFirst: false })
+
+  if (modelFilter) {
+    const { data: ms } = await supabase
+      .from('model_specifications')
+      .select('id')
+      .eq('model', modelFilter.toUpperCase())
+      .single()
+    if (ms?.id) query = query.eq('model_id', ms.id)
+  }
+
+  const { data, error } = await query
   if (error) { console.error(error); return [] }
   return data as Guitar[]
 }
 
-export default async function RegistryPage() {
-  const [guitars, refMap] = await Promise.all([getGuitars(), getRefValues()])
+export default async function RegistryPage({ searchParams }: { searchParams: Promise<{ model?: string }> }) {
+  const { model: modelFilter } = await searchParams
+  const [guitars, refMap] = await Promise.all([getGuitars(modelFilter), getRefValues()])
 
   return (
     <>
@@ -107,6 +119,26 @@ export default async function RegistryPage() {
           </div>
         </div>
       </section>
+
+      {/* Model filter banner */}
+      {modelFilter && (
+        <div style={{
+          padding: '12px 4rem',
+          background: 'rgba(200,169,110,0.06)',
+          borderBottom: '1px solid rgba(200,169,110,0.15)',
+          display: 'flex', alignItems: 'center', gap: '16px',
+        }}>
+          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: '#c8a96e', letterSpacing: '0.5px' }}>
+            Showing: {modelFilter.toUpperCase()}
+          </span>
+          <a
+            href="/"
+            style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57', textDecoration: 'none', letterSpacing: '0.5px' }}
+          >
+            Clear filter ×
+          </a>
+        </div>
+      )}
 
       {/* REGISTRY */}
       <RegistrySection guitars={guitars} refMap={refMap} />

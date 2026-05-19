@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getRefValues, r } from '@/lib/ref-values'
-import type { ModelSpec, CatalogueModel } from '@/lib/types'
+import type { ModelSpec, ModelGenSpec } from '@/lib/types'
 
 export const revalidate = 60
 
@@ -30,17 +30,132 @@ function swatchBg(refId: string, meta: ColourMeta | null): string | null {
   return hex ?? null
 }
 
-function Field({ label, value }: { label: string; value: string | number | null | undefined }) {
-  if (!value && value !== 0) return null
+// Always renders — shows "—" for null so every field is visible for review
+function SpecRow({ label, value }: { label: string; value: string | number | null | undefined }) {
+  const hasValue = value !== null && value !== undefined && value !== ''
   return (
     <div style={{
-      display: 'flex', gap: '16px', padding: '10px 0',
-      borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '14px',
+      display: 'flex', gap: '16px', padding: '8px 0',
+      borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '13px',
     }}>
-      <span style={{ color: '#5c5a57', width: '200px', flexShrink: 0, fontFamily: 'var(--font-dm-mono)', fontSize: '12px' }}>
+      <span style={{ color: '#5c5a57', width: '180px', flexShrink: 0, fontFamily: 'var(--font-dm-mono)', fontSize: '11px' }}>
         {label}
       </span>
-      <span style={{ color: '#f0ede8' }}>{String(value)}</span>
+      <span style={{ color: hasValue ? '#f0ede8' : '#2e2d2b' }}>{hasValue ? String(value) : '—'}</span>
+    </div>
+  )
+}
+
+// Section header within a spec block
+function SpecGroup({ label }: { label: string }) {
+  return (
+    <p style={{
+      fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '2px',
+      textTransform: 'uppercase', color: '#3a3835',
+      marginTop: '16px', marginBottom: '4px',
+    }}>
+      {label}
+    </p>
+  )
+}
+
+function ColourSwatches({ colours, colourMetaMap, refMap }: {
+  colours: string[]
+  colourMetaMap: Record<string, ColourMeta>
+  refMap: Record<string, string>
+}) {
+  if (!colours.length) return null
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', paddingTop: '4px' }}>
+      {colours.map(colId => {
+        const name = r(refMap, colId) ?? colId
+        const parts = name.split(' — ')
+        const code = parts.length >= 2 ? parts[0] : name
+        const bg = swatchBg(colId, colourMetaMap[colId] ?? null)
+        return (
+          <div key={colId} style={{ display: 'flex', alignItems: 'center', gap: '6px' }} title={name}>
+            <div style={{
+              width: '14px', height: '14px', flexShrink: 0,
+              background: bg ?? 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.15)',
+            }} />
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96' }}>
+              {code}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// Full spec block — same field list for both universal and gen rows
+function SpecBlock({
+  spec,
+  refMap,
+  colourMetaMap,
+  isGenRow = false,
+}: {
+  spec: Partial<ModelSpec & ModelGenSpec>
+  refMap: Record<string, string>
+  colourMetaMap: Record<string, ColourMeta>
+  isGenRow?: boolean
+}) {
+  return (
+    <div>
+      {isGenRow && spec.available_colours && spec.available_colours.length > 0 && (
+        <div style={{ marginBottom: '12px' }}>
+          <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: '#3a3835', marginBottom: '8px' }}>
+            Available colours
+          </p>
+          <ColourSwatches colours={spec.available_colours} colourMetaMap={colourMetaMap} refMap={refMap} />
+        </div>
+      )}
+
+      {isGenRow && (
+        <SpecRow label="Original RRP" value={spec.original_rrp != null ? `£${spec.original_rrp}` : null} />
+      )}
+
+      <SpecGroup label="Body" />
+      <SpecRow label="Body shape"           value={r(refMap, spec.body_shape_analogue)} />
+      <SpecRow label="Body wood"            value={r(refMap, spec.body_wood)} />
+      <SpecRow label="Body construction"    value={r(refMap, spec.body_construction)} />
+
+      <SpecGroup label="Pickups & electronics" />
+      <SpecRow label="Pickup configuration" value={r(refMap, spec.pickup_configuration)} />
+      <SpecRow label="Switch type"          value={r(refMap, spec.switch_type)} />
+      <SpecRow label="Switch knob"          value={r(refMap, spec.switch_knob)} />
+      <SpecRow label="Potentiometers"       value={r(refMap, spec.potentiometers)} />
+      <SpecRow label="Pickup surrounds"     value={r(refMap, spec.pickup_surrounds)} />
+      <SpecRow label="Pickup colours"       value={r(refMap, spec.pickup_colours)} />
+
+      <SpecGroup label="Hardware" />
+      <SpecRow label="Bridge"               value={r(refMap, spec.bridge_type)} />
+      <SpecRow label="Hardware colour"      value={r(refMap, spec.hardware_colour)} />
+      <SpecRow label="Tuner style"          value={r(refMap, spec.tuner_style)} />
+
+      <SpecGroup label="Neck" />
+      <SpecRow label="Neck construction"    value={r(refMap, spec.neck_construction)} />
+      <SpecRow label="Neck wood"            value={r(refMap, spec.neck_wood)} />
+      <SpecRow label="Neck profile"         value={r(refMap, spec.neck_profile)} />
+      <SpecRow label="Fretboard"            value={r(refMap, spec.fretboard_wood)} />
+      <SpecRow label="Fret count"           value={r(refMap, spec.fret_count)} />
+      <SpecRow label="Scale length"         value={r(refMap, spec.scale_length)} />
+      <SpecRow label="Neck binding"         value={r(refMap, spec.neck_binding)} />
+      <SpecRow label="Skunk stripe"         value={r(refMap, spec.skunk_stripe)} />
+      <SpecRow label="Nut type"             value={r(refMap, spec.nut_type)} />
+
+      <SpecGroup label="Headstock" />
+      <SpecRow label="Headstock style"      value={r(refMap, spec.headstock_style)} />
+      <SpecRow label="Headstock face"       value={r(refMap, spec.headstock_face)} />
+      <SpecRow label="Headstock logo"       value={r(refMap, spec.headstock_logo)} />
+
+      <SpecGroup label="Other" />
+      <SpecRow label="Left handed"          value={r(refMap, spec.left_handed_available)} />
+      {!isGenRow && <SpecRow label="Serial prefix" value={(spec as ModelSpec).serial_prefix} />}
+      {!isGenRow && spec.original_rrp != null && (
+        <SpecRow label="Original RRP" value={`£${spec.original_rrp}`} />
+      )}
     </div>
   )
 }
@@ -79,14 +194,14 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   const [
     refMap,
     { data: rawVariants },
-    { data: rawCatalogueRows },
+    { data: rawGenSpecs },
     { data: rawRegistry },
     { data: rawColourMeta },
     { data: parentSpecData },
   ] = await Promise.all([
     getRefValues(),
     supabase.from('model_specifications').select('*').eq('parent_model_id', spec.id),
-    supabase.from('catalogue_models').select('*').eq('model_id', spec.id).order('catalogue_year'),
+    supabase.from('model_gen_specs').select('*').eq('model_id', spec.id).order('generation'),
     supabase.from('guitars').select('serial_number_only').eq('model_id', spec.id).eq('status', 'Approved'),
     supabase.from('ref_values').select('id, metadata').in('category', ['COL', 'CSC']).eq('is_active', true),
     parentSpecPromise,
@@ -98,7 +213,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   }
 
   const variants = (rawVariants ?? []) as ModelSpec[]
-  const catalogueRows = (rawCatalogueRows ?? []) as CatalogueModel[]
+  const genSpecs = (rawGenSpecs ?? []) as ModelGenSpec[]
   const parentSpec = parentSpecData as { id: string; model: string } | null
 
   const serials = (rawRegistry ?? [])
@@ -110,23 +225,28 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
 
   const seriesLabel = r(refMap, spec.series)
 
+  const sectionHead = (label: string) => (
+    <p style={{
+      fontSize: '10px', fontFamily: 'var(--font-dm-mono)', color: '#5c5a57',
+      letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px',
+    }}>
+      {label}
+    </p>
+  )
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
 
       {/* Back nav */}
       <div style={{ marginBottom: '24px' }}>
-        <Link
-          href="/models"
-          className="link-muted"
-          style={{ fontSize: '13px', fontFamily: 'var(--font-dm-mono)', letterSpacing: '0.5px' }}
-        >
+        <Link href="/models" className="link-muted" style={{ fontSize: '13px', fontFamily: 'var(--font-dm-mono)', letterSpacing: '0.5px' }}>
           ← Model Guide
         </Link>
       </div>
 
       {/* Header */}
       <div style={{ marginBottom: '40px', paddingBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px', flexWrap: 'wrap' }}>
           {seriesLabel && (
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px', color: '#c8a96e', textTransform: 'uppercase' }}>
               {seriesLabel}
@@ -146,7 +266,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
           fontFamily: 'var(--font-bebas)',
           fontSize: 'clamp(3rem, 8vw, 5rem)',
           letterSpacing: '3px', color: '#f0ede8', lineHeight: 1,
-          marginBottom: '16px',
+          marginBottom: '12px',
         }}>
           {spec.model}
         </h1>
@@ -157,7 +277,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
             fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
             letterSpacing: '1.5px', textTransform: 'uppercase',
             color: '#8b6e3f', background: 'rgba(200,169,110,0.08)',
-            padding: '3px 8px', marginBottom: '16px',
+            padding: '3px 8px', marginBottom: '12px',
           }}>
             {spec.rarity}
           </div>
@@ -168,154 +288,81 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
             {spec.description}
           </p>
         )}
+
+        {/* View in Registry + notes */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginTop: '20px', flexWrap: 'wrap' }}>
+          <Link
+            href={`/?model=${spec.model}`}
+            style={{
+              fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '1px',
+              color: '#c8a96e', border: '1px solid rgba(200,169,110,0.3)',
+              padding: '5px 12px', textDecoration: 'none',
+            }}
+          >
+            View in Registry →
+          </Link>
+          {registeredCount > 0 && (
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57' }}>
+              {registeredCount} registered
+            </span>
+          )}
+          {serialMin != null && serialMax != null && serialMin !== serialMax && (
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57' }}>
+              Serial range {serialMin}–{serialMax}
+            </span>
+          )}
+        </div>
+
+        {spec.notes && (
+          <div style={{ marginTop: '20px', padding: '14px 16px', background: '#161616', border: '1px solid rgba(255,255,255,0.08)', maxWidth: '680px' }}>
+            <p style={{ color: '#9e9b96', fontSize: '13px', lineHeight: 1.6 }}>{spec.notes}</p>
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      {/* Spec columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-        {/* Left — Full specification */}
+        {/* Universal specification */}
         <div>
-          <p style={{
-            fontSize: '10px', fontFamily: 'var(--font-dm-mono)', color: '#5c5a57',
-            letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px',
-          }}>
-            Specification
-          </p>
-          <Field label="Body shape"           value={r(refMap, spec.body_shape_analogue)} />
-          <Field label="Body wood"            value={r(refMap, spec.body_wood)} />
-          <Field label="Body construction"    value={r(refMap, spec.body_construction)} />
-          <Field label="Pickup configuration" value={r(refMap, spec.pickup_configuration)} />
-          <Field label="Bridge"               value={r(refMap, spec.bridge_type)} />
-          <Field label="Scale length"         value={r(refMap, spec.scale_length)} />
-          <Field label="Neck construction"    value={r(refMap, spec.neck_construction)} />
-          <Field label="Neck wood"            value={r(refMap, spec.neck_wood)} />
-          <Field label="Neck profile"         value={r(refMap, spec.neck_profile)} />
-          <Field label="Fretboard"            value={r(refMap, spec.fretboard_wood)} />
-          <Field label="Fret count"           value={r(refMap, spec.fret_count)} />
-          <Field label="Switch"               value={r(refMap, spec.switch_type)} />
-          <Field label="Potentiometers"       value={r(refMap, spec.potentiometers)} />
-          <Field label="Left handed"          value={r(refMap, spec.left_handed_available)} />
-          <Field label="Serial prefix"        value={spec.serial_prefix} />
-          {spec.original_rrp != null && (
-            <Field label="Original RRP"       value={`£${spec.original_rrp}`} />
-          )}
-
-          {spec.notes && (
-            <div style={{
-              marginTop: '24px', padding: '16px',
-              background: '#161616', border: '1px solid rgba(255,255,255,0.08)',
-            }}>
-              <p style={{ fontSize: '10px', fontFamily: 'var(--font-dm-mono)', color: '#5c5a57', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px' }}>
-                Notes
-              </p>
-              <p style={{ color: '#9e9b96', fontSize: '14px', lineHeight: 1.6 }}>{spec.notes}</p>
-            </div>
-          )}
+          {sectionHead('Universal Specification')}
+          <SpecBlock spec={spec} refMap={refMap} colourMetaMap={colourMetaMap} />
         </div>
 
-        {/* Right — Catalogue by year + registry */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-
-          {/* Catalogue by year */}
-          {catalogueRows.length > 0 && (
-            <div>
-              <p style={{
-                fontSize: '10px', fontFamily: 'var(--font-dm-mono)', color: '#5c5a57',
-                letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px',
-              }}>
-                By Year
-              </p>
-              {catalogueRows.map(row => (
-                <div key={row.id} style={{
-                  marginBottom: '20px', paddingBottom: '20px',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                }}>
-                  <p style={{
-                    fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
-                    color: '#c8a96e', letterSpacing: '1px', marginBottom: '10px',
-                  }}>
-                    {r(refMap, row.catalogue_year) ?? row.catalogue_year}
-                  </p>
-
-                  {row.original_rrp != null && (
-                    <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: '#5c5a57', marginBottom: '10px' }}>
-                      RRP £{row.original_rrp}
-                    </p>
-                  )}
-
-                  {row.available_colours && row.available_colours.length > 0 && (
-                    <div>
-                      <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#5c5a57', letterSpacing: '1px', marginBottom: '8px' }}>
-                        Available colours
-                      </p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                        {row.available_colours.map(colId => {
-                          const name = r(refMap, colId) ?? colId
-                          const parts = name.split(' — ')
-                          const code = parts.length >= 2 ? parts[0] : name
-                          const bg = swatchBg(colId, colourMetaMap[colId] ?? null)
-                          return (
-                            <div key={colId} style={{ display: 'flex', alignItems: 'center', gap: '6px' }} title={name}>
-                              <div style={{
-                                width: '14px', height: '14px', flexShrink: 0,
-                                background: bg ?? 'rgba(255,255,255,0.08)',
-                                border: '1px solid rgba(255,255,255,0.15)',
-                              }} />
-                              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96' }}>
-                                {code}
-                              </span>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Registry stats */}
-          <div>
-            <p style={{
-              fontSize: '10px', fontFamily: 'var(--font-dm-mono)', color: '#5c5a57',
-              letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '16px',
-            }}>
-              Registry
-            </p>
-            <div style={{ display: 'flex', gap: '40px', alignItems: 'flex-end' }}>
-              <div>
-                <p style={{ fontFamily: 'var(--font-bebas)', fontSize: '56px', color: '#c8a96e', lineHeight: 1 }}>
-                  {registeredCount}
-                </p>
-                <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57', letterSpacing: '1px' }}>
-                  Registered
-                </p>
-              </div>
-              {serialMin != null && serialMax != null && serialMin !== serialMax && (
-                <div style={{ paddingBottom: '4px' }}>
-                  <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '15px', color: '#f0ede8' }}>
-                    {serialMin} — {serialMax}
-                  </p>
-                  <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57', letterSpacing: '1px' }}>
-                    Serial range
-                  </p>
-                </div>
-              )}
-            </div>
+        {/* Gen-specific specs */}
+        {genSpecs.map(gs => (
+          <div key={gs.id}>
+            {sectionHead(r(refMap, gs.generation) ?? gs.generation)}
+            <SpecBlock spec={gs} refMap={refMap} colourMetaMap={colourMetaMap} isGenRow />
           </div>
+        ))}
 
-        </div>
+        {/* Placeholder columns if fewer than 2 gen specs */}
+        {genSpecs.length === 0 && (
+          <>
+            <div>
+              {sectionHead('Gen 2 Specification')}
+              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b', paddingTop: '8px' }}>No data yet</p>
+            </div>
+            <div>
+              {sectionHead('Gen 3 Specification')}
+              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b', paddingTop: '8px' }}>No data yet</p>
+            </div>
+          </>
+        )}
+        {genSpecs.length === 1 && (
+          <div>
+            {sectionHead('No further gen data')}
+            <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b', paddingTop: '8px' }}>No data yet</p>
+          </div>
+        )}
+
       </div>
 
       {/* HT Variants */}
       {variants.length > 0 && (
         <div style={{ marginTop: '48px', paddingTop: '40px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <p style={{
-            fontSize: '10px', fontFamily: 'var(--font-dm-mono)', color: '#5c5a57',
-            letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '20px',
-          }}>
-            HT Variants
-          </p>
+          {sectionHead('HT Variants')}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1px', background: 'rgba(255,255,255,0.06)' }}>
             {variants.map(v => (
               <Link
@@ -340,11 +387,14 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
                 }}>
                   {v.model}
                 </p>
-                <Field label="Bridge" value={r(refMap, v.bridge_type)} />
+                {v.bridge_type && (
+                  <div style={{ display: 'flex', gap: '16px', padding: '6px 0', fontSize: '13px' }}>
+                    <span style={{ color: '#5c5a57', width: '120px', flexShrink: 0, fontFamily: 'var(--font-dm-mono)', fontSize: '11px' }}>Bridge</span>
+                    <span style={{ color: '#f0ede8' }}>{r(refMap, v.bridge_type)}</span>
+                  </div>
+                )}
                 {v.description && (
-                  <p style={{ color: '#9e9b96', fontSize: '13px', lineHeight: 1.6, marginTop: '12px' }}>
-                    {v.description}
-                  </p>
+                  <p style={{ color: '#9e9b96', fontSize: '13px', lineHeight: 1.6, marginTop: '12px' }}>{v.description}</p>
                 )}
               </Link>
             ))}

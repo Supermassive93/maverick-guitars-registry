@@ -148,7 +148,7 @@ function SpecBlock({
       <SpecGroup label="Headstock" />
       <SpecRow label="Headstock style"      value={r(refMap, spec.headstock_style)} />
       <SpecRow label="Headstock face"       value={r(refMap, spec.headstock_face)} />
-      <SpecRow label="Headstock logo"       value={r(refMap, spec.headstock_logo)} />
+      {isGenRow && <SpecRow label="Headstock logo" value={r(refMap, spec.headstock_logo)} />}
 
       <SpecGroup label="Other" />
       <SpecRow label="Left handed"          value={r(refMap, spec.left_handed_available)} />

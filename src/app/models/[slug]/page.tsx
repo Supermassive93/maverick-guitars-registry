@@ -236,7 +236,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   )
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
 
       {/* Back nav */}
       <div style={{ marginBottom: '24px' }}>
@@ -314,55 +314,17 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
           )}
         </div>
 
-        {spec.notes && (
-          <div style={{ marginTop: '20px', padding: '14px 16px', background: '#161616', border: '1px solid rgba(255,255,255,0.08)', maxWidth: '680px' }}>
-            <p style={{ color: '#9e9b96', fontSize: '13px', lineHeight: 1.6 }}>{spec.notes}</p>
-          </div>
-        )}
       </div>
 
-      {/* Spec columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-        {/* Universal specification */}
-        <div>
-          {sectionHead('Universal Specification')}
-          <SpecBlock spec={spec} refMap={refMap} colourMetaMap={colourMetaMap} />
-        </div>
-
-        {/* Gen-specific specs */}
-        {genSpecs.map(gs => (
-          <div key={gs.id}>
-            {sectionHead(r(refMap, gs.generation) ?? gs.generation)}
-            <SpecBlock spec={gs} refMap={refMap} colourMetaMap={colourMetaMap} isGenRow />
-          </div>
-        ))}
-
-        {/* Placeholder columns if fewer than 2 gen specs */}
-        {genSpecs.length === 0 && (
-          <>
-            <div>
-              {sectionHead('Gen 2 Specification')}
-              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b', paddingTop: '8px' }}>No data yet</p>
-            </div>
-            <div>
-              {sectionHead('Gen 3 Specification')}
-              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b', paddingTop: '8px' }}>No data yet</p>
-            </div>
-          </>
-        )}
-        {genSpecs.length === 1 && (
-          <div>
-            {sectionHead('No further gen data')}
-            <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b', paddingTop: '8px' }}>No data yet</p>
-          </div>
-        )}
-
+      {/* Universal specification */}
+      <div style={{ marginBottom: '48px', paddingBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        {sectionHead('Universal Specification')}
+        <SpecBlock spec={spec} refMap={refMap} colourMetaMap={colourMetaMap} />
       </div>
 
       {/* HT Variants */}
       {variants.length > 0 && (
-        <div style={{ marginTop: '48px', paddingTop: '40px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ marginBottom: '48px', paddingBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           {sectionHead('HT Variants')}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1px', background: 'rgba(255,255,255,0.06)' }}>
             {variants.map(v => (
@@ -389,9 +351,9 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
                   {v.model}
                 </p>
                 {v.bridge_type && (
-                  <div style={{ display: 'flex', gap: '16px', padding: '6px 0', fontSize: '13px' }}>
+                  <div style={{ display: 'flex', gap: '16px', padding: '6px 0' }}>
                     <span style={{ color: '#5c5a57', width: '120px', flexShrink: 0, fontFamily: 'var(--font-dm-mono)', fontSize: '11px' }}>Bridge</span>
-                    <span style={{ color: '#f0ede8' }}>{r(refMap, v.bridge_type)}</span>
+                    <span style={{ color: '#f0ede8', fontSize: '13px' }}>{r(refMap, v.bridge_type)}</span>
                   </div>
                 )}
                 {v.description && (
@@ -402,6 +364,23 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
           </div>
         </div>
       )}
+
+      {/* Gen 1 & Gen 2 specification columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {(['GEN-0001', 'GEN-0002'] as const).map(genId => {
+          const gs = genSpecs.find(g => g.generation === genId) ?? null
+          return (
+            <div key={genId}>
+              {sectionHead(r(refMap, genId) ?? genId)}
+              {gs ? (
+                <SpecBlock spec={gs} refMap={refMap} colourMetaMap={colourMetaMap} isGenRow />
+              ) : (
+                <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b', paddingTop: '8px' }}>No data yet</p>
+              )}
+            </div>
+          )
+        })}
+      </div>
 
     </div>
   )

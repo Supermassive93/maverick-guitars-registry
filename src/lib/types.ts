@@ -107,6 +107,7 @@ export interface ModelGenSpec {
   pickup_colours: string | null        // PKC ref ID
 
   bridge_type: string | null           // BRG ref ID
+  bridge_logo: string | null           // BGL ref ID
   hardware_colour: string | null       // HWC ref ID
   tuner_style: string | null           // TNR ref ID
 

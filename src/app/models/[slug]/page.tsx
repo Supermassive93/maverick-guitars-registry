@@ -131,6 +131,7 @@ function SpecBlock({
 
       <SpecGroup label="Hardware" />
       <SpecRow label="Bridge"               value={r(refMap, spec.bridge_type)} />
+      {isGenRow && <SpecRow label="Bridge logo" value={r(refMap, (spec as Partial<ModelGenSpec>).bridge_logo)} />}
       <SpecRow label="Hardware colour"      value={r(refMap, spec.hardware_colour)} />
       <SpecRow label="Tuner style"          value={r(refMap, spec.tuner_style)} />
 

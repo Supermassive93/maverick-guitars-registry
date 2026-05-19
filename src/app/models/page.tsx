@@ -5,10 +5,8 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Model Guide — Maverick Guitars Registry',
-  description: 'The complete Maverick Guitars model catalogue — all 22 models across the F, X, Species, Chaos, Streetfighter, Matrix, G and B series.',
+  description: 'The complete Maverick Guitars model catalogue — 24 models across the Evolution, Century, D-Tox and Nemesis series.',
 }
-
-const STANDALONE_SERIES = ['X-Treme', 'Streetfighter', 'Matrix']
 
 const subNav = [
   { href: '#range', label: 'Model Guide' },
@@ -145,12 +143,11 @@ export default async function ModelsPage() {
 
   function SeriesSection({ series, bass = false }: { series: string; bass?: boolean }) {
     const models = seriesModels(series)
-    const isStandalone = STANDALONE_SERIES.includes(series)
     const accentColor = bass ? '#9e9b96' : '#c8a96e'
 
     return (
       <section style={{
-        padding: isStandalone ? '3rem 4rem' : '5rem 4rem',
+        padding: '5rem 4rem',
         borderBottom: '1px solid rgba(255,255,255,0.08)',
       }}>
         <div style={{ marginBottom: '28px' }}>
@@ -162,7 +159,7 @@ export default async function ModelsPage() {
           </p>
           <h2 style={{
             fontFamily: 'var(--font-bebas)',
-            fontSize: isStandalone ? 'clamp(28px, 3vw, 42px)' : 'clamp(32px, 4vw, 52px)',
+            fontSize: 'clamp(32px, 4vw, 52px)',
             letterSpacing: '2px', lineHeight: 1,
             color: accentColor,
           }}>
@@ -272,7 +269,7 @@ export default async function ModelsPage() {
           <p style={{ maxWidth: '600px', color: '#9e9b96', fontSize: '16px', lineHeight: 1.7 }}>
             Maverick produced a focused range of rock and metal-oriented electric guitars and basses,
             all British-designed and manufactured in Korea in collaboration with hardware
-            designer Trev Wilkinson. 22 models across 9 series.
+            designer Trev Wilkinson. 24 models across four catalogue series.
           </p>
         </div>
       </section>
@@ -323,8 +320,10 @@ export default async function ModelsPage() {
           lineHeight: 1.7, marginTop: '16px',
           fontFamily: 'var(--font-dm-mono)',
         }}>
-          Maverick extended the range into bass guitars across two catalogue years.
-          The B1 appeared in the 2001 catalogue; the S4 and S5 followed in 2002.
+          The Nemesis series covers Maverick&apos;s full bass range. The B1 and Z-47 predate
+          the Nemesis branding appearing in catalogues but are referenced as Nemesis in
+          secondary market listings — Registry Derived. The S4 and S5 are Catalogue Confirmed
+          from the 2002 catalogue.
         </p>
       </div>
 

@@ -20,10 +20,10 @@ export const STANDARD_SPEC_KEYS = [
 ] as const
 
 export const MODEL_CATALOGUE: ModelData[] = [
-  // F-Series
+  // ── Evolution ────────────────────────────────────────────────────────────
   {
     model: 'F1',
-    series: 'F-Series',
+    series: 'Evolution',
     description: 'The flagship superstrat. Dual humbucker configuration with Floyd Rose locking tremolo. The highest volume model in the range — the guitar most associated with the Maverick name.',
     specs: [
       { key: 'Body style', value: 'Superstrat' },
@@ -34,7 +34,7 @@ export const MODEL_CATALOGUE: ModelData[] = [
   },
   {
     model: 'F1HT',
-    series: 'F-Series',
+    series: 'Evolution',
     description: 'The F1 platform with a fixed Wilkinson hardtail in place of the Floyd Rose. All the ergonomics of the F1 with added tuning stability and sustain.',
     specs: [
       { key: 'Body style', value: 'Superstrat' },
@@ -45,7 +45,7 @@ export const MODEL_CATALOGUE: ModelData[] = [
   },
   {
     model: 'F2',
-    series: 'F-Series',
+    series: 'Evolution',
     description: 'The sophisticated hybrid. Gibson neck geometry married to a low Fender-style hardtail. Gen 1 examples carry a ~1° neck pitch requiring ~8mm body packing — PRS-equivalent geometry producing exceptionally low action potential. Low production numbers. All known examples are Transparent Red — this appears to be the only colour the F2 was ever produced in.',
     specs: [
       { key: 'Body style', value: 'Superstrat' },
@@ -56,7 +56,7 @@ export const MODEL_CATALOGUE: ModelData[] = [
   },
   {
     model: 'F3',
-    series: 'F-Series',
+    series: 'Evolution',
     description: 'The versatile workhorse. HSH pickup configuration with Floyd Rose locking tremolo. Highest production numbers of any Maverick model — the most commercially successful guitar in the catalogue.',
     specs: [
       { key: 'Body style', value: 'Superstrat' },
@@ -67,56 +67,18 @@ export const MODEL_CATALOGUE: ModelData[] = [
   },
   {
     model: 'F4',
-    series: 'F-Series',
+    series: 'Evolution',
     description: 'HSS configuration with Synchronised Tremolo. Features a composite neck profile morphing from vintage V at the nut to D-shape at the body join — delivering a dynamic playing feel across the full range.',
     specs: [
       { key: 'Body style', value: 'Semi-Superstrat' },
       { key: 'Pickup config', value: 'HSS' },
       { key: 'Bridge', value: 'Synchronised Tremolo - Fender Style' },
     ],
+    rarity: 'Registry Derived',
   },
-  {
-    model: 'FD-Tox',
-    series: 'F-Series',
-    description: 'An F-Series variant with its own distinct identity within the family. Shares the core F-Series platform and construction approach.',
-    specs: [
-      { key: 'Body style', value: 'Superstrat' },
-    ],
-  },
-  // X-Series
-  {
-    model: 'X1',
-    series: 'X-Series',
-    description: 'Explorer/Mockingbird-influenced body with aggressive angular styling. Available in both 6 and 7-string configurations. Used by Mindstorms and American Headcharge. The heaviest-looking guitar Maverick produced.',
-    specs: [
-      { key: 'Body style', value: 'Explorer / Mockingbird' },
-    ],
-  },
-  {
-    model: 'XD-Tox',
-    series: 'X-Series',
-    description: 'X-Series variant sharing the angular body platform of the X1. Produced in limited numbers as a companion model within the X family.',
-    specs: [
-      { key: 'Body style', value: 'Explorer / Mockingbird' },
-    ],
-    rarity: 'Limited',
-  },
-  // X-Treme — standalone model
-  {
-    model: 'X-Treme',
-    series: 'X-Treme',
-    description: 'A standalone model with an extreme Explorer/Mockingbird body. Uniquely features decorative lines routed through the paint into bare wood — on the body face behind the tremolo and on the headstock face between the tuners. Zebra pickups and a split Rosewood & Maple fingerboard complete a look found nowhere else in the range.',
-    specs: [
-      { key: 'Body style', value: 'Extreme Explorer / Mockingbird' },
-      { key: 'Bridge', value: 'Tremolo' },
-      { key: 'Fretboard', value: 'Split Rosewood & Maple' },
-    ],
-    rarity: 'Rare',
-  },
-  // Streetfighter — standalone model
   {
     model: 'SF-1',
-    series: 'Streetfighter',
+    series: 'Evolution',
     description: 'Commonly known as the Streetfighter. The rarest Maverick guitar — a retailer-commissioned limited run featuring a reverse headstock, fret vents, and Wilkinson hardware throughout. As few as 4 known examples in certain colourways. Exceptionally collectible.',
     specs: [
       { key: 'Body style', value: 'Superstrat' },
@@ -125,43 +87,55 @@ export const MODEL_CATALOGUE: ModelData[] = [
     ],
     rarity: 'Extremely rare',
   },
-  // Matrix — standalone model
+  {
+    model: 'X1',
+    series: 'Evolution',
+    description: 'Explorer/Mockingbird-influenced body with aggressive angular styling. Available in both 6 and 7-string configurations. Used by Mindstorms and American Headcharge. The heaviest-looking guitar Maverick produced.',
+    specs: [
+      { key: 'Body style', value: 'Explorer / Mockingbird' },
+    ],
+  },
   {
     model: 'Matrix',
-    series: 'Matrix',
-    description: 'A standalone model occupying its own classification in the Maverick catalogue. Distinct from both the F-Series superstrats and the angular X family.',
+    series: 'Evolution',
+    description: 'A standalone model occupying its own classification in the Maverick catalogue. Distinct from both the superstrat and angular X family.',
     specs: [],
   },
-  // JR-Series — Jim Root limited production guitar
   {
-    model: 'JR4',
-    series: 'JR-Series',
-    description: 'A limited production guitar with a direct tie to Jim Root of Stone Sour and Slipknot. Maverick provided Root with several prototypes to test, and he played them live — including at the 2002 Reading Festival. The signature relationship was never formalised and Root moved on, but Maverick went ahead and produced a limited run for the market regardless. Superstrat body with full Maverick contouring, no pickup surrounds, and a hardtail bridge. 24-fret rosewood fingerboard with centralised inlays. Headstock matches body colour — observed in Pewter/Silver. Controls are a single through-body pot (likely push-pull volume/tone) and a 5-way blade switch mounted below the bridge, with no Evolution roller pots. Factory pickups were Duncan Designed or Wilkinson Alnico V humbuckers as standard across the Maverick range — many owners have since upgraded to EMG 81/85 actives.',
+    model: 'X-Treme',
+    series: 'Evolution',
+    description: 'Extreme Explorer/Mockingbird body with decorative lines routed through the paint into bare wood — on the body face behind the tremolo and on the headstock face between the tuners. Zebra pickups and a split Rosewood & Maple fingerboard complete a look found nowhere else in the range.',
     specs: [
-      { key: 'Body style', value: 'Superstrat' },
-      { key: 'Pickup config', value: 'HH' },
-      { key: 'Bridge', value: 'Maverick/Wilkinson Hardtail' },
-      { key: 'Headstock', value: 'Standard 6-aside (body-matched colour)' },
-      { key: 'Frets', value: '24' },
-      { key: 'Fretboard', value: 'AAA Indian Rosewood' },
-      { key: 'Potentiometers', value: '1x push-pull' },
-      { key: 'Switch', value: '5-way blade' },
+      { key: 'Body style', value: 'Extreme Explorer / Mockingbird' },
+      { key: 'Bridge', value: 'Tremolo' },
+      { key: 'Fretboard', value: 'Split Rosewood & Maple' },
     ],
-    rarity: 'Limited production',
-    notes: 'Not an official signature — Jim Root tested prototypes and played them live (2002 Reading Festival) but did not pursue the endorsement. Maverick produced a limited market run regardless. One of the most historically significant models in the Maverick catalogue.',
+    rarity: 'Rare',
   },
-  // Species
+  // ── Century ───────────────────────────────────────────────────────────────
+  {
+    model: 'Chaos 1',
+    series: 'Century',
+    description: 'Entry model in the Chaos range. A more affordable route into the Maverick catalogue while retaining the core construction philosophy.',
+    specs: [],
+  },
+  {
+    model: 'Chaos 2',
+    series: 'Century',
+    description: 'Upgraded Chaos variant with improved specification over the Chaos 1.',
+    specs: [],
+  },
   {
     model: 'Species 1',
-    series: 'Species',
-    description: 'The entry model in Maverick\'s Species range. A distinctive sub-series with its own body styling and identity separate from the core F-Series superstrat platform. All known Species examples have been observed in Gloss Black only.',
+    series: 'Century',
+    description: 'The entry model in the Species range. A distinctive sub-series with its own body styling and identity separate from the core superstrat platform. All known Species examples have been observed in Gloss Black only.',
     specs: [
       { key: 'Body style', value: 'Species' },
     ],
   },
   {
     model: 'Species 2',
-    series: 'Species',
+    series: 'Century',
     description: 'Mid-range Species variant. Builds on the Species 1 platform with a different pickup or hardware configuration.',
     specs: [
       { key: 'Body style', value: 'Species' },
@@ -169,7 +143,7 @@ export const MODEL_CATALOGUE: ModelData[] = [
   },
   {
     model: 'Species 3',
-    series: 'Species',
+    series: 'Century',
     description: 'A pre-production single-cut prototype that predates the G-Series. Never commercially released. The only known Maverick single-cut that pre-dates the G1/G2, making it one of the most historically significant models in the catalogue.',
     specs: [
       { key: 'Body style', value: 'Single Cut - LP style' },
@@ -184,31 +158,36 @@ export const MODEL_CATALOGUE: ModelData[] = [
   },
   {
     model: 'Species 7 String',
-    series: 'Species',
+    series: 'Century',
     description: 'Seven-string variant within the Species line. One of the few extended-range instruments Maverick offered alongside the X1.',
     specs: [
       { key: 'Body style', value: 'Species' },
     ],
     rarity: 'Rare',
   },
-  // Chaos
+  // ── D-Tox ─────────────────────────────────────────────────────────────────
   {
-    model: 'Chaos 1',
-    series: 'Chaos',
-    description: 'Entry model in the Chaos series. A more affordable route into the Maverick range while retaining the core construction philosophy.',
-    specs: [],
+    model: 'FD-Tox',
+    series: 'D-Tox',
+    description: 'F-platform variant within the D-Tox series. Shares the core superstrat construction approach with its own distinct identity.',
+    specs: [
+      { key: 'Body style', value: 'Superstrat' },
+    ],
   },
   {
-    model: 'Chaos 2',
-    series: 'Chaos',
-    description: 'Upgraded Chaos variant with improved specification over the Chaos 1.',
-    specs: [],
+    model: 'XD-Tox',
+    series: 'D-Tox',
+    description: 'X-platform variant within the D-Tox series. Angular body platform of the X1 family carried into the D-Tox line.',
+    specs: [
+      { key: 'Body style', value: 'Explorer / Mockingbird' },
+    ],
+    rarity: 'Limited',
   },
-  // G-Series
+  // ── Unknown ───────────────────────────────────────────────────────────────
   {
     model: 'G1',
-    series: 'G-Series',
-    description: 'Maverick\'s take on the Les Paul format. Set-neck construction departs from the bolt-on superstrat approach of the F-Series. Rarer than the F-Series models.',
+    series: 'Unknown',
+    description: 'Maverick\'s take on the Les Paul format. Set-neck construction departs from the bolt-on superstrat approach of the Evolution series. Rarer than the F-series models.',
     specs: [
       { key: 'Body style', value: 'Single Cut - LP style' },
       { key: 'Pickup config', value: 'HH' },
@@ -220,7 +199,7 @@ export const MODEL_CATALOGUE: ModelData[] = [
   },
   {
     model: 'G2',
-    series: 'G-Series',
+    series: 'Unknown',
     description: 'Second variant in the G-Series. Complements the G1 within the set-neck, humbucker-driven side of the Maverick catalogue.',
     specs: [
       { key: 'Body style', value: 'Single Cut - LP style' },
@@ -231,21 +210,37 @@ export const MODEL_CATALOGUE: ModelData[] = [
     ],
     rarity: 'Low production',
   },
-  // B-Series (bass — 2001 catalogue)
+  {
+    model: 'JR4',
+    series: 'Unknown',
+    description: 'A limited production guitar with a direct tie to Jim Root of Stone Sour and Slipknot. Maverick provided Root with several prototypes to test, and he played them live — including at the 2002 Reading Festival. The signature relationship was never formalised and Root moved on, but Maverick went ahead and produced a limited run for the market regardless. Superstrat body with full Maverick contouring, no pickup surrounds, and a hardtail bridge. 24-fret rosewood fingerboard with centralised inlays. Controls are a single through-body pot (likely push-pull volume/tone) and a 5-way blade switch mounted below the bridge.',
+    specs: [
+      { key: 'Body style', value: 'Superstrat' },
+      { key: 'Pickup config', value: 'HH' },
+      { key: 'Bridge', value: 'Maverick/Wilkinson Hardtail' },
+      { key: 'Headstock', value: 'Standard 6-aside (body-matched colour)' },
+      { key: 'Frets', value: '24' },
+      { key: 'Fretboard', value: 'AAA Indian Rosewood' },
+      { key: 'Potentiometers', value: '1x push-pull' },
+      { key: 'Switch', value: '5-way blade' },
+    ],
+    rarity: 'Limited production',
+    notes: 'Not an official signature — Jim Root tested prototypes and played them live (2002 Reading Festival) but did not pursue the endorsement. One of the most historically significant models in the Maverick catalogue.',
+  },
+  // ── Nemesis (bass) ────────────────────────────────────────────────────────
   {
     model: 'B1',
-    series: 'B-Series',
+    series: 'Nemesis',
     description: 'Maverick\'s first bass guitar, featured in the 2001 catalogue. Brought the same British-designed ethos and Korean manufacturing to the low end.',
     specs: [
       { key: 'Body style', value: 'Bass guitar' },
     ],
     rarity: 'Rarely seen',
   },
-  // Z-Series
   {
     model: 'Z-47',
-    series: 'Z-Series',
-    description: 'A 4-string bass built on the Explorer/Mockingbird body platform — the only known Maverick bass to use this angular body shape. Features the Evolution Roller Pot complement in a straight-line configuration beneath the bridge, consistent with the B1. Bolt-on two-piece scarf joint neck with skunk stripe, 24-fret Indian Rosewood fingerboard, 4-aside headstock.',
+    series: 'Nemesis',
+    description: 'A 4-string bass built on the Explorer/Mockingbird body platform — the only known Maverick bass to use this angular body shape. Features the Evolution Roller Pot complement in a straight-line configuration beneath the bridge. Bolt-on two-piece scarf joint neck with skunk stripe, 24-fret Indian Rosewood fingerboard, 4-aside headstock.',
     specs: [
       { key: 'Body style', value: 'Explorer-Mockingbird' },
       { key: 'Headstock', value: '4-aside' },
@@ -255,18 +250,17 @@ export const MODEL_CATALOGUE: ModelData[] = [
     ],
     rarity: 'Rarely seen',
   },
-  // S-Series (bass — 2002 catalogue)
   {
     model: 'S4',
-    series: 'S-Series',
-    description: 'Maverick\'s 4-string bass, introduced in the 2002 catalogue. Complemented the guitar range for full-band setups.',
+    series: 'Nemesis',
+    description: 'Maverick\'s 4-string bass, confirmed in the 2002 catalogue. Complemented the guitar range for full-band setups.',
     specs: [
       { key: 'Body style', value: 'Bass guitar (4-string)' },
     ],
   },
   {
     model: 'S5',
-    series: 'S-Series',
+    series: 'Nemesis',
     description: 'The 5-string bass, introduced alongside the S4 in the 2002 catalogue. Extended low-end reach for players needing the additional low B string.',
     specs: [
       { key: 'Body style', value: 'Bass guitar (5-string)' },
@@ -275,19 +269,12 @@ export const MODEL_CATALOGUE: ModelData[] = [
 ]
 
 export const SERIES_ORDER = [
-  'F-Series',
-  'X-Series',
-  'X-Treme',
-  'Streetfighter',
-  'Matrix',
-  'JR-Series',
-  'Species',
-  'Chaos',
-  'G-Series',
+  'Evolution',
+  'Century',
+  'D-Tox',
+  'Unknown',
   // Bass guitars below the divider
-  'B-Series',
-  'S-Series',
-  'Z-Series',
+  'Nemesis',
 ]
 
-export const BASS_SERIES = ['B-Series', 'S-Series', 'Z-Series']
+export const BASS_SERIES = ['Nemesis']

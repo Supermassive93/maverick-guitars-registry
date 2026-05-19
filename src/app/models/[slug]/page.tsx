@@ -141,7 +141,7 @@ function SpecBlock({
       <SpecRow label="Fretboard"            value={r(refMap, spec.fretboard_wood)} />
       <SpecRow label="Fret count"           value={r(refMap, spec.fret_count)} />
       <SpecRow label="Scale length"         value={r(refMap, spec.scale_length)} />
-      <SpecRow label="Neck binding"         value={r(refMap, spec.neck_binding)} />
+      {isGenRow && <SpecRow label="Neck binding" value={r(refMap, spec.neck_binding)} />}
       <SpecRow label="Skunk stripe"         value={r(refMap, spec.skunk_stripe)} />
       <SpecRow label="Nut type"             value={r(refMap, spec.nut_type)} />
 

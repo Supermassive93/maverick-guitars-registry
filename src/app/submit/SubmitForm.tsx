@@ -227,6 +227,32 @@ const NECK_CONSTRUCTION_OPTS: SelectOpt[] = [
   { value: 'NCK-0006', label: 'Unknown' },
 ]
 
+const NECK_WOOD_OPTS: SelectOpt[] = [
+  { value: 'NWD-0001', label: 'Selected Canadian Maple' },
+  { value: 'NWD-0002', label: 'Rock Maple' },
+  { value: 'NWD-0003', label: 'Maple' },
+  { value: 'NWD-0005', label: 'Bubinga' },
+  { value: 'NWD-0006', label: 'Mahogany' },
+  { value: 'NWD-0004', label: 'Unknown' },
+]
+
+const NECK_PROFILE_OPTS: SelectOpt[] = [
+  { value: 'NPR-0001', label: 'Ultra Thin' },
+  { value: 'NPR-0002', label: 'Thin C' },
+  { value: 'NPR-0003', label: 'Medium C' },
+  { value: 'NPR-0004', label: 'Fat C' },
+  { value: 'NPR-0005', label: 'D' },
+  { value: 'NPR-0006', label: 'U' },
+  { value: 'NPR-0007', label: 'Unknown' },
+]
+
+const BODY_CONSTRUCTION_OPTS: SelectOpt[] = [
+  { value: 'BCN-0001', label: 'Single Slab' },
+  { value: 'BCN-0002', label: 'Two-piece' },
+  { value: 'BCN-0003', label: 'Three-piece' },
+  { value: 'BCN-0004', label: 'Unknown' },
+]
+
 const HEADSTOCK_STYLE_OPTS: SelectOpt[] = [
   { value: 'HST-0001', label: '6-aside' },
   { value: 'HST-0002', label: '6-aside reversed' },
@@ -338,6 +364,9 @@ type FormState = {
   fretboard_wood: string
   scale_length: string
   neck_construction: string
+  neck_wood: string
+  neck_profile: string
+  body_construction: string
   skunk_stripe: string
   headstock_break_angle: string
   neck_pitch: string
@@ -362,7 +391,7 @@ const INITIAL: FormState = {
   pickup_colours: '', tuner_style: '',
   neck_binding: '', switch_type: '', switch_knob: '', potentiometers: '',
   nut_type: '', whammy_bar: '', fret_count: '', fretboard_wood: '', scale_length: '',
-  neck_construction: '', skunk_stripe: '', headstock_break_angle: '',
+  neck_construction: '', neck_wood: '', neck_profile: '', body_construction: '', skunk_stripe: '', headstock_break_angle: '',
   neck_pitch: '', last_known_country: '', last_known_region: '', last_known_city: '',
   source_type: 'Owner registration', source_url: '', last_price: '',
   submitter_email: '', submission_notes: '',
@@ -781,6 +810,9 @@ export default function SubmitForm() {
         fretboard_wood:       form.fretboard_wood || null,
         scale_length:         form.scale_length || null,
         neck_construction:    form.neck_construction || null,
+        neck_wood:            form.neck_wood || null,
+        neck_profile:         form.neck_profile || null,
+        body_construction:    form.body_construction || null,
         skunk_stripe:         form.skunk_stripe || null,
         left_handed_available: form.left_handed_available === 'Yes' ? 'LHA-0001' : null,
         headstock_break_angle: form.headstock_break_angle ? parseFloat(form.headstock_break_angle) : null,
@@ -1196,6 +1228,9 @@ export default function SubmitForm() {
           <Field label="Body shape" prefilled={prefilledFields.has('body_shape_analogue')}>
             <Select value={form.body_shape_analogue} onChange={set('body_shape_analogue')} options={BODY_SHAPE_OPTS} />
           </Field>
+          <Field label="Body construction" prefilled={prefilledFields.has('body_construction')}>
+            <Select value={form.body_construction} onChange={set('body_construction')} options={BODY_CONSTRUCTION_OPTS} />
+          </Field>
         </Section>
 
         <Section title="Hardware & electronics">
@@ -1286,6 +1321,12 @@ export default function SubmitForm() {
         <Section title="Neck & construction">
           <Field label="Neck construction">
             <Select value={form.neck_construction} onChange={set('neck_construction')} options={NECK_CONSTRUCTION_OPTS} />
+          </Field>
+          <Field label="Neck wood" prefilled={prefilledFields.has('neck_wood')}>
+            <Select value={form.neck_wood} onChange={set('neck_wood')} options={NECK_WOOD_OPTS} />
+          </Field>
+          <Field label="Neck profile" prefilled={prefilledFields.has('neck_profile')}>
+            <Select value={form.neck_profile} onChange={set('neck_profile')} options={NECK_PROFILE_OPTS} />
           </Field>
           <Field label="Headstock style" prefilled={prefilledFields.has('headstock_style')}>
             <Select value={form.headstock_style} onChange={set('headstock_style')} options={HEADSTOCK_STYLE_OPTS} />

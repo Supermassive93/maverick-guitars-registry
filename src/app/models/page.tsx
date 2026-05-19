@@ -45,7 +45,7 @@ export default async function ModelsPage() {
   }
   type ShapeRow = { model: string; body_shape_analogue: string | null; headstock_style: string | null }
 
-  const [{ data: rawSpecRows }, { data: rawCatalogueRows }, { data: rawShapeRows }, { data: rawCounts }] = await Promise.all([
+  const [{ data: rawSpecRows }, { data: rawCatalogueRows }, { data: rawShapeRows }, { data: rawCounts }, { data: rawRefValues }] = await Promise.all([
     supabase
       .from('model_specifications')
       .select('id, model, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type, description, rarity'),
@@ -60,6 +60,9 @@ export default async function ModelsPage() {
       .from('guitars')
       .select('model_id')
       .eq('status', 'Approved'),
+    supabase
+      .from('ref_values')
+      .select('id, display_name'),
   ])
 
   const specByModel = new Map<string, SpecRow>()
@@ -83,6 +86,16 @@ export default async function ModelsPage() {
   for (const row of (rawCounts ?? []) as { model_id: string | null }[]) {
     if (!row.model_id) continue
     registryCountByModel.set(row.model_id, (registryCountByModel.get(row.model_id) ?? 0) + 1)
+  }
+
+  const refMap = new Map<string, string>()
+  for (const row of (rawRefValues ?? []) as { id: string; display_name: string }[]) {
+    refMap.set(row.id, row.display_name)
+  }
+
+  function resolveRef(val: string | null): string | null {
+    if (!val) return null
+    return /^[A-Z]{2,4}-\d{4}$/.test(val) ? (refMap.get(val) ?? val) : val
   }
 
   function normaliseHeadstock(raw: string): string {
@@ -130,8 +143,9 @@ export default async function ModelsPage() {
         ?? staticSpecs.find(s => s.key === key)?.value
         ?? null
     }
-    if (key === 'Headstock' && raw) return normaliseHeadstock(raw)
-    return raw
+    const resolved = resolveRef(raw)
+    if (key === 'Headstock' && resolved) return normaliseHeadstock(resolved)
+    return resolved
   }
 
   const electricSeries = SERIES_ORDER.filter(s => !BASS_SERIES.includes(s))

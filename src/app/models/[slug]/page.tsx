@@ -374,11 +374,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
             return (
               <div key={genId}>
                 {sectionHead(r(refMap, genId) ?? genId)}
-                {gs ? (
-                  <SpecBlock spec={gs} refMap={refMap} colourMetaMap={colourMetaMap} isGenRow />
-                ) : (
-                  <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#3a3835', paddingTop: '8px' }}>No data yet</p>
-                )}
+                <SpecBlock spec={gs ?? {}} refMap={refMap} colourMetaMap={colourMetaMap} isGenRow />
               </div>
             )
           })}

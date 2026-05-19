@@ -135,7 +135,7 @@ function SpecBlock({
       <SpecRow label="Tuner style"          value={r(refMap, spec.tuner_style)} />
 
       <SpecGroup label="Neck" />
-      <SpecRow label="Neck construction"    value={r(refMap, spec.neck_construction)} />
+      {isGenRow && <SpecRow label="Neck construction" value={r(refMap, spec.neck_construction)} />}
       <SpecRow label="Neck wood"            value={r(refMap, spec.neck_wood)} />
       <SpecRow label="Neck profile"         value={r(refMap, spec.neck_profile)} />
       <SpecRow label="Fretboard"            value={r(refMap, spec.fretboard_wood)} />

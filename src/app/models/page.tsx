@@ -1,7 +1,8 @@
-import { MODEL_CATALOGUE, SERIES_ORDER, BASS_SERIES, STANDARD_SPEC_KEYS } from '@/data/models'
+import { MODEL_CATALOGUE, SERIES_ORDER, BASS_SERIES } from '@/data/models'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import ModelCard from '@/components/ModelCard'
 
 export const metadata: Metadata = {
   title: 'Model Guide — Maverick Guitars Registry',
@@ -39,29 +40,17 @@ export default async function ModelsPage() {
     id: string
     model: string
     parent_model_id: string | null
-    body_shape_analogue: string | null
-    body_wood: string | null
-    pickup_configuration: string | null
-    bridge_type: string | null
-    headstock_style: string | null
-    fret_count: string | null
-    fretboard_wood: string | null
-    potentiometers: string | null
-    switch_type: string | null
     description: string | null
     rarity: string | null
   }
-  const [{ data: rawSpecRows }, { data: rawCounts }, { data: rawRefValues }, { data: rawColours }] = await Promise.all([
+  const [{ data: rawSpecRows }, { data: rawCounts }, { data: rawColours }] = await Promise.all([
     supabase
       .from('model_specifications')
-      .select('id, model, parent_model_id, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type, description, rarity'),
+      .select('id, model, parent_model_id, description, rarity'),
     supabase
       .from('guitars')
       .select('model_id')
       .eq('status', 'Approved'),
-    supabase
-      .from('ref_values')
-      .select('id, display_name'),
     supabase
       .from('ref_values')
       .select('id, category, display_name, descriptor, metadata')
@@ -75,15 +64,6 @@ export default async function ModelsPage() {
     specByModel.set(row.model, row)
   }
 
-  // parent id → HT variants
-  const variantsByParentId = new Map<string, SpecRow[]>()
-  for (const row of (rawSpecRows ?? []) as SpecRow[]) {
-    if (!row.parent_model_id) continue
-    const list = variantsByParentId.get(row.parent_model_id) ?? []
-    list.push(row)
-    variantsByParentId.set(row.parent_model_id, list)
-  }
-
   // Only show rarity once ≥ 3 approved guitars exist for the model, keyed by model_id UUID
   const registryCountByModel = new Map<string, number>()
   for (const row of (rawCounts ?? []) as { model_id: string | null }[]) {
@@ -91,50 +71,10 @@ export default async function ModelsPage() {
     registryCountByModel.set(row.model_id, (registryCountByModel.get(row.model_id) ?? 0) + 1)
   }
 
-  const refMap = new Map<string, string>()
-  for (const row of (rawRefValues ?? []) as { id: string; display_name: string }[]) {
-    refMap.set(row.id, row.display_name)
-  }
-
   const colourRows = (rawColours ?? []) as ColourRow[]
   const col2001  = colourRows.filter(r => r.category === 'COL' && r.metadata?.source_year === 2001)
   const col2002  = colourRows.filter(r => r.category === 'COL' && r.metadata?.source_year === 2002)
   const cscRows  = colourRows.filter(r => r.category === 'CSC' && r.id !== 'CSC-0004')
-
-  function resolveRef(val: string | null): string | null {
-    if (!val) return null
-    return /^[A-Z]{2,4}-\d{4}$/.test(val) ? (refMap.get(val) ?? val) : val
-  }
-
-  function normaliseHeadstock(raw: string): string {
-    const val = raw.toLowerCase()
-    if (val === '6-aside') return 'Standard 6-aside'
-    if (val === '6-aside reversed') return 'Reverse 6-aside'
-    return raw
-  }
-
-  const SPEC_FIELD_MAP: Record<string, keyof SpecRow> = {
-    'Body style':    'body_shape_analogue',
-    'Body wood':     'body_wood',
-    'Pickup config': 'pickup_configuration',
-    'Bridge':        'bridge_type',
-    'Headstock':     'headstock_style',
-    'Frets':         'fret_count',
-    'Fretboard':     'fretboard_wood',
-    'Potentiometers':'potentiometers',
-    'Switch':        'switch_type',
-  }
-
-  function getSpec(modelName: string, key: string, staticSpecs: { key: string; value: string }[]): string | null {
-    const spec  = specByModel.get(modelName)
-    const field = SPEC_FIELD_MAP[key]
-    const raw = (field && spec ? (spec[field] as string | null) : null)
-      ?? staticSpecs.find(s => s.key === key)?.value
-      ?? null
-    const resolved = resolveRef(raw)
-    if (key === 'Headstock' && resolved) return normaliseHeadstock(resolved)
-    return resolved
-  }
 
   const electricSeries = SERIES_ORDER.filter(s => !BASS_SERIES.includes(s))
   const bassSeries = SERIES_ORDER.filter(s => BASS_SERIES.includes(s))
@@ -174,10 +114,10 @@ export default async function ModelsPage() {
 
     return (
       <section style={{
-        padding: '5rem 4rem',
+        padding: '3rem 4rem',
         borderBottom: '1px solid rgba(255,255,255,0.08)',
       }}>
-        <div style={{ marginBottom: '28px' }}>
+        <div style={{ marginBottom: '20px' }}>
           <p style={{
             fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
             color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
@@ -195,10 +135,11 @@ export default async function ModelsPage() {
         </div>
 
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          display: 'flex',
+          overflowX: 'auto',
           gap: '1px',
           background: 'rgba(255,255,255,0.06)',
+          paddingBottom: '2px',
         }}>
           {models.map(m => {
             const spec = specByModel.get(m.model)
@@ -206,90 +147,15 @@ export default async function ModelsPage() {
             const rarityRaw = spec?.rarity ?? m.rarity
             const rarity = (registryCountByModel.get(spec?.id ?? '') ?? 0) >= 3 ? rarityRaw : null
             return (
-            <div key={m.model} style={{ background: '#161616', padding: '2rem', display: 'flex', flexDirection: 'column' }}>
-              <div style={{
-                fontFamily: 'var(--font-bebas)',
-                fontSize: '52px',
-                color: accentColor,
-                letterSpacing: '3px',
-                lineHeight: 1,
-                marginBottom: '8px',
-              }}>
-                {m.model}
-              </div>
-
-              {rarity && (
-                <div style={{
-                  display: 'inline-block',
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '10px',
-                  letterSpacing: '1.5px', textTransform: 'uppercase',
-                  color: bass ? '#5c5a57' : '#8b6e3f',
-                  background: bass ? 'rgba(255,255,255,0.04)' : 'rgba(200,169,110,0.08)',
-                  padding: '3px 8px', marginBottom: '8px',
-                }}>
-                  {rarity}
-                </div>
-              )}
-
-              <p style={{
-                fontSize: '13px', color: '#9e9b96', lineHeight: 1.6,
-                marginTop: '12px', marginBottom: '0',
-              }}>
-                {description}
-              </p>
-
-              <div style={{ marginTop: 'auto', paddingTop: '24px' }}>
-                {STANDARD_SPEC_KEYS.map(key => {
-                  const value = getSpec(m.model, key, m.specs)
-                  const isUnknown = !value
-                  return (
-                    <div key={key} style={{
-                      display: 'flex', justifyContent: 'space-between', gap: '12px',
-                      fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
-                      padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.06)',
-                    }}>
-                      <span style={{ color: '#5c5a57', flexShrink: 0 }}>{key}</span>
-                      <span style={{ color: isUnknown ? '#3a3835' : '#f0ede8', textAlign: 'right' }}>
-                        {value ?? 'Unknown'}
-                      </span>
-                    </div>
-                  )
-                })}
-
-                {/* HT variants */}
-                {(variantsByParentId.get(spec?.id ?? '') ?? []).map(variant => (
-                  <div key={variant.model} style={{
-                    marginTop: '14px',
-                    paddingTop: '14px',
-                    borderTop: '1px solid rgba(255,255,255,0.08)',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <span style={{
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '9px',
-                        letterSpacing: '2px', textTransform: 'uppercase',
-                        color: accentColor,
-                        background: bass ? 'rgba(255,255,255,0.04)' : 'rgba(200,169,110,0.08)',
-                        padding: '2px 6px',
-                      }}>HT Variant</span>
-                      <span style={{
-                        fontFamily: 'var(--font-bebas)', fontSize: '22px',
-                        color: accentColor, letterSpacing: '2px', lineHeight: 1,
-                      }}>{variant.model}</span>
-                    </div>
-                    <div style={{
-                      display: 'flex', justifyContent: 'space-between', gap: '12px',
-                      fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
-                      padding: '4px 0',
-                    }}>
-                      <span style={{ color: '#5c5a57', flexShrink: 0 }}>Bridge</span>
-                      <span style={{ color: '#f0ede8', textAlign: 'right' }}>
-                        {resolveRef(variant.bridge_type) ?? 'Maverick/Wilkinson Hardtail'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+              <ModelCard
+                key={m.model}
+                model={m.model}
+                description={description ?? null}
+                rarity={rarity ?? null}
+                slug={m.model.toLowerCase()}
+                accentColor={accentColor}
+                bass={bass}
+              />
             )
           })}
         </div>

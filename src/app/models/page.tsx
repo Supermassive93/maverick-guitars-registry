@@ -32,31 +32,10 @@ export default async function ModelsPage() {
     description: string | null
     rarity: string | null
   }
-  type CatalogueRow = {
-    model_id: string
-    body_shape_analogue: string | null
-    body_wood: string | null
-    pickup_configuration: string | null
-    bridge_type: string | null
-    headstock_style: string | null
-    fret_count: string | null
-    fretboard_wood: string | null
-    potentiometers: string | null
-    switch_type: string | null
-  }
-  type ShapeRow = { model: string; body_shape_analogue: string | null; headstock_style: string | null }
-
-  const [{ data: rawSpecRows }, { data: rawCatalogueRows }, { data: rawShapeRows }, { data: rawCounts }, { data: rawRefValues }] = await Promise.all([
+  const [{ data: rawSpecRows }, { data: rawCounts }, { data: rawRefValues }] = await Promise.all([
     supabase
       .from('model_specifications')
       .select('id, model, parent_model_id, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type, description, rarity'),
-    supabase
-      .from('catalogue_models')
-      .select('model_id, body_shape_analogue, body_wood, pickup_configuration, bridge_type, headstock_style, fret_count, fretboard_wood, potentiometers, switch_type')
-      .order('catalogue_year', { ascending: false }),
-    supabase
-      .from('model_shape_registry')
-      .select('model, body_shape_analogue, headstock_style'),
     supabase
       .from('guitars')
       .select('model_id')
@@ -78,17 +57,6 @@ export default async function ModelsPage() {
     const list = variantsByParentId.get(row.parent_model_id) ?? []
     list.push(row)
     variantsByParentId.set(row.parent_model_id, list)
-  }
-
-  // catalogue_models: keep only the most recent row per model as fallback, keyed by model_id UUID
-  const catalogueByModel = new Map<string, CatalogueRow>()
-  for (const row of (rawCatalogueRows ?? []) as CatalogueRow[]) {
-    if (!catalogueByModel.has(row.model_id)) catalogueByModel.set(row.model_id, row)
-  }
-
-  const shapeByModel = new Map<string, ShapeRow>()
-  for (const row of (rawShapeRows ?? []) as ShapeRow[]) {
-    shapeByModel.set(row.model, row)
   }
 
   // Only show rarity once ≥ 3 approved guitars exist for the model, keyed by model_id UUID
@@ -115,7 +83,7 @@ export default async function ModelsPage() {
     return raw
   }
 
-  const SPEC_FIELD_MAP: Record<string, keyof Omit<CatalogueRow, 'model_id'>> = {
+  const SPEC_FIELD_MAP: Record<string, keyof SpecRow> = {
     'Body style':    'body_shape_analogue',
     'Body wood':     'body_wood',
     'Pickup config': 'pickup_configuration',
@@ -129,30 +97,10 @@ export default async function ModelsPage() {
 
   function getSpec(modelName: string, key: string, staticSpecs: { key: string; value: string }[]): string | null {
     const spec  = specByModel.get(modelName)
-    const cat   = catalogueByModel.get(spec?.id ?? '')
-    const shape = shapeByModel.get(modelName)
     const field = SPEC_FIELD_MAP[key]
-
-    let raw: string | null = null
-    if (key === 'Body style') {
-      // Priority: model_shape_registry → model_specifications → catalogue_models → static
-      raw = shape?.body_shape_analogue
-        ?? spec?.body_shape_analogue
-        ?? cat?.body_shape_analogue
-        ?? staticSpecs.find(s => s.key === key)?.value
-        ?? null
-    } else if (key === 'Headstock') {
-      raw = shape?.headstock_style
-        ?? spec?.headstock_style
-        ?? cat?.headstock_style
-        ?? staticSpecs.find(s => s.key === key)?.value
-        ?? null
-    } else {
-      raw = (field && spec ? (spec[field] as string | null) : null)
-        ?? (field && cat  ? (cat[field]  as string | null) : null)
-        ?? staticSpecs.find(s => s.key === key)?.value
-        ?? null
-    }
+    const raw = (field && spec ? (spec[field] as string | null) : null)
+      ?? staticSpecs.find(s => s.key === key)?.value
+      ?? null
     const resolved = resolveRef(raw)
     if (key === 'Headstock' && resolved) return normaliseHeadstock(resolved)
     return resolved

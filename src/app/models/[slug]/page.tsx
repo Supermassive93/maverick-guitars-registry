@@ -367,20 +367,22 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
       )}
 
       {/* Gen 1 & Gen 2 specification columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {(['GEN-0001', 'GEN-0002'] as const).map(genId => {
-          const gs = genSpecs.find(g => g.generation === genId) ?? null
-          return (
-            <div key={genId}>
-              {sectionHead(r(refMap, genId) ?? genId)}
-              {gs ? (
-                <SpecBlock spec={gs} refMap={refMap} colourMetaMap={colourMetaMap} isGenRow />
-              ) : (
-                <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b', paddingTop: '8px' }}>No data yet</p>
-              )}
-            </div>
-          )
-        })}
+      <div style={{ paddingTop: '40px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {(['GEN-0001', 'GEN-0002'] as const).map(genId => {
+            const gs = genSpecs.find(g => g.generation === genId) ?? null
+            return (
+              <div key={genId}>
+                {sectionHead(r(refMap, genId) ?? genId)}
+                {gs ? (
+                  <SpecBlock spec={gs} refMap={refMap} colourMetaMap={colourMetaMap} isGenRow />
+                ) : (
+                  <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#3a3835', paddingTop: '8px' }}>No data yet</p>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
 
     </div>

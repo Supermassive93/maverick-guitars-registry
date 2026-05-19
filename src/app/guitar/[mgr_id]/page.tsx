@@ -61,6 +61,32 @@ function Tag({ label }: { label: string }) {
   )
 }
 
+type ColourMetaRow = {
+  id: string
+  metadata: {
+    hex: string | null
+    hex_primary: string | null
+    hex_secondary: string | null
+    pattern: string | null
+  } | null
+}
+
+function colourSwatchBg(refId: string, meta: ColourMetaRow['metadata']): string | null {
+  if (!meta) return null
+  const { hex, hex_primary, hex_secondary, pattern } = meta
+  if (pattern === 'Striped' && hex_primary && hex_secondary)
+    return `repeating-linear-gradient(0deg, ${hex_primary} 0px, ${hex_primary} 10px, ${hex_secondary} 10px, ${hex_secondary} 20px)`
+  if (pattern === 'Burst' && hex) {
+    const centre = refId === 'COL-0013' ? '#C4903C' : '#F0C030'
+    return `radial-gradient(ellipse at center, ${centre} 0%, ${hex} 72%)`
+  }
+  if (pattern === 'Natural Grain' && hex)
+    return `repeating-linear-gradient(92deg, rgba(0,0,0,0.07) 0px, rgba(0,0,0,0.07) 1px, transparent 1px, transparent 7px), ${hex}`
+  if (pattern === 'Gloss Metallic' && hex)
+    return `linear-gradient(135deg, rgba(255,255,255,0.20) 0%, transparent 50%, rgba(255,255,255,0.06) 100%), ${hex}`
+  return hex ?? null
+}
+
 function Field({ label, value }: { label: string; value: string | number | null | undefined }) {
   if (!value && value !== 0) return null
   return (
@@ -82,8 +108,17 @@ export default async function GuitarPage({ params }: { params: Promise<{ mgr_id:
   const id = parseInt(mgr_id)
   if (isNaN(id)) notFound()
 
-  const [guitar, refMap] = await Promise.all([getGuitar(id), getRefValues()])
+  const [guitar, refMap, { data: rawColourMeta }] = await Promise.all([
+    getGuitar(id),
+    getRefValues(),
+    supabase.from('ref_values').select('id, metadata').in('category', ['COL', 'CSC']).eq('is_active', true),
+  ])
   if (!guitar) notFound()
+
+  const colourMetaMap: Record<string, ColourMetaRow['metadata']> = {}
+  for (const row of (rawColourMeta ?? []) as ColourMetaRow[]) {
+    colourMetaMap[row.id] = row.metadata
+  }
 
   const modelName = getModelName(guitar)
   const images = guitar.image_urls ?? []
@@ -188,7 +223,24 @@ export default async function GuitarPage({ params }: { params: Promise<{ mgr_id:
             </p>
             <Field label="Catalogue year"       value={r(refMap, guitar.catalogue_year)} />
             <Field label="Finish"               value={r(refMap, guitar.finish_type)} />
-            <Field label="Colour"               value={r(refMap, guitar.factory_colour) ?? guitar.custom_shop_colour} />
+            {(() => {
+              const display = r(refMap, guitar.factory_colour) ?? guitar.custom_shop_colour
+              if (!display) return null
+              const refId = guitar.factory_colour ?? (
+                guitar.custom_shop_colour && /^[A-Z]{2,4}-\d{4}$/.test(guitar.custom_shop_colour)
+                  ? guitar.custom_shop_colour : null
+              )
+              const swatchBg = refId ? colourSwatchBg(refId, colourMetaMap[refId] ?? null) : null
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '14px' }}>
+                  <span style={{ color: '#5c5a57', width: '200px', flexShrink: 0, fontFamily: 'var(--font-dm-mono)', fontSize: '12px' }}>Colour</span>
+                  <span style={{ color: '#f0ede8', flex: 1 }}>{display}</span>
+                  {swatchBg && (
+                    <div style={{ width: '20px', height: '20px', background: swatchBg, border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }} />
+                  )}
+                </div>
+              )
+            })()}
             <Field label="Body"                 value={r(refMap, guitar.body_wood)} />
             <Field label="Body shape"           value={r(refMap, guitar.body_shape_analogue)} />
             <Field label="Body construction"    value={r(refMap, guitar.body_construction)} />

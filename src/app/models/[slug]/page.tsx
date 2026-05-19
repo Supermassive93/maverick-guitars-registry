@@ -103,19 +103,6 @@ function SpecBlock({
 }) {
   return (
     <div>
-      {isGenRow && spec.available_colours && spec.available_colours.length > 0 && (
-        <div style={{ marginBottom: '12px' }}>
-          <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: '#3a3835', marginBottom: '8px' }}>
-            Available colours
-          </p>
-          <ColourSwatches colours={spec.available_colours} colourMetaMap={colourMetaMap} refMap={refMap} />
-        </div>
-      )}
-
-      {isGenRow && (
-        <SpecRow label="Original RRP" value={spec.original_rrp != null ? `£${spec.original_rrp}` : null} />
-      )}
-
       <SpecGroup label="Body" />
       <SpecRow label="Body shape"           value={r(refMap, spec.body_shape_analogue)} />
       <SpecRow label="Body wood"            value={r(refMap, spec.body_wood)} />
@@ -154,9 +141,7 @@ function SpecBlock({
       <SpecGroup label="Other" />
       <SpecRow label="Left handed"          value={r(refMap, spec.left_handed_available)} />
       {!isGenRow && <SpecRow label="Serial prefix" value={(spec as ModelSpec).serial_prefix} />}
-      {!isGenRow && spec.original_rrp != null && (
-        <SpecRow label="Original RRP" value={`£${spec.original_rrp}`} />
-      )}
+      {!isGenRow && <SpecRow label="Original RRP" value={spec.original_rrp != null ? `£${spec.original_rrp}` : null} />}
     </div>
   )
 }

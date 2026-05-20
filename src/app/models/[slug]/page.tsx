@@ -142,7 +142,7 @@ function SpecBlock({ spec, refMap, productionYears }: { spec: Partial<ModelSpec>
       <SpecRow label="Production years"     value={productionYears} />
       <SpecRow label="Left handed option"   value={r(refMap, spec.left_handed_available)} />
       <SpecRow label="Serial prefix"        value={spec.serial_prefix} />
-      <SpecRow label="Original RRP"         value={spec.original_rrp != null ? `£${spec.original_rrp}` : null} />
+      <SpecRow label="Original RRP"         value={spec.original_rrp != null ? `£${spec.original_rrp}` : 'Unknown'} />
     </div>
   )
 }
@@ -217,7 +217,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     supabase.from('guitars').select('serial_number_only').eq('model_id', spec.id).eq('status', 'Approved'),
     supabase.from('ref_values').select('id, metadata').in('category', ['COL', 'CSC', 'HWC']).eq('is_active', true),
     parentSpecPromise,
-    supabase.from('model_source_colours').select('available_colours, available_hardware_colours, notes, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
+    supabase.from('model_source_colours').select('available_colours, available_custom_shop_colours, available_hardware_colours, notes, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
   ])
 
   const colourMetaMap: Record<string, ColourMeta> = {}
@@ -228,7 +228,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   const variants = (rawVariants ?? []) as ModelSpec[]
   const genSpecs = (rawGenSpecs ?? []) as ModelGenSpec[]
   const parentSpec = parentSpecData as { id: string; model: string } | null
-  type SourceColourRow = { available_colours: string[]; available_hardware_colours: string[] | null; notes: string | null; source_materials: { id: string; title: string; year: string | null; material_type: string | null } }
+  type SourceColourRow = { available_colours: string[]; available_custom_shop_colours: string[] | null; available_hardware_colours: string[] | null; notes: string | null; source_materials: { id: string; title: string; year: string | null; material_type: string | null } }
   const sourceColours = (rawSourceColours ?? []) as SourceColourRow[]
 
   function sourceLabel(sm: SourceColourRow['source_materials'] | null): string {
@@ -240,7 +240,10 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     return `${y} Maverick Catalogue`
   }
 
-  // Aggregate all hardware colour IDs across all source rows — not split by year.
+  // Aggregate all custom shop and hardware colour IDs across all source rows — not split by year.
+  const customShopColourIds = [...new Set(
+    sourceColours.flatMap(sc => sc.available_custom_shop_colours ?? [])
+  )]
   const hardwareColourIds = [...new Set(
     sourceColours.flatMap(sc => sc.available_hardware_colours ?? [])
   )]
@@ -393,6 +396,18 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
                 </div>
               ) : (
                 <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b' }}>No colour data yet</p>
+              )}
+            </div>
+
+            {/* Custom shop body colours — aggregated across full production run */}
+            <div>
+              {sectionHead('Custom Shop Body Colours')}
+              {customShopColourIds.length > 0 ? (
+                <div>
+                  <ColourSwatches colours={customShopColourIds} colourMetaMap={colourMetaMap} refMap={refMap} />
+                </div>
+              ) : (
+                <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b' }}>No custom shop data yet</p>
               )}
             </div>
 

@@ -28,6 +28,7 @@ export interface Guitar {
   body_wood: string | null
   body_construction: string | null
   body_bookmatched: string | null
+  joint_type: string | null
   pickup_configuration: string | null
   instrument_type: string | null
   neck_pickup: string | null
@@ -148,9 +149,16 @@ export interface ModelSpec {
 
   // Pickups & electronics
   pickup_configuration: string | null  // PCG ref ID
+  neck_pickup: string | null           // PKP ref ID
+  middle_pickup: string | null         // PKP ref ID
+  bridge_pickup: string | null         // PKP ref ID
   switch_type: string | null           // SWT ref ID
   switch_knob: string | null           // SKN ref ID
-  potentiometers: string | null        // POT ref ID
+  potentiometers: string | null        // POT ref ID — retired, use volume_pot / tone_pot
+  volume_pot: string | null            // POT ref ID
+  volume_pot_count: number | null
+  tone_pot: string | null              // POT ref ID
+  tone_pot_count: number | null
   pickup_surrounds: string | null      // PSR ref ID
   pickup_colours: string | null        // PKC ref ID
 

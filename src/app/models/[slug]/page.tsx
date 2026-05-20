@@ -97,12 +97,20 @@ function SpecBlock({ spec, refMap }: { spec: Partial<ModelSpec>; refMap: Record<
       <SpecRow label="Body shape"           value={r(refMap, spec.body_shape_analogue)} />
       <SpecRow label="Body wood"            value={r(refMap, spec.body_wood)} />
       <SpecRow label="Body construction"    value={r(refMap, spec.body_construction)} />
+      <SpecRow label="Joint type"           value={r(refMap, spec.joint_type)} />
+      <SpecRow label="Bookmatched"          value={r(refMap, spec.body_bookmatched)} />
 
       <SpecGroup label="Pickups & electronics" />
       <SpecRow label="Pickup configuration" value={r(refMap, spec.pickup_configuration)} />
-      <SpecRow label="Switch type"          value={r(refMap, spec.switch_type)} />
-      <SpecRow label="Potentiometers"       value={r(refMap, spec.potentiometers)} />
+      <SpecRow label="Neck pickup"          value={r(refMap, spec.neck_pickup)} />
+      <SpecRow label="Middle pickup"        value={r(refMap, spec.middle_pickup)} />
+      <SpecRow label="Bridge pickup"        value={r(refMap, spec.bridge_pickup)} />
       <SpecRow label="Pickup colours"       value={r(refMap, spec.pickup_colours)} />
+      <SpecRow label="Switch type"           value={r(refMap, spec.switch_type)} />
+      <SpecRow label="Volume pot"           value={r(refMap, spec.volume_pot)} />
+      <SpecRow label="Volume pot count"     value={spec.volume_pot_count} />
+      <SpecRow label="Tone pot"             value={r(refMap, spec.tone_pot)} />
+      <SpecRow label="Tone pot count"       value={spec.tone_pot_count} />
 
       <SpecGroup label="Hardware" />
       <SpecRow label="Bridge"               value={r(refMap, spec.bridge_type)} />
@@ -111,7 +119,7 @@ function SpecBlock({ spec, refMap }: { spec: Partial<ModelSpec>; refMap: Record<
 
       <SpecGroup label="Neck" />
       <SpecRow label="Neck wood"            value={r(refMap, spec.neck_wood)} />
-      <SpecRow label="Neck profile"         value={r(refMap, spec.neck_profile)} />
+
       <SpecRow label="Fretboard"            value={r(refMap, spec.fretboard_wood)} />
       <SpecRow label="Fret count"           value={r(refMap, spec.fret_count)} />
       <SpecRow label="Scale length"         value={r(refMap, spec.scale_length)} />
@@ -122,7 +130,7 @@ function SpecBlock({ spec, refMap }: { spec: Partial<ModelSpec>; refMap: Record<
       <SpecRow label="Headstock face"       value={r(refMap, spec.headstock_face)} />
 
       <SpecGroup label="Other" />
-      <SpecRow label="Left handed"          value={r(refMap, spec.left_handed_available)} />
+      <SpecRow label="Left handed option"    value={r(refMap, spec.left_handed_available)} />
       <SpecRow label="Serial prefix"        value={spec.serial_prefix} />
       <SpecRow label="Original RRP"         value={spec.original_rrp != null ? `£${spec.original_rrp}` : null} />
     </div>
@@ -142,6 +150,7 @@ function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refM
 
       <SpecGroup label="Neck" />
       <SpecRow label="Neck construction" value={r(refMap, spec.neck_construction)} />
+      <SpecRow label="Neck profile"      value={r(refMap, spec.neck_profile)} />
       <SpecRow label="Neck binding"      value={r(refMap, spec.neck_binding)} />
       <SpecRow label="Skunk stripe"      value={r(refMap, spec.skunk_stripe)} />
 

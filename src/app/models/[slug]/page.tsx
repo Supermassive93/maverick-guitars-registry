@@ -347,7 +347,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
 
           {/* Col 2 — Available colours by source */}
           <div>
-            {sectionHead('Available Colours')}
+            {sectionHead('Available Body Colours')}
             {sourceColours.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
                 {sourceColours.map(sc => (

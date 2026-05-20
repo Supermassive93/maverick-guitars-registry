@@ -313,7 +313,8 @@ export default async function ModelsPage() {
             }}>IDENTIFY YOUR GEN</h2>
             <p style={{ maxWidth: '600px', color: '#9e9b96', fontSize: '16px', lineHeight: 1.7 }}>
               Maverick guitars were produced across multiple generations with identifiable spec changes between them.
-              This guide reflects what the registry has established to date — it sharpens as more examples are documented.
+              Seven confirmed indicators have been established from catalogue evidence and documented examples — primarily the F1 and F1HT.
+              This guide sharpens as more examples are registered.
             </p>
           </div>
         </div>
@@ -364,7 +365,7 @@ export default async function ModelsPage() {
                 Surround present → Gen 2
               </div>
               <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: '#9e9b96', lineHeight: 1.65 }}>
-                A plastic ring or frame surrounds the pickup. Primary marker for Gen 2 in the registry.
+                A metal surround frames each pickup. Confirmed Gen 2 indicator across documented examples.
               </p>
             </div>
           </div>
@@ -394,12 +395,37 @@ export default async function ModelsPage() {
             {
               label: 'Pickup surrounds', confidence: 'Confirmed' as const,
               gen1: 'None — pickups sit flush in routed cavities with no plastic frame',
-              gen2: 'Present — plastic surrounds visible around each pickup housing',
+              gen2: 'Metal surrounds — a frame surrounds each pickup housing',
             },
             {
-              label: 'Catalogue evidence', confidence: 'Confirmed' as const,
-              gen1: '2001 and 2002 catalogues both show Gen 1 spec throughout',
-              gen2: 'Not yet catalogue-confirmed — based on physical examples',
+              label: 'Switch knob', confidence: 'Confirmed' as const,
+              gen1: 'Cylindrical barrel knob with O-ring detail',
+              gen2: 'Tapered knob — no O-ring',
+            },
+            {
+              label: 'Headstock logo', confidence: 'Confirmed' as const,
+              gen1: 'Maverick script — lacquer-encapsulated foil decal',
+              gen2: 'Maverick script — cream silkscreen print',
+            },
+            {
+              label: 'Bridge logo', confidence: 'Confirmed' as const,
+              gen1: 'Maverick classic script logo on bridge plate',
+              gen2: 'Maverick stencil script logo on bridge plate',
+            },
+            {
+              label: 'Neck construction', confidence: 'Confirmed' as const,
+              gen1: 'Bolt-on 2-piece with scarf joint',
+              gen2: 'Bolt-on 1-piece',
+            },
+            {
+              label: 'Neck binding', confidence: 'Confirmed' as const,
+              gen1: 'No binding',
+              gen2: 'Cream binding',
+            },
+            {
+              label: 'Skunk stripe', confidence: 'Confirmed' as const,
+              gen1: 'Bubinga skunk stripe on neck back',
+              gen2: 'No skunk stripe',
             },
             {
               label: 'Potentiometers', confidence: 'Tentative' as const,

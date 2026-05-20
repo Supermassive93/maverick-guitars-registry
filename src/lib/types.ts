@@ -146,6 +146,7 @@ export interface ModelSpec {
   body_wood: string | null             // BWD ref ID
   body_construction: string | null     // BCN ref ID
   body_bookmatched: string | null
+  joint_type: string | null            // JNT ref ID
 
   // Pickups & electronics
   pickup_configuration: string | null  // PCG ref ID

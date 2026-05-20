@@ -66,22 +66,30 @@ function ColourSwatches({ colours, colourMetaMap, refMap }: {
 }) {
   if (!colours.length) return null
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', paddingTop: '4px' }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', paddingTop: '4px' }}>
       {colours.map(colId => {
         const name = r(refMap, colId) ?? colId
         const parts = name.split(' — ')
         const code = parts.length >= 2 ? parts[0] : name
+        const label = parts.length >= 2 ? parts[1] : ''
         const bg = swatchBg(colId, colourMetaMap[colId] ?? null)
         return (
-          <div key={colId} style={{ display: 'flex', alignItems: 'center', gap: '6px' }} title={name}>
+          <div key={colId} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '56px' }}>
             <div style={{
-              width: '14px', height: '14px', flexShrink: 0,
+              width: '36px', height: '36px', flexShrink: 0,
               background: bg ?? 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.15)',
             }} />
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96' }}>
-              {code}
-            </span>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#c8a96e', letterSpacing: '0.5px' }}>
+                {code}
+              </div>
+              {label && (
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', color: '#5c5a57', marginTop: '2px', lineHeight: 1.3 }}>
+                  {label}
+                </div>
+              )}
+            </div>
           </div>
         )
       })}
@@ -199,6 +207,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     { data: rawRegistry },
     { data: rawColourMeta },
     { data: parentSpecData },
+    { data: rawSourceColours },
   ] = await Promise.all([
     getRefValues(),
     supabase.from('model_specifications').select('*').eq('parent_model_id', spec.id),
@@ -206,6 +215,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     supabase.from('guitars').select('serial_number_only').eq('model_id', spec.id).eq('status', 'Approved'),
     supabase.from('ref_values').select('id, metadata').in('category', ['COL', 'CSC']).eq('is_active', true),
     parentSpecPromise,
+    supabase.from('model_source_colours').select('available_colours, notes, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
   ])
 
   const colourMetaMap: Record<string, ColourMeta> = {}
@@ -216,6 +226,15 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   const variants = (rawVariants ?? []) as ModelSpec[]
   const genSpecs = (rawGenSpecs ?? []) as ModelGenSpec[]
   const parentSpec = parentSpecData as { id: string; model: string } | null
+  type SourceColourRow = { available_colours: string[]; notes: string | null; source_materials: { id: string; title: string; year: string | null; material_type: string | null } }
+  const sourceColours = (rawSourceColours ?? []) as SourceColourRow[]
+
+  function sourceLabel(sm: SourceColourRow['source_materials']): string {
+    const y = sm.year ?? ''
+    if (sm.material_type === 'Magazine') return `${y} Press Sourced Colours`
+    if (sm.title.toLowerCase().includes('brochure')) return `${y} Maverick Brochure`
+    return `${y} Maverick Catalogue`
+  }
 
   const serials = (rawRegistry ?? [])
     .map((g: { serial_number_only: number | null }) => g.serial_number_only)
@@ -316,10 +335,42 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
 
       </div>
 
-      {/* Universal specification */}
+      {/* Universal specification + Available colours */}
       <div style={{ marginBottom: '48px', paddingBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        {sectionHead('Universal Specification')}
-        <SpecBlock spec={spec} refMap={refMap} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+
+          {/* Col 1 — Universal spec */}
+          <div>
+            {sectionHead('Universal Specification')}
+            <SpecBlock spec={spec} refMap={refMap} />
+          </div>
+
+          {/* Col 2 — Available colours by source */}
+          <div>
+            {sectionHead('Available Colours')}
+            {sourceColours.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+                {sourceColours.map(sc => (
+                  <div key={sc.source_materials.id}>
+                    <p style={{
+                      fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px',
+                      textTransform: 'uppercase', color: '#5c5a57', marginBottom: '12px',
+                    }}>
+                      {sourceLabel(sc.source_materials)}
+                    </p>
+                    <ColourSwatches colours={sc.available_colours} colourMetaMap={colourMetaMap} refMap={refMap} />
+                    {sc.notes && (
+                      <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#3a3835', marginTop: '8px' }}>{sc.notes}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b' }}>No colour data yet</p>
+            )}
+          </div>
+
+        </div>
       </div>
 
       {/* HT Variants */}

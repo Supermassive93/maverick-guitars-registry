@@ -43,7 +43,7 @@ export default async function ModelsPage() {
     description: string | null
     rarity: string | null
   }
-  const [{ data: rawSpecRows }, { data: rawCounts }, { data: rawColours }] = await Promise.all([
+  const [{ data: rawSpecRows }, { data: rawCounts }, { data: rawColours }, { data: rawSourceColours }] = await Promise.all([
     supabase
       .from('model_specifications')
       .select('id, model, parent_model_id, description, rarity'),
@@ -57,6 +57,9 @@ export default async function ModelsPage() {
       .in('category', ['COL', 'CSC'])
       .eq('is_active', true)
       .order('sort_order'),
+    supabase
+      .from('model_source_colours')
+      .select('available_colours, source_materials(year)'),
   ])
 
   const specByModel = new Map<string, SpecRow>()
@@ -75,6 +78,16 @@ export default async function ModelsPage() {
   const col2001  = colourRows.filter(r => r.category === 'COL' && r.metadata?.source_year === 2001)
   const col2002  = colourRows.filter(r => r.category === 'COL' && r.metadata?.source_year === 2002)
   const cscRows  = colourRows.filter(r => r.category === 'CSC' && r.id !== 'CSC-0004')
+
+  // Derive 2006 palette from model_source_colours entries linked to 2006 source materials
+  type SourceColourEntry = { available_colours: string[]; source_materials: { year: string | null } | null }
+  const col2006Ids = new Set<string>()
+  for (const row of (rawSourceColours ?? []) as SourceColourEntry[]) {
+    if (row.source_materials?.year === '2006') {
+      for (const id of row.available_colours) col2006Ids.add(id)
+    }
+  }
+  const col2006 = colourRows.filter(r => r.category === 'COL' && col2006Ids.has(r.id))
 
   const electricSeries = SERIES_ORDER.filter(s => !BASS_SERIES.includes(s))
   const bassSeries = SERIES_ORDER.filter(s => BASS_SERIES.includes(s))
@@ -573,6 +586,53 @@ export default async function ModelsPage() {
               gap: '1px', background: 'rgba(255,255,255,0.06)',
             }}>
               {col2002.map(row => {
+                const { code, name } = swatchLabel(row.display_name)
+                return (
+                  <div key={row.id} style={{ background: '#161616' }}>
+                    <div
+                      title={row.metadata?.hex_note ?? undefined}
+                      style={{ height: '100px', background: swatchBg(row) }}
+                    />
+                    <div style={{ padding: '12px 14px' }}>
+                      {code && <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '20px', letterSpacing: '2px', color: '#c8a96e', lineHeight: 1, marginBottom: '3px' }}>{code}</div>}
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96', lineHeight: 1.4 }}>{name}</div>
+                      {row.metadata?.pattern && (
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: '#3a3835', marginTop: '6px' }}>
+                          {row.metadata.pattern}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Factory colours — 2006 */}
+        {col2006.length > 0 && (
+          <div style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <p style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+                color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
+              }}>Factory Colours · {col2006.length} colours</p>
+              <h3 style={{
+                fontFamily: 'var(--font-bebas)', fontSize: 'clamp(28px, 3vw, 44px)',
+                letterSpacing: '2px', color: '#c8a96e', lineHeight: 1,
+              }}>2006 Confirmed</h3>
+              <p style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57',
+                marginTop: '8px', lineHeight: 1.6, maxWidth: '560px',
+              }}>
+                Colours confirmed available in 2006 via press sources. These are a subset of the 2002 catalogue palette carried forward.
+              </p>
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+              gap: '1px', background: 'rgba(255,255,255,0.06)',
+            }}>
+              {col2006.map(row => {
                 const { code, name } = swatchLabel(row.display_name)
                 return (
                   <div key={row.id} style={{ background: '#161616' }}>

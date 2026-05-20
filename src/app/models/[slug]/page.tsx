@@ -27,6 +27,8 @@ function swatchBg(refId: string, meta: ColourMeta | null): string | null {
     return `repeating-linear-gradient(92deg, rgba(0,0,0,0.07) 0px, rgba(0,0,0,0.07) 1px, transparent 1px, transparent 7px), ${hex}`
   if (pattern === 'Gloss Metallic' && hex)
     return `linear-gradient(135deg, rgba(255,255,255,0.20) 0%, transparent 50%, rgba(255,255,255,0.06) 100%), ${hex}`
+  if (pattern === 'Brushed' && hex)
+    return `repeating-linear-gradient(90deg, rgba(255,255,255,0.12) 0px, rgba(255,255,255,0.12) 1px, transparent 1px, transparent 4px), ${hex}`
   return hex ?? null
 }
 
@@ -122,7 +124,6 @@ function SpecBlock({ spec, refMap, productionYears }: { spec: Partial<ModelSpec>
 
       <SpecGroup label="Hardware" />
       <SpecRow label="Bridge"               value={r(refMap, spec.bridge_type)} />
-      <SpecRow label="Hardware colour"      value={r(refMap, spec.hardware_colour)} />
       <SpecRow label="Tuner style"          value={r(refMap, spec.tuner_style)} />
 
       <SpecGroup label="Neck" />
@@ -214,9 +215,9 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     supabase.from('model_specifications').select('*').eq('parent_model_id', spec.id),
     supabase.from('model_gen_specs').select('*').eq('model_id', spec.id).order('generation'),
     supabase.from('guitars').select('serial_number_only').eq('model_id', spec.id).eq('status', 'Approved'),
-    supabase.from('ref_values').select('id, metadata').in('category', ['COL', 'CSC']).eq('is_active', true),
+    supabase.from('ref_values').select('id, metadata').in('category', ['COL', 'CSC', 'HWC']).eq('is_active', true),
     parentSpecPromise,
-    supabase.from('model_source_colours').select('available_colours, notes, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
+    supabase.from('model_source_colours').select('available_colours, available_hardware_colours, notes, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
   ])
 
   const colourMetaMap: Record<string, ColourMeta> = {}
@@ -227,20 +228,27 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   const variants = (rawVariants ?? []) as ModelSpec[]
   const genSpecs = (rawGenSpecs ?? []) as ModelGenSpec[]
   const parentSpec = parentSpecData as { id: string; model: string } | null
-  type SourceColourRow = { available_colours: string[]; notes: string | null; source_materials: { id: string; title: string; year: string | null; material_type: string | null } }
+  type SourceColourRow = { available_colours: string[]; available_hardware_colours: string[] | null; notes: string | null; source_materials: { id: string; title: string; year: string | null; material_type: string | null } }
   const sourceColours = (rawSourceColours ?? []) as SourceColourRow[]
 
-  function sourceLabel(sm: SourceColourRow['source_materials']): string {
+  function sourceLabel(sm: SourceColourRow['source_materials'] | null): string {
+    if (!sm) return 'Source Pending'
+    if (sm.title === 'Pending — Source Required') return 'Source Pending'
     const y = sm.year ?? ''
     if (sm.material_type === 'Magazine') return `${y} Press Sourced Colours`
     if (sm.title.toLowerCase().includes('brochure')) return `${y} Maverick Brochure`
     return `${y} Maverick Catalogue`
   }
 
+  // Aggregate all hardware colour IDs across all source rows — not split by year.
+  const hardwareColourIds = [...new Set(
+    sourceColours.flatMap(sc => sc.available_hardware_colours ?? [])
+  )]
+
   // Derive production years from source material years linked via model_source_colours.
   // DO NOT hardcode — add a model_source_colours row to extend the window.
   const sourceYears = sourceColours
-    .map(sc => sc.source_materials.year)
+    .map(sc => sc.source_materials?.year)
     .filter((y): y is string => y != null)
     .map(y => parseInt(y))
     .filter(y => !isNaN(y))
@@ -360,29 +368,46 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
             <SpecBlock spec={spec} refMap={refMap} productionYears={productionYears} />
           </div>
 
-          {/* Col 2 — Available colours by source */}
-          <div>
-            {sectionHead('Available Body Colours')}
-            {sourceColours.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-                {sourceColours.map(sc => (
-                  <div key={sc.source_materials.id}>
-                    <p style={{
-                      fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px',
-                      textTransform: 'uppercase', color: '#5c5a57', marginBottom: '12px',
-                    }}>
-                      {sourceLabel(sc.source_materials)}
-                    </p>
-                    <ColourSwatches colours={sc.available_colours} colourMetaMap={colourMetaMap} refMap={refMap} />
-                    {sc.notes && (
-                      <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#3a3835', marginTop: '8px' }}>{sc.notes}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b' }}>No colour data yet</p>
-            )}
+          {/* Col 2 — Body colours + Hardware colours */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
+
+            {/* Available body colours by source year */}
+            <div>
+              {sectionHead('Available Body Colours')}
+              {sourceColours.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+                  {sourceColours.map((sc, i) => (
+                    <div key={sc.source_materials?.id ?? i}>
+                      <p style={{
+                        fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px',
+                        textTransform: 'uppercase', color: '#5c5a57', marginBottom: '12px',
+                      }}>
+                        {sourceLabel(sc.source_materials)}
+                      </p>
+                      <ColourSwatches colours={sc.available_colours} colourMetaMap={colourMetaMap} refMap={refMap} />
+                      {sc.notes && (
+                        <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#3a3835', marginTop: '8px' }}>{sc.notes}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b' }}>No colour data yet</p>
+              )}
+            </div>
+
+            {/* Available hardware colours — aggregated across full production run */}
+            <div>
+              {sectionHead('Available Hardware Colours')}
+              {hardwareColourIds.length > 0 ? (
+                <div>
+                  <ColourSwatches colours={hardwareColourIds} colourMetaMap={colourMetaMap} refMap={refMap} />
+                </div>
+              ) : (
+                <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b' }}>No hardware colour data yet</p>
+              )}
+            </div>
+
           </div>
 
         </div>

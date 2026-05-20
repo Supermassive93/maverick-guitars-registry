@@ -54,7 +54,7 @@ export default async function ModelsPage() {
     supabase
       .from('ref_values')
       .select('id, category, display_name, descriptor, metadata')
-      .in('category', ['COL', 'CSC'])
+      .in('category', ['COL', 'CSC', 'HWC'])
       .eq('is_active', true)
       .order('sort_order'),
     supabase
@@ -78,6 +78,7 @@ export default async function ModelsPage() {
   const col2001  = colourRows.filter(r => r.category === 'COL' && r.metadata?.source_year === 2001)
   const col2002  = colourRows.filter(r => r.category === 'COL' && r.metadata?.source_year === 2002)
   const cscRows  = colourRows.filter(r => r.category === 'CSC' && r.id !== 'CSC-0004')
+  const hwcRows  = colourRows.filter(r => r.category === 'HWC' && r.id !== 'HWC-0004')
 
   // Derive 2006 palette from model_source_colours entries linked to 2006 source materials
   type SourceColourEntry = { available_colours: string[]; source_materials: { year: string | null } | null }
@@ -110,6 +111,8 @@ export default async function ModelsPage() {
       return `repeating-linear-gradient(92deg, rgba(0,0,0,0.07) 0px, rgba(0,0,0,0.07) 1px, transparent 1px, transparent 7px), ${hex}`
     if (pattern === 'Gloss Metallic' && hex)
       return `linear-gradient(135deg, rgba(255,255,255,0.20) 0%, transparent 50%, rgba(255,255,255,0.06) 100%), ${hex}`
+    if (pattern === 'Brushed' && hex)
+      return `repeating-linear-gradient(90deg, rgba(255,255,255,0.12) 0px, rgba(255,255,255,0.12) 1px, transparent 1px, transparent 4px), ${hex}`
     if (hex) return hex
     return 'repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 8px)'
   }
@@ -659,6 +662,47 @@ export default async function ModelsPage() {
               gap: '1px', background: 'rgba(255,255,255,0.06)',
             }}>
               {col2006.map(row => {
+                const { code, name } = swatchLabel(row.display_name)
+                return (
+                  <div key={row.id} style={{ background: '#161616' }}>
+                    <div
+                      title={row.metadata?.hex_note ?? undefined}
+                      style={{ height: '100px', background: swatchBg(row) }}
+                    />
+                    <div style={{ padding: '12px 14px' }}>
+                      {code && <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '20px', letterSpacing: '2px', color: '#c8a96e', lineHeight: 1, marginBottom: '3px' }}>{code}</div>}
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96', lineHeight: 1.4 }}>{name}</div>
+                      {row.metadata?.pattern && (
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: '#3a3835', marginTop: '6px' }}>
+                          {row.metadata.pattern}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Hardware colours */}
+        {hwcRows.length > 0 && (
+          <div style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <p style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+                color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
+              }}>Hardware Finishes · {hwcRows.length} options</p>
+              <h3 style={{
+                fontFamily: 'var(--font-bebas)', fontSize: 'clamp(28px, 3vw, 44px)',
+                letterSpacing: '2px', color: '#c8a96e', lineHeight: 1,
+              }}>Hardware Colours</h3>
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+              gap: '1px', background: 'rgba(255,255,255,0.06)',
+            }}>
+              {hwcRows.map(row => {
                 const { code, name } = swatchLabel(row.display_name)
                 return (
                   <div key={row.id} style={{ background: '#161616' }}>

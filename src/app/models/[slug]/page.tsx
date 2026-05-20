@@ -98,7 +98,7 @@ function ColourSwatches({ colours, colourMetaMap, refMap }: {
 }
 
 // Universal specification — all fields that apply across all generations
-function SpecBlock({ spec, refMap }: { spec: Partial<ModelSpec>; refMap: Record<string, string> }) {
+function SpecBlock({ spec, refMap, productionYears }: { spec: Partial<ModelSpec>; refMap: Record<string, string>; productionYears: string | null }) {
   return (
     <div>
       <SpecGroup label="Body" />
@@ -138,7 +138,8 @@ function SpecBlock({ spec, refMap }: { spec: Partial<ModelSpec>; refMap: Record<
       <SpecRow label="Headstock face"       value={r(refMap, spec.headstock_face)} />
 
       <SpecGroup label="Other" />
-      <SpecRow label="Left handed option"    value={r(refMap, spec.left_handed_available)} />
+      <SpecRow label="Production years"     value={productionYears} />
+      <SpecRow label="Left handed option"   value={r(refMap, spec.left_handed_available)} />
       <SpecRow label="Serial prefix"        value={spec.serial_prefix} />
       <SpecRow label="Original RRP"         value={spec.original_rrp != null ? `£${spec.original_rrp}` : null} />
     </div>
@@ -235,6 +236,20 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     if (sm.title.toLowerCase().includes('brochure')) return `${y} Maverick Brochure`
     return `${y} Maverick Catalogue`
   }
+
+  // Derive production years from source material years linked via model_source_colours.
+  // DO NOT hardcode — add a model_source_colours row to extend the window.
+  const sourceYears = sourceColours
+    .map(sc => sc.source_materials.year)
+    .filter((y): y is string => y != null)
+    .map(y => parseInt(y))
+    .filter(y => !isNaN(y))
+    .sort((a, b) => a - b)
+  const productionYears = sourceYears.length === 0
+    ? null
+    : sourceYears[0] === sourceYears[sourceYears.length - 1]
+      ? String(sourceYears[0])
+      : `${sourceYears[0]}–${sourceYears[sourceYears.length - 1]}`
 
   const serials = (rawRegistry ?? [])
     .map((g: { serial_number_only: number | null }) => g.serial_number_only)
@@ -342,7 +357,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
           {/* Col 1 — Universal spec */}
           <div>
             {sectionHead('Universal Specification')}
-            <SpecBlock spec={spec} refMap={refMap} />
+            <SpecBlock spec={spec} refMap={refMap} productionYears={productionYears} />
           </div>
 
           {/* Col 2 — Available colours by source */}

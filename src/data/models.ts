@@ -35,7 +35,7 @@ export const MODEL_CATALOGUE: ModelData[] = [
   {
     model: 'F2',
     series: 'Evolution',
-    description: 'The sophisticated hybrid. Gibson neck geometry married to a low Fender-style hardtail. Gen 1 examples carry a ~1° neck pitch requiring ~8mm body packing — PRS-equivalent geometry producing exceptionally low action potential. Low production numbers. All known examples are Transparent Red — this appears to be the only colour the F2 was ever produced in.',
+    description: 'The sophisticated hybrid. Gibson neck geometry married to a low Fender-style hardtail. Gen 1 examples carry a ~1° neck pitch requiring ~8mm body packing — PRS-equivalent geometry producing exceptionally low action potential. Confirmed available in Tobacco Burst and Fireburst per the 2002 catalogue.',
     specs: [
       { key: 'Body style', value: 'Superstrat' },
       { key: 'Pickup config', value: 'HH' },

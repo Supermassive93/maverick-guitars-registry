@@ -476,7 +476,7 @@ export default async function ModelsPage() {
             {[
               {
                 model: 'F2', badge: 'Confirmed', badgeGold: true,
-                body: 'Gen 1 F2 examples carry a ~1° neck pitch requiring ~8mm body packing — PRS-equivalent geometry producing exceptionally low action. All known F2 examples are Transparent Red. Any other colour would be significant.',
+                body: 'Gen 1 F2 examples carry a ~1° neck pitch requiring ~8mm body packing — PRS-equivalent geometry producing exceptionally low action. Confirmed available in Tobacco Burst and Fireburst per the 2002 catalogue.',
               },
               {
                 model: 'X1', badge: 'Tentative', badgeGold: false,

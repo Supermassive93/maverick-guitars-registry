@@ -188,6 +188,11 @@ export interface ModelSpec {
   left_handed_available: string | null // LHA ref ID
   original_rrp: number | null
   left_handed_rrp: number | null
+  // NOTE: production_years is NOT stored — it is derived at render time from
+  // model_source_colours → source_materials.year (min–max range).
+  // Do NOT add a production_years column to model_specifications.
+  // To extend a model's production window, add a model_source_colours entry
+  // linking the model to the relevant source material.
 
   // Metadata
   specification_source: string | null  // SPC ref ID

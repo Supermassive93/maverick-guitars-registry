@@ -142,11 +142,13 @@ export interface ModelSpec {
   catalogue_year: string | null     // CYR ref ID (legacy — kept for reference)
 
   // Body
-  body_shape_analogue: string | null   // BSA ref ID
-  body_wood: string | null             // BWD ref ID
-  body_construction: string | null     // BCN ref ID
+  body_shape_analogue: string | null        // BSA ref ID
+  body_wood: string | null                  // BWD ref ID
+  body_construction: string | null          // BCN ref ID
   body_bookmatched: string | null
-  joint_type: string | null            // JNT ref ID
+  joint_type: string | null                 // JNT ref ID
+  body_carving: string | null               // BCV ref ID
+  body_decorative_routing: string | null    // BDR ref ID
 
   // Pickups & electronics
   pickup_configuration: string | null  // PCG ref ID
@@ -162,6 +164,7 @@ export interface ModelSpec {
   tone_pot_count: number | null
   pickup_surrounds: string | null      // PSR ref ID
   pickup_colours: string | null        // PKC ref ID
+  coil_tap: string | null              // CTF ref ID
 
   // Hardware
   bridge_type: string | null           // BRG ref ID
@@ -180,9 +183,10 @@ export interface ModelSpec {
   nut_type: string | null              // NUT ref ID
 
   // Headstock
-  headstock_style: string | null       // HST ref ID
-  headstock_face: string | null        // HDF ref ID
-  headstock_logo: string | null        // HGL ref ID
+  headstock_style: string | null            // HST ref ID
+  headstock_face: string | null             // HDF ref ID
+  headstock_logo: string | null             // HGL ref ID
+  headstock_decorative_routing: string | null // HDR ref ID
 
   // Other
   left_handed_available: string | null // LHA ref ID

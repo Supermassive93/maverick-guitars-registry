@@ -14,6 +14,12 @@ type ColourMeta = {
   pattern?: string | null
 }
 
+type PickupMeta = {
+  style?: string | null
+  hex_primary?: string | null
+  hex_secondary?: string | null
+}
+
 function swatchBg(refId: string, meta: ColourMeta | null): string | null {
   if (!meta) return null
   const { hex, hex_primary, hex_secondary, pattern } = meta
@@ -99,6 +105,108 @@ function ColourSwatches({ colours, colourMetaMap, refMap }: {
   )
 }
 
+function HumbuckerIcon({ meta }: { meta: PickupMeta | null }) {
+  const style = meta?.style ?? 'covered'
+  const primary = meta?.hex_primary ?? '#1e1c1a'
+  const secondary = meta?.hex_secondary ?? primary
+  const line = 'rgba(255,255,255,0.45)'
+  const pole = 'rgba(0,0,0,0.55)'
+  const sw = '13.75'
+  const cys = [300, 505.5, 710.5, 917, 1123, 1329]
+  const screwYs = [257.5, 462.5, 668.5, 874.5, 1080.5, 1286.5]
+
+  if (style === 'open_coil') {
+    return (
+      <svg viewBox="3319 111 766 1407" width="38" height="70" style={{ display: 'block' }}>
+        {/* Bobbin fills */}
+        <rect x="3326" y="118" width="365" height="1393" rx="182" fill={primary} />
+        <rect x="3713" y="118" width="365" height="1393" rx="182" fill={secondary} />
+        {/* Pole fills */}
+        {cys.map(cy => <circle key={`l${cy}`} cx="3508.5" cy={cy} r="60.5" fill={pole} />)}
+        {cys.map(cy => <circle key={`r${cy}`} cx="3895.5" cy={cy} r="60.5" fill={pole} />)}
+        {/* Outer housing outline */}
+        <path d="M3326 243.335C3326 174.114 3382.11 118 3451.34 118L3952.67 118C4021.89 118 4078 174.114 4078 243.335L4078 1385.67C4078 1454.89 4021.89 1511 3952.67 1511L3451.34 1511C3382.11 1511 3326 1454.89 3326 1385.67Z" stroke={line} strokeWidth={sw} strokeMiterlimit="8" fill="none" />
+        {/* Left bobbin */}
+        <g stroke={line} strokeWidth={sw} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit="10">
+          <path d="M3508.5 118C3609.29 118 3691 199.484 3691 300"/>
+          <path d="M3326 300C3326 199.484 3407.71 118 3508.5 118"/>
+          <path d="M3508.5 1511C3407.71 1511 3326 1429.52 3326 1329"/>
+          <path d="M3691 1329C3691 1429.52 3609.29 1511 3508.5 1511"/>
+          <path d="M3326 300 3326 1329.12"/>
+          <path d="M3691 300 3691 1329.12"/>
+          {cys.map(cy => <circle key={cy} cx="3508.5" cy={cy} r="60.5"/>)}
+        </g>
+        {/* Right bobbin */}
+        <g stroke={line} strokeWidth={sw} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit="10">
+          <path d="M3895.5 118C3996.29 118 4078 199.484 4078 300"/>
+          <path d="M3713 300C3713 199.484 3794.71 118 3895.5 118"/>
+          <path d="M3895.5 1511C3794.71 1511 3713 1429.52 3713 1329"/>
+          <path d="M4078 1329C4078 1429.52 3996.29 1511 3895.5 1511"/>
+          <path d="M3713 300 3713 1329.12"/>
+          <path d="M4078 300 4078 1329.12"/>
+          {cys.map(cy => <circle key={cy} cx="3895.5" cy={cy} r="60.5"/>)}
+        </g>
+        {screwYs.map(y => (
+          <path key={y} d="M0 0 85.8837 85.8837" stroke={line} strokeWidth="22.9167" strokeMiterlimit="8" fill="none" transform={`matrix(-1 0 0 1 3551.38 ${y})`}/>
+        ))}
+      </svg>
+    )
+  }
+
+  // Covered
+  return (
+    <svg viewBox="2362 111 766 1407" width="38" height="70" style={{ display: 'block' }}>
+      {/* Body fill */}
+      <rect x="2369" y="118" width="752" height="1393" rx="125" fill={primary} />
+      {/* Pole piece fills */}
+      {cys.map(cy => <circle key={cy} cx="2551.5" cy={cy} r="60.5" fill={pole} />)}
+      {/* Outer housing outline */}
+      <path d="M2369 243.335C2369 174.114 2425.11 118 2494.34 118L2995.67 118C3064.89 118 3121 174.114 3121 243.335L3121 1385.67C3121 1454.89 3064.89 1511 2995.67 1511L2494.34 1511C2425.11 1511 2369 1454.89 2369 1385.67Z" stroke={line} strokeWidth={sw} strokeMiterlimit="8" fill="none" />
+      {/* Rails and pole circles */}
+      <g stroke={line} strokeWidth={sw} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit="10">
+        <path d="M2369 300 2369 1329.12"/>
+        <path d="M3121 300 3121 1329.12"/>
+        {cys.map(cy => <circle key={cy} cx="2551.5" cy={cy} r="60.5"/>)}
+      </g>
+      {screwYs.map(y => (
+        <path key={y} d="M0 0 85.8837 85.8837" stroke={line} strokeWidth="22.9167" strokeMiterlimit="8" fill="none" transform={`matrix(-1 0 0 1 2594.38 ${y})`}/>
+      ))}
+    </svg>
+  )
+}
+
+function PickupSwatches({ pickupIds, pickupMetaMap, refMap }: {
+  pickupIds: string[]
+  pickupMetaMap: Record<string, PickupMeta>
+  refMap: Record<string, string>
+}) {
+  if (!pickupIds.length) return null
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', paddingTop: '4px' }}>
+      {pickupIds.map(id => {
+        const full = r(refMap, id) ?? id
+        const parts = full.split(' — ')
+        const code  = parts.length >= 2 ? parts[0] : ''
+        const label = parts.length >= 2 ? parts[1] : full
+        const meta = pickupMetaMap[id] ?? null
+        return (
+          <div key={id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+            <HumbuckerIcon meta={meta} />
+            {code && (
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#c8a96e', letterSpacing: '0.5px' }}>
+                {code}
+              </div>
+            )}
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', color: '#5c5a57', textAlign: 'center', maxWidth: '56px', lineHeight: 1.4 }}>
+              {label}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // Universal specification — all fields that apply across all generations
 function SpecBlock({ spec, refMap, productionYears }: { spec: Partial<ModelSpec>; refMap: Record<string, string>; productionYears: string | null }) {
   return (
@@ -109,14 +217,16 @@ function SpecBlock({ spec, refMap, productionYears }: { spec: Partial<ModelSpec>
       <SpecRow label="Body construction"    value={r(refMap, spec.body_construction)} />
       <SpecRow label="Joint type"           value={r(refMap, spec.joint_type)} />
       <SpecRow label="Bookmatched"          value={r(refMap, spec.body_bookmatched)} />
+      <SpecRow label="Body contouring"       value={r(refMap, spec.body_carving)} />
+      <SpecRow label="Decorative body routing" value={r(refMap, spec.body_decorative_routing)} />
 
       <SpecGroup label="Pickups & electronics" />
       <SpecRow label="Pickup configuration" value={r(refMap, spec.pickup_configuration)} />
       <SpecRow label="Neck pickup"          value={r(refMap, spec.neck_pickup)} />
       <SpecRow label="Middle pickup"        value={r(refMap, spec.middle_pickup)} />
       <SpecRow label="Bridge pickup"        value={r(refMap, spec.bridge_pickup)} />
-      <SpecRow label="Pickup colours"       value={r(refMap, spec.pickup_colours)} />
-      <SpecRow label="Switch type"           value={r(refMap, spec.switch_type)} />
+      <SpecRow label="Coil tap"             value={r(refMap, spec.coil_tap)} />
+      <SpecRow label="Selector switch type" value={r(refMap, spec.switch_type)} />
       <SpecRow label="Volume pot"           value={r(refMap, spec.volume_pot)} />
       <SpecRow label="Volume pot count"     value={spec.volume_pot_count} />
       <SpecRow label="Tone pot"             value={r(refMap, spec.tone_pot)} />
@@ -137,6 +247,7 @@ function SpecBlock({ spec, refMap, productionYears }: { spec: Partial<ModelSpec>
       <SpecGroup label="Headstock" />
       <SpecRow label="Headstock style"      value={r(refMap, spec.headstock_style)} />
       <SpecRow label="Headstock face"       value={r(refMap, spec.headstock_face)} />
+      <SpecRow label="Headstock routing"    value={r(refMap, spec.headstock_decorative_routing)} />
 
       <SpecGroup label="Other" />
       <SpecRow label="Production years"     value={productionYears} />
@@ -170,12 +281,19 @@ function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refM
   )
 }
 
+function resolveSlug(slug: string, models: { model: string }[]): string {
+  const match = models.find(m => m.model.toLowerCase().replace(/\s+/g, '-') === slug)
+  return match?.model ?? slug
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
+  const { data: allModels } = await supabase.from('model_specifications').select('model')
+  const modelName = resolveSlug(slug, allModels ?? [])
   const { data } = await supabase
     .from('model_specifications')
     .select('model, description')
-    .eq('model', slug.toUpperCase())
+    .eq('model', modelName)
     .single()
   const spec = data as Pick<ModelSpec, 'model' | 'description'> | null
   if (!spec) return { title: 'Model Not Found — Maverick Guitars Registry' }
@@ -187,7 +305,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ModelPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const modelName = slug.toUpperCase()
+  const { data: allModels } = await supabase.from('model_specifications').select('model')
+  const modelName = resolveSlug(slug, allModels ?? [])
 
   const { data: specRaw } = await supabase
     .from('model_specifications')
@@ -215,20 +334,25 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     supabase.from('model_specifications').select('*').eq('parent_model_id', spec.id),
     supabase.from('model_gen_specs').select('*').eq('model_id', spec.id).order('generation'),
     supabase.from('guitars').select('serial_number_only').eq('model_id', spec.id).eq('status', 'Approved'),
-    supabase.from('ref_values').select('id, metadata').in('category', ['COL', 'CSC', 'HWC']).eq('is_active', true),
+    supabase.from('ref_values').select('id, metadata').in('category', ['COL', 'CSC', 'HWC', 'PKC', 'CPKC']).eq('is_active', true),
     parentSpecPromise,
-    supabase.from('model_source_colours').select('available_colours, available_custom_shop_colours, available_hardware_colours, notes, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
+    supabase.from('model_source_colours').select('available_colours, available_custom_shop_colours, available_hardware_colours, available_pickup_colours, available_custom_shop_pickup_colours, notes, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
   ])
 
   const colourMetaMap: Record<string, ColourMeta> = {}
-  for (const row of (rawColourMeta ?? []) as { id: string; metadata: ColourMeta | null }[]) {
-    colourMetaMap[row.id] = row.metadata ?? {}
+  const pickupMetaMap: Record<string, PickupMeta> = {}
+  for (const row of (rawColourMeta ?? []) as { id: string; metadata: Record<string, unknown> | null }[]) {
+    if (row.id.startsWith('PKC-') || row.id.startsWith('CPKC-')) {
+      pickupMetaMap[row.id] = (row.metadata ?? {}) as PickupMeta
+    } else {
+      colourMetaMap[row.id] = (row.metadata ?? {}) as ColourMeta
+    }
   }
 
   const variants = (rawVariants ?? []) as ModelSpec[]
   const genSpecs = (rawGenSpecs ?? []) as ModelGenSpec[]
   const parentSpec = parentSpecData as { id: string; model: string } | null
-  type SourceColourRow = { available_colours: string[]; available_custom_shop_colours: string[] | null; available_hardware_colours: string[] | null; notes: string | null; source_materials: { id: string; title: string; year: string | null; material_type: string | null } }
+  type SourceColourRow = { available_colours: string[]; available_custom_shop_colours: string[] | null; available_hardware_colours: string[] | null; available_pickup_colours: string[] | null; available_custom_shop_pickup_colours: string[] | null; notes: string | null; source_materials: { id: string; title: string; year: string | null; material_type: string | null } }
   const sourceColours = (rawSourceColours ?? []) as SourceColourRow[]
 
   function sourceLabel(sm: SourceColourRow['source_materials'] | null): string {
@@ -240,12 +364,18 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     return `${y} Maverick Catalogue`
   }
 
-  // Aggregate all custom shop and hardware colour IDs across all source rows — not split by year.
+  // Aggregate all custom shop, hardware, and pickup colour IDs across all source rows — not split by year.
   const customShopColourIds = [...new Set(
     sourceColours.flatMap(sc => sc.available_custom_shop_colours ?? [])
   )]
   const hardwareColourIds = [...new Set(
     sourceColours.flatMap(sc => sc.available_hardware_colours ?? [])
+  )]
+  const pickupColourIds = [...new Set(
+    sourceColours.flatMap(sc => sc.available_pickup_colours ?? [])
+  )]
+  const customShopPickupColourIds = [...new Set(
+    sourceColours.flatMap(sc => sc.available_custom_shop_pickup_colours ?? [])
   )]
 
   // Derive production years from source material years linked via model_source_colours.
@@ -374,12 +504,12 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
           {/* Col 2 — Body colours + Hardware colours */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
 
-            {/* Available body colours by source year */}
+            {/* Factory body colours by source year */}
             <div>
-              {sectionHead('Available Body Colours')}
-              {sourceColours.length > 0 ? (
+              {sectionHead('Factory Body Colours')}
+              {sourceColours.filter(sc => sc.source_materials && sc.source_materials.title !== 'Pending — Source Required').length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-                  {sourceColours.map((sc, i) => (
+                  {sourceColours.filter(sc => sc.source_materials && sc.source_materials.title !== 'Pending — Source Required').map((sc, i) => (
                     <div key={sc.source_materials?.id ?? i}>
                       <p style={{
                         fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px',
@@ -399,15 +529,33 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
               )}
             </div>
 
+            {/* Factory pickup colours */}
+            <div>
+              {sectionHead('Factory Pickup Colours')}
+              {pickupColourIds.length > 0 ? (
+                <PickupSwatches pickupIds={pickupColourIds} pickupMetaMap={pickupMetaMap} refMap={refMap} />
+              ) : (
+                <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b' }}>No pickup colour data yet</p>
+              )}
+            </div>
+
             {/* Custom shop body colours — aggregated across full production run */}
             <div>
               {sectionHead('Custom Shop Body Colours')}
               {customShopColourIds.length > 0 ? (
-                <div>
-                  <ColourSwatches colours={customShopColourIds} colourMetaMap={colourMetaMap} refMap={refMap} />
-                </div>
+                <ColourSwatches colours={customShopColourIds} colourMetaMap={colourMetaMap} refMap={refMap} />
               ) : (
                 <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b' }}>No custom shop data yet</p>
+              )}
+            </div>
+
+            {/* Custom shop pickup colours */}
+            <div>
+              {sectionHead('Custom Shop Pickup Colours')}
+              {customShopPickupColourIds.length > 0 ? (
+                <PickupSwatches pickupIds={customShopPickupColourIds} pickupMetaMap={pickupMetaMap} refMap={refMap} />
+              ) : (
+                <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b' }}>No custom shop pickup data yet</p>
               )}
             </div>
 
@@ -415,9 +563,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
             <div>
               {sectionHead('Available Hardware Colours')}
               {hardwareColourIds.length > 0 ? (
-                <div>
-                  <ColourSwatches colours={hardwareColourIds} colourMetaMap={colourMetaMap} refMap={refMap} />
-                </div>
+                <ColourSwatches colours={hardwareColourIds} colourMetaMap={colourMetaMap} refMap={refMap} />
               ) : (
                 <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b' }}>No hardware colour data yet</p>
               )}

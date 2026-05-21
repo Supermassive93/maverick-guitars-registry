@@ -33,6 +33,7 @@ export default async function ModelsPage() {
       aka: string | null
       colour_source: string | null
       source_year: number | null
+      style: string | null
     } | null
   }
 
@@ -54,7 +55,7 @@ export default async function ModelsPage() {
     supabase
       .from('ref_values')
       .select('id, category, display_name, descriptor, metadata')
-      .in('category', ['COL', 'CSC', 'HWC'])
+      .in('category', ['COL', 'CSC', 'HWC', 'PKC', 'CPKC'])
       .eq('is_active', true)
       .order('sort_order'),
     supabase
@@ -79,6 +80,8 @@ export default async function ModelsPage() {
   const col2002  = colourRows.filter(r => r.category === 'COL' && r.metadata?.source_year === 2002)
   const cscRows  = colourRows.filter(r => r.category === 'CSC' && r.id !== 'CSC-0004')
   const hwcRows  = colourRows.filter(r => r.category === 'HWC' && r.id !== 'HWC-0004')
+  const pkcRows  = colourRows.filter(r => r.category === 'PKC'  && r.id !== 'PKC-0005')
+  const cpkcRows = colourRows.filter(r => r.category === 'CPKC' && r.id !== 'CPKC-0005')
 
   // Derive 2006 palette from model_source_colours entries linked to 2006 source materials
   type SourceColourEntry = { available_colours: string[]; source_materials: { year: string | null } | null }
@@ -122,6 +125,57 @@ export default async function ModelsPage() {
     return parts.length >= 2
       ? { code: parts[0], name: parts.slice(1).join(' — ') }
       : { code: '', name: displayName }
+  }
+
+  function HumbuckerIcon({ row }: { row: ColourRow }) {
+    const style = row.metadata?.style ?? 'covered'
+    const primary = row.metadata?.hex_primary ?? '#1e1c1a'
+    const secondary = row.metadata?.hex_secondary ?? primary
+    const line = 'rgba(255,255,255,0.45)'
+    const pole = 'rgba(0,0,0,0.55)'
+    const sw = '13.75'
+    const cys = [300, 505.5, 710.5, 917, 1123, 1329]
+    const screwYs = [257.5, 462.5, 668.5, 874.5, 1080.5, 1286.5]
+    if (style === 'open_coil') {
+      return (
+        <svg viewBox="3319 111 766 1407" width="38" height="70" style={{ display: 'block' }}>
+          <rect x="3326" y="118" width="365" height="1393" rx="182" fill={primary} />
+          <rect x="3713" y="118" width="365" height="1393" rx="182" fill={secondary} />
+          {cys.map(cy => <circle key={`l${cy}`} cx="3508.5" cy={cy} r="60.5" fill={pole} />)}
+          {cys.map(cy => <circle key={`r${cy}`} cx="3895.5" cy={cy} r="60.5" fill={pole} />)}
+          <path d="M3326 243.335C3326 174.114 3382.11 118 3451.34 118L3952.67 118C4021.89 118 4078 174.114 4078 243.335L4078 1385.67C4078 1454.89 4021.89 1511 3952.67 1511L3451.34 1511C3382.11 1511 3326 1454.89 3326 1385.67Z" stroke={line} strokeWidth={sw} strokeMiterlimit="8" fill="none" />
+          <g stroke={line} strokeWidth={sw} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit="10">
+            <path d="M3508.5 118C3609.29 118 3691 199.484 3691 300"/>
+            <path d="M3326 300C3326 199.484 3407.71 118 3508.5 118"/>
+            <path d="M3508.5 1511C3407.71 1511 3326 1429.52 3326 1329"/>
+            <path d="M3691 1329C3691 1429.52 3609.29 1511 3508.5 1511"/>
+            <path d="M3326 300 3326 1329.12"/><path d="M3691 300 3691 1329.12"/>
+            {cys.map(cy => <circle key={cy} cx="3508.5" cy={cy} r="60.5"/>)}
+          </g>
+          <g stroke={line} strokeWidth={sw} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit="10">
+            <path d="M3895.5 118C3996.29 118 4078 199.484 4078 300"/>
+            <path d="M3713 300C3713 199.484 3794.71 118 3895.5 118"/>
+            <path d="M3895.5 1511C3794.71 1511 3713 1429.52 3713 1329"/>
+            <path d="M4078 1329C4078 1429.52 3996.29 1511 3895.5 1511"/>
+            <path d="M3713 300 3713 1329.12"/><path d="M4078 300 4078 1329.12"/>
+            {cys.map(cy => <circle key={cy} cx="3895.5" cy={cy} r="60.5"/>)}
+          </g>
+          {screwYs.map(y => <path key={y} d="M0 0 85.8837 85.8837" stroke={line} strokeWidth="22.9167" strokeMiterlimit="8" fill="none" transform={`matrix(-1 0 0 1 3551.38 ${y})`}/>)}
+        </svg>
+      )
+    }
+    return (
+      <svg viewBox="2362 111 766 1407" width="38" height="70" style={{ display: 'block' }}>
+        <rect x="2369" y="118" width="752" height="1393" rx="125" fill={primary} />
+        {cys.map(cy => <circle key={cy} cx="2551.5" cy={cy} r="60.5" fill={pole} />)}
+        <path d="M2369 243.335C2369 174.114 2425.11 118 2494.34 118L2995.67 118C3064.89 118 3121 174.114 3121 243.335L3121 1385.67C3121 1454.89 3064.89 1511 2995.67 1511L2494.34 1511C2425.11 1511 2369 1454.89 2369 1385.67Z" stroke={line} strokeWidth={sw} strokeMiterlimit="8" fill="none" />
+        <g stroke={line} strokeWidth={sw} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit="10">
+          <path d="M2369 300 2369 1329.12"/><path d="M3121 300 3121 1329.12"/>
+          {cys.map(cy => <circle key={cy} cx="2551.5" cy={cy} r="60.5"/>)}
+        </g>
+        {screwYs.map(y => <path key={y} d="M0 0 85.8837 85.8837" stroke={line} strokeWidth="22.9167" strokeMiterlimit="8" fill="none" transform={`matrix(-1 0 0 1 2594.38 ${y})`}/>)}
+      </svg>
+    )
   }
 
   function SeriesSection({ series, bass = false }: { series: string; bass?: boolean }) {
@@ -168,7 +222,7 @@ export default async function ModelsPage() {
                 model={m.model}
                 description={description ?? null}
                 rarity={rarity ?? null}
-                slug={m.model.toLowerCase()}
+                slug={m.model.toLowerCase().replace(/\s+/g, '-')}
                 accentColor={accentColor}
                 bass={bass}
               />
@@ -685,6 +739,41 @@ export default async function ModelsPage() {
           </div>
         )}
 
+        {/* Factory pickup colours */}
+        {pkcRows.length > 0 && (
+          <div style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <p style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+                color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
+              }}>Factory Pickup Colours · {pkcRows.length} options</p>
+              <h3 style={{
+                fontFamily: 'var(--font-bebas)', fontSize: 'clamp(28px, 3vw, 44px)',
+                letterSpacing: '2px', color: '#c8a96e', lineHeight: 1,
+              }}>Factory Pickup Colours</h3>
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
+              gap: '1px', background: 'rgba(255,255,255,0.06)',
+            }}>
+              {pkcRows.map(row => {
+                const { code, name } = swatchLabel(row.display_name)
+                return (
+                  <div key={row.id} style={{ background: '#161616' }}>
+                    <div style={{ height: '110px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <HumbuckerIcon row={row} />
+                    </div>
+                    <div style={{ padding: '10px 14px' }}>
+                      {code && <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '20px', letterSpacing: '2px', color: '#c8a96e', lineHeight: 1, marginBottom: '3px' }}>{code}</div>}
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96', lineHeight: 1.4 }}>{name}</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Hardware colours */}
         {hwcRows.length > 0 && (
           <div style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -764,6 +853,41 @@ export default async function ModelsPage() {
                           {row.metadata.pattern}
                         </div>
                       )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Custom shop pickup colours */}
+        {cpkcRows.length > 0 && (
+          <div style={{ padding: '3rem 4rem' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <p style={{
+                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+                color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
+              }}>Custom Shop · {cpkcRows.length} options</p>
+              <h3 style={{
+                fontFamily: 'var(--font-bebas)', fontSize: 'clamp(28px, 3vw, 44px)',
+                letterSpacing: '2px', color: '#9e9b96', lineHeight: 1,
+              }}>Custom Shop Pickup Colours</h3>
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
+              gap: '1px', background: 'rgba(255,255,255,0.06)',
+            }}>
+              {cpkcRows.map(row => {
+                const { code, name } = swatchLabel(row.display_name)
+                return (
+                  <div key={row.id} style={{ background: '#161616' }}>
+                    <div style={{ height: '110px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <HumbuckerIcon row={row} />
+                    </div>
+                    <div style={{ padding: '10px 14px' }}>
+                      {code && <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '20px', letterSpacing: '2px', color: '#9e9b96', lineHeight: 1, marginBottom: '3px' }}>{code}</div>}
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96', lineHeight: 1.4 }}>{name}</div>
                     </div>
                   </div>
                 )

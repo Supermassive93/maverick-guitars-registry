@@ -247,7 +247,7 @@ function SpecBlock({ spec, refMap, productionYears }: { spec: Partial<ModelSpec>
       <SpecGroup label="Headstock" />
       <SpecRow label="Headstock style"      value={r(refMap, spec.headstock_style)} />
       <SpecRow label="Headstock face"       value={r(refMap, spec.headstock_face)} />
-      <SpecRow label="Headstock routing"    value={r(refMap, spec.headstock_decorative_routing)} />
+      <SpecRow label="Decorative headstock routing" value={r(refMap, spec.headstock_decorative_routing)} />
 
       <SpecGroup label="Other" />
       <SpecRow label="Production years"     value={productionYears} />
@@ -279,6 +279,10 @@ function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refM
       <SpecRow label="Headstock logo"   value={r(refMap, spec.headstock_logo)} />
     </div>
   )
+}
+
+const MODEL_NICKNAMES: Record<string, string> = {
+  'SF-1': 'Streetfighter',
 }
 
 function resolveSlug(slug: string, models: { model: string }[]): string {
@@ -443,8 +447,14 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
           fontSize: 'clamp(3rem, 8vw, 5rem)',
           letterSpacing: '3px', color: '#f0ede8', lineHeight: 1,
           marginBottom: '12px',
+          display: 'flex', alignItems: 'baseline', gap: '20px', flexWrap: 'wrap',
         }}>
           {spec.model}
+          {MODEL_NICKNAMES[spec.model] && (
+            <span style={{ fontSize: 'clamp(1.4rem, 3.5vw, 2.2rem)', color: '#3a3835', letterSpacing: '2px' }}>
+              {MODEL_NICKNAMES[spec.model]}
+            </span>
+          )}
         </h1>
 
         {spec.rarity && (

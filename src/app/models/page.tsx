@@ -1,4 +1,8 @@
 import { MODEL_CATALOGUE, SERIES_ORDER, BASS_SERIES } from '@/data/models'
+
+const MODEL_NICKNAMES: Record<string, string> = {
+  'SF-1': 'Streetfighter',
+}
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -220,6 +224,7 @@ export default async function ModelsPage() {
               <ModelCard
                 key={m.model}
                 model={m.model}
+                nickname={MODEL_NICKNAMES[m.model]}
                 description={description ?? null}
                 rarity={rarity ?? null}
                 slug={m.model.toLowerCase().replace(/\s+/g, '-')}
@@ -263,9 +268,15 @@ export default async function ModelsPage() {
             THE RANGE
           </h1>
           <p style={{ maxWidth: '600px', color: '#9e9b96', fontSize: '16px', lineHeight: 1.7 }}>
-            Maverick produced a focused range of rock and metal-oriented electric guitars and basses,
-            all British-designed and manufactured in Korea in collaboration with hardware
-            designer Trev Wilkinson. 24 models across four catalogue series.
+            In 1997, hardware designer Trev Wilkinson introduced Maverick Guitars to a small custom
+            workshop in Korea. Recognising the level of hand craftsmanship on offer, Maverick spent
+            the next three years researching what contemporary players needed — and where existing
+            manufacturing fell short. The first guitars reached the market in late 2000.
+          </p>
+          <p style={{ maxWidth: '600px', color: '#9e9b96', fontSize: '16px', lineHeight: 1.7, marginTop: '16px' }}>
+            British-designed and Korean-built, the range spanned 24 models across four catalogue
+            series — featuring the patented Evolution roller volume and tone system as one of several
+            in-house developments that set Maverick apart from the broader market.
           </p>
         </div>
       </section>

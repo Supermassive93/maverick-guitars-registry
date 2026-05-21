@@ -5,6 +5,7 @@ import { useState } from 'react'
 
 type Props = {
   model: string
+  nickname?: string
   description: string | null
   rarity: string | null
   slug: string
@@ -12,7 +13,7 @@ type Props = {
   bass?: boolean
 }
 
-export default function ModelCard({ model, description, rarity, slug, accentColor, bass = false }: Props) {
+export default function ModelCard({ model, nickname, description, rarity, slug, accentColor, bass = false }: Props) {
   const [hovered, setHovered] = useState(false)
   return (
     <Link
@@ -36,8 +37,14 @@ export default function ModelCard({ model, description, rarity, slug, accentColo
         letterSpacing: '3px',
         lineHeight: 1,
         marginBottom: '8px',
+        display: 'flex', alignItems: 'baseline', gap: '12px',
       }}>
         {model}
+        {nickname && (
+          <span style={{ fontSize: '15px', color: '#3a3835', letterSpacing: '2px' }}>
+            {nickname}
+          </span>
+        )}
       </div>
 
       {rarity && (

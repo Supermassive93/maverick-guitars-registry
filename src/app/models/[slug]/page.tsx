@@ -212,7 +212,7 @@ function SpecBlock({ spec, refMap, productionYears }: { spec: Partial<ModelSpec>
   return (
     <div>
       <SpecGroup label="Body" />
-      <SpecRow label="Body shape"           value={r(refMap, spec.body_shape_analogue)} />
+      <SpecRow label="Body shape analogue"   value={r(refMap, spec.body_shape_analogue)} />
       <SpecRow label="Body wood"            value={r(refMap, spec.body_wood)} />
       <SpecRow label="Body construction"    value={r(refMap, spec.body_construction)} />
       <SpecRow label="Joint type"           value={r(refMap, spec.joint_type)} />
@@ -237,6 +237,7 @@ function SpecBlock({ spec, refMap, productionYears }: { spec: Partial<ModelSpec>
       <SpecRow label="Tuner style"          value={r(refMap, spec.tuner_style)} />
 
       <SpecGroup label="Neck" />
+      <SpecRow label="Neck mount"           value={r(refMap, spec.neck_mount)} />
       <SpecRow label="Neck wood"            value={r(refMap, spec.neck_wood)} />
 
       <SpecRow label="Fretboard"            value={r(refMap, spec.fretboard_wood)} />
@@ -271,6 +272,7 @@ function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refM
 
       <SpecGroup label="Neck" />
       <SpecRow label="Neck construction" value={r(refMap, spec.neck_construction)} />
+      <SpecRow label="Neck finish"       value={r(refMap, spec.neck_finish)} />
       <SpecRow label="Neck profile"      value={r(refMap, spec.neck_profile)} />
       <SpecRow label="Neck binding"      value={r(refMap, spec.neck_binding)} />
       <SpecRow label="Skunk stripe"      value={r(refMap, spec.skunk_stripe)} />

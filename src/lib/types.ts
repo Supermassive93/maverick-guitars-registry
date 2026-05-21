@@ -121,6 +121,7 @@ export interface ModelGenSpec {
   neck_binding: string | null          // NKB ref ID
   skunk_stripe: string | null          // SKS ref ID
   nut_type: string | null              // NUT ref ID
+  neck_finish: string | null           // NKF ref ID
 
   headstock_style: string | null       // HST ref ID
   headstock_face: string | null        // HDF ref ID
@@ -172,7 +173,8 @@ export interface ModelSpec {
   tuner_style: string | null           // TNR ref ID
 
   // Neck
-  neck_construction: string | null     // NCK ref ID
+  neck_mount: string | null            // NMT ref ID — universal mount type (bolt-on / set / through)
+  neck_construction: string | null     // NCK ref ID — now null; construction (1-piece/2-piece) lives in gen specs
   neck_wood: string | null             // NWD ref ID
   neck_profile: string | null          // NPR ref ID
   fretboard_wood: string | null        // FWD ref ID

@@ -342,7 +342,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     supabase.from('guitars').select('serial_number_only').eq('model_id', spec.id).eq('status', 'Approved'),
     supabase.from('ref_values').select('id, metadata').in('category', ['COL', 'CSC', 'HWC', 'PKC', 'CPKC']).eq('is_active', true),
     parentSpecPromise,
-    supabase.from('model_source_colours').select('available_colours, available_custom_shop_colours, available_hardware_colours, available_pickup_colours, available_custom_shop_pickup_colours, notes, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
+    supabase.from('model_source_colours').select('available_colours, available_custom_shop_colours, available_hardware_colours, available_pickup_colours, available_custom_shop_pickup_colours, notes, year_qualifier, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
   ])
 
   const colourMetaMap: Record<string, ColourMeta> = {}
@@ -358,7 +358,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   const variants = (rawVariants ?? []) as ModelSpec[]
   const genSpecs = (rawGenSpecs ?? []) as ModelGenSpec[]
   const parentSpec = parentSpecData as { id: string; model: string } | null
-  type SourceColourRow = { available_colours: string[]; available_custom_shop_colours: string[] | null; available_hardware_colours: string[] | null; available_pickup_colours: string[] | null; available_custom_shop_pickup_colours: string[] | null; notes: string | null; source_materials: { id: string; title: string; year: string | null; material_type: string | null } }
+  type SourceColourRow = { available_colours: string[]; available_custom_shop_colours: string[] | null; available_hardware_colours: string[] | null; available_pickup_colours: string[] | null; available_custom_shop_pickup_colours: string[] | null; notes: string | null; year_qualifier: string | null; source_materials: { id: string; title: string; year: string | null; material_type: string | null } }
   const sourceColours = (rawSourceColours ?? []) as SourceColourRow[]
 
   function sourceLabel(sm: SourceColourRow['source_materials'] | null): string {
@@ -392,10 +392,14 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     .map(y => parseInt(y))
     .filter(y => !isNaN(y))
     .sort((a, b) => a - b)
+  const singleYear = sourceYears.length > 0 && sourceYears[0] === sourceYears[sourceYears.length - 1]
+  const yearQualifier = singleYear
+    ? (sourceColours.find(sc => sc.year_qualifier)?.year_qualifier ?? null)
+    : null
   const productionYears = sourceYears.length === 0
     ? null
-    : sourceYears[0] === sourceYears[sourceYears.length - 1]
-      ? String(sourceYears[0])
+    : singleYear
+      ? yearQualifier ? `${yearQualifier} ${sourceYears[0]}` : String(sourceYears[0])
       : `${sourceYears[0]}–${sourceYears[sourceYears.length - 1]}`
 
   const serials = (rawRegistry ?? [])

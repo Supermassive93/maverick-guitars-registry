@@ -208,7 +208,8 @@ function PickupSwatches({ pickupIds, pickupMetaMap, refMap }: {
 }
 
 // Universal specification — all fields that apply across all generations
-function SpecBlock({ spec, refMap, bsaMetaMap, productionYears }: { spec: Partial<ModelSpec>; refMap: Record<string, string>; bsaMetaMap: Record<string, { maverick_body_name?: string }>; productionYears: string | null }) {
+type VersionedValue = { value: string; year: string | null; title: string }
+function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears }: { spec: Partial<ModelSpec>; refMap: Record<string, string>; bsaMetaMap: Record<string, { maverick_body_name?: string }>; versionedSpecs: Record<string, VersionedValue[]>; productionYears: string | null }) {
   return (
     <div>
       <SpecGroup label="Body" />
@@ -246,7 +247,11 @@ function SpecBlock({ spec, refMap, bsaMetaMap, productionYears }: { spec: Partia
       <SpecRow label="Fret count"           value={r(refMap, spec.fret_count)} />
       <SpecRow label="Scale length"         value={r(refMap, spec.scale_length)} />
       <SpecRow label="Nut type"             value={r(refMap, spec.nut_type)} />
-      <SpecRow label="Nut width"            value={spec.nut_width != null ? `${spec.nut_width}mm` : null} />
+      <SpecRow label="Nut width"            value={
+        versionedSpecs['nut_width']?.length > 1
+          ? versionedSpecs['nut_width'].map(v => `${v.value}${v.year ? ` (${v.year})` : ''}`).join(' → ')
+          : spec.nut_width != null ? `${spec.nut_width}mm` : null
+      } />
 
       <SpecGroup label="Headstock" />
       <SpecRow label="Headstock style"      value={r(refMap, spec.headstock_style)} />
@@ -340,6 +345,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     { data: rawColourMeta },
     { data: parentSpecData },
     { data: rawSourceColours },
+    { data: rawSpecSources },
   ] = await Promise.all([
     getRefValues(),
     supabase.from('model_specifications').select('*').eq('parent_model_id', spec.id),
@@ -348,6 +354,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     supabase.from('ref_values').select('id, metadata').in('category', ['COL', 'CSC', 'HWC', 'PKC', 'CPKC', 'BSA']).eq('is_active', true),
     parentSpecPromise,
     supabase.from('model_source_colours').select('available_colours, available_custom_shop_colours, available_hardware_colours, available_pickup_colours, available_custom_shop_pickup_colours, notes, year_qualifier, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
+    supabase.from('model_spec_sources').select('field_name, field_value, source_materials(year, title)').eq('spec_id', spec.id).not('field_value', 'is', null),
   ])
 
   const colourMetaMap: Record<string, ColourMeta> = {}
@@ -366,6 +373,19 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   const variants = (rawVariants ?? []) as ModelSpec[]
   const genSpecs = (rawGenSpecs ?? []) as ModelGenSpec[]
   const parentSpec = parentSpecData as { id: string; model: string } | null
+
+  // Versioned spec values — field_name → [{value, year, title}] sorted by year
+  const versionedSpecs: Record<string, VersionedValue[]> = {}
+  for (const row of (rawSpecSources ?? []) as { field_name: string; field_value: string; source_materials: { year: string | null; title: string } }[]) {
+    const entries = versionedSpecs[row.field_name] ?? []
+    entries.push({ value: row.field_value, year: row.source_materials?.year ?? null, title: row.source_materials?.title ?? '' })
+    versionedSpecs[row.field_name] = entries
+  }
+  // Sort each field's entries by year ascending
+  for (const key of Object.keys(versionedSpecs)) {
+    versionedSpecs[key].sort((a, b) => (a.year ?? '').localeCompare(b.year ?? ''))
+  }
+
   type SourceColourRow = { available_colours: string[]; available_custom_shop_colours: string[] | null; available_hardware_colours: string[] | null; available_pickup_colours: string[] | null; available_custom_shop_pickup_colours: string[] | null; notes: string | null; year_qualifier: string | null; source_materials: { id: string; title: string; year: string | null; material_type: string | null } }
   const sourceColours = (rawSourceColours ?? []) as SourceColourRow[]
 
@@ -533,7 +553,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
           {/* Col 1 — Universal spec */}
           <div>
             {sectionHead('Universal Specification')}
-            <SpecBlock spec={spec} refMap={refMap} bsaMetaMap={bsaMetaMap} productionYears={productionYears} />
+            <SpecBlock spec={spec} refMap={refMap} bsaMetaMap={bsaMetaMap} versionedSpecs={versionedSpecs} productionYears={productionYears} />
           </div>
 
           {/* Col 2 — Body colours + Hardware colours */}

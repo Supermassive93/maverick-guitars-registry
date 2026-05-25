@@ -26,7 +26,7 @@ function swatchBg(refId: string, meta: ColourMeta | null): string | null {
   if (pattern === 'Striped' && hex_primary && hex_secondary)
     return `repeating-linear-gradient(0deg, ${hex_primary} 0px, ${hex_primary} 10px, ${hex_secondary} 10px, ${hex_secondary} 20px)`
   if (pattern === 'Burst' && hex) {
-    const centre = refId === 'COL-0013' ? '#C4903C' : '#F0C030'
+    const centre = hex_primary ?? (refId === 'COL-0013' ? '#C4903C' : '#F0C030')
     return `radial-gradient(ellipse at center, ${centre} 0%, ${hex} 72%)`
   }
   if (pattern === 'Natural Grain' && hex)
@@ -209,7 +209,7 @@ function PickupSwatches({ pickupIds, pickupMetaMap, refMap }: {
 
 // Universal specification — all fields that apply across all generations
 type VersionedValue = { value: string; year: string | null; title: string }
-function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears }: { spec: Partial<ModelSpec>; refMap: Record<string, string>; bsaMetaMap: Record<string, { maverick_body_name?: string }>; versionedSpecs: Record<string, VersionedValue[]>; productionYears: string | null }) {
+function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears, hidePickups, hideTunerStyle }: { spec: Partial<ModelSpec>; refMap: Record<string, string>; bsaMetaMap: Record<string, { maverick_body_name?: string }>; versionedSpecs: Record<string, VersionedValue[]>; productionYears: string | null; hidePickups?: boolean; hideTunerStyle?: boolean }) {
   return (
     <div>
       <SpecGroup label="Body" />
@@ -224,9 +224,11 @@ function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears }
 
       <SpecGroup label="Pickups & electronics" />
       <SpecRow label="Pickup configuration" value={r(refMap, spec.pickup_configuration)} />
-      <SpecRow label="Neck pickup"          value={r(refMap, spec.neck_pickup)} />
-      <SpecRow label="Middle pickup"        value={r(refMap, spec.middle_pickup)} />
-      <SpecRow label="Bridge pickup"        value={r(refMap, spec.bridge_pickup)} />
+      {!hidePickups && <>
+        <SpecRow label="Neck pickup"        value={r(refMap, spec.neck_pickup)} />
+        <SpecRow label="Middle pickup"      value={r(refMap, spec.middle_pickup)} />
+        <SpecRow label="Bridge pickup"      value={r(refMap, spec.bridge_pickup)} />
+      </>}
       <SpecRow label="Coil tap"             value={r(refMap, spec.coil_tap)} />
       <SpecRow label="Selector switch type" value={
         versionedSpecs['switch_type']?.length > 0
@@ -240,7 +242,7 @@ function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears }
 
       <SpecGroup label="Hardware" />
       <SpecRow label="Bridge"               value={r(refMap, spec.bridge_type)} />
-      <SpecRow label="Tuner style"          value={r(refMap, spec.tuner_style)} />
+      {!hideTunerStyle && <SpecRow label="Tuner style" value={r(refMap, spec.tuner_style)} />}
 
       <SpecGroup label="Neck" />
       <SpecRow label="Neck mount"           value={r(refMap, spec.neck_mount)} />
@@ -261,6 +263,7 @@ function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears }
       <SpecGroup label="Headstock" />
       <SpecRow label="Headstock style"      value={r(refMap, spec.headstock_style)} />
       <SpecRow label="Headstock face"       value={r(refMap, spec.headstock_face)} />
+      <SpecRow label="Headstock binding"    value={r(refMap, spec.headstock_binding)} />
       <SpecRow label="Decorative headstock routing" value={r(refMap, spec.headstock_decorative_routing)} />
 
       <SpecGroup label="Other" />
@@ -273,15 +276,26 @@ function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears }
   )
 }
 
-// Generational indicators only — fields confirmed to vary between Gen 1 and Gen 2
+// Generational indicators only — fields confirmed to vary between generations
 function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refMap: Record<string, string> }) {
+  const productionYearDisplay = spec.production_year_start != null
+    ? spec.production_year_start === spec.production_year_end
+      ? String(spec.production_year_start)
+      : `${spec.production_year_start}–${spec.production_year_end}`
+    : null
+
   return (
     <div>
+      <SpecRow label="Production years" value={productionYearDisplay} />
       <SpecGroup label="Pickups & electronics" />
+      <SpecRow label="Neck pickup"      value={r(refMap, spec.neck_pickup)} />
+      <SpecRow label="Middle pickup"    value={r(refMap, spec.middle_pickup)} />
+      <SpecRow label="Bridge pickup"    value={r(refMap, spec.bridge_pickup)} />
       <SpecRow label="Switch knob"      value={r(refMap, spec.switch_knob)} />
       <SpecRow label="Pickup surrounds" value={r(refMap, spec.pickup_surrounds)} />
 
       <SpecGroup label="Hardware" />
+      <SpecRow label="Tuner style"      value={r(refMap, spec.tuner_style)} />
       <SpecRow label="Bridge logo"      value={r(refMap, spec.bridge_logo)} />
       <SpecRow label="Trem arm"         value={r(refMap, spec.trem_arm)} />
 
@@ -293,7 +307,8 @@ function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refM
       <SpecRow label="Neck binding"      value={r(refMap, spec.neck_binding)} />
 
       <SpecGroup label="Headstock" />
-      <SpecRow label="Headstock logo"   value={r(refMap, spec.headstock_logo)} />
+      <SpecRow label="Headstock logo"    value={r(refMap, spec.headstock_logo)} />
+      <SpecRow label="Headstock binding" value={r(refMap, spec.headstock_binding)} />
     </div>
   )
 }
@@ -379,6 +394,8 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   const variants = (rawVariants ?? []) as ModelSpec[]
   const genSpecs = (rawGenSpecs ?? []) as ModelGenSpec[]
   const parentSpec = parentSpecData as { id: string; model: string } | null
+  const hasGenPickups = genSpecs.some(gs => gs.neck_pickup || gs.bridge_pickup)
+  const hasGenTunerStyle = genSpecs.some(gs => gs.tuner_style)
 
   // Versioned spec values — field_name → [{value, year, title}] sorted by year
   const versionedSpecs: Record<string, VersionedValue[]> = {}
@@ -418,16 +435,17 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     sourceColours.flatMap(sc => sc.available_custom_shop_pickup_colours ?? [])
   )]
 
-  // Group factory body colours by year_qualifier — deduplicated across all sources for that year
+  // Group factory body colours by source year — deduplicated across all sources for that year
   const factoryColoursByYear = new Map<string, string[]>()
   for (const sc of sourceColours) {
     if (!sc.source_materials || sc.source_materials.title === 'Pending — Source Required') continue
-    if (!sc.year_qualifier) continue
-    const existing = factoryColoursByYear.get(sc.year_qualifier) ?? []
+    const year = sc.source_materials.year
+    if (!year) continue
+    const existing = factoryColoursByYear.get(year) ?? []
     const merged = [...new Set([...existing, ...(sc.available_colours ?? [])])]
-    factoryColoursByYear.set(sc.year_qualifier, merged)
+    factoryColoursByYear.set(year, merged)
   }
-  const sortedFactoryYears = [...factoryColoursByYear.keys()].sort()
+  const sortedFactoryYears = [...factoryColoursByYear.keys()].sort((a, b) => parseInt(a) - parseInt(b))
 
   // Derive production years from source material years linked via model_source_colours.
   // DO NOT hardcode — add a model_source_colours row to extend the window.
@@ -559,7 +577,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
           {/* Col 1 — Universal spec */}
           <div>
             {sectionHead('Universal Specification')}
-            <SpecBlock spec={spec} refMap={refMap} bsaMetaMap={bsaMetaMap} versionedSpecs={versionedSpecs} productionYears={productionYears} />
+            <SpecBlock spec={spec} refMap={refMap} bsaMetaMap={bsaMetaMap} versionedSpecs={versionedSpecs} productionYears={productionYears} hidePickups={hasGenPickups} hideTunerStyle={hasGenTunerStyle} />
           </div>
 
           {/* Col 2 — Body colours + Hardware colours */}
@@ -675,24 +693,37 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
         </div>
       )}
 
-      {/* Generation specification columns — standard Gen 1/Gen 2, or actual gens for non-standard models */}
+      {/* Generation specification columns */}
       <div style={{ paddingTop: '40px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {(() => {
-            const standardGens = ['GEN-0001', 'GEN-0002']
-            const hasNonStandard = genSpecs.some(g => !standardGens.includes(g.generation))
-            const columns = hasNonStandard ? genSpecs.map(g => g.generation) : standardGens
-            return columns.map(genId => {
-              const gs = genSpecs.find(g => g.generation === genId) ?? null
-              return (
-                <div key={genId}>
-                  {sectionHead(r(refMap, genId) ?? genId)}
-                  <GenIndicatorBlock spec={gs ?? {}} refMap={refMap} />
-                </div>
+        {(() => {
+          const standardGens = ['GEN-0001', 'GEN-0002']
+          const hasNonStandard = genSpecs.some(g => !standardGens.includes(g.generation))
+          // Preferred display order — Gen 0.5 before Gen 1 before Gen 2, pre-production last
+          const GEN_ORDER = ['GEN-0005', 'GEN-0001', 'GEN-0002', 'GEN-0003', 'GEN-0004']
+          const columns = hasNonStandard
+            ? [...new Set(genSpecs.map(g => g.generation))].sort(
+                (a, b) => {
+                  const ai = GEN_ORDER.indexOf(a)
+                  const bi = GEN_ORDER.indexOf(b)
+                  return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+                }
               )
-            })
-          })()}
-        </div>
+            : standardGens
+          const colClass = columns.length >= 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'
+          return (
+            <div className={`grid grid-cols-1 ${colClass} gap-8`}>
+              {columns.map(genId => {
+                const gs = genSpecs.find(g => g.generation === genId) ?? null
+                return (
+                  <div key={genId}>
+                    {sectionHead(r(refMap, genId) ?? genId)}
+                    <GenIndicatorBlock spec={gs ?? {}} refMap={refMap} />
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })()}
       </div>
 
     </div>

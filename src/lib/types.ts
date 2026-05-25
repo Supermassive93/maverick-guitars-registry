@@ -106,6 +106,9 @@ export interface ModelGenSpec {
   potentiometers: string | null        // POT ref ID
   pickup_surrounds: string | null      // PSR ref ID
   pickup_colours: string | null        // PKC ref ID
+  neck_pickup: string | null           // PKP ref ID
+  middle_pickup: string | null         // PKP ref ID
+  bridge_pickup: string | null         // PKP ref ID
 
   bridge_type: string | null           // BRG ref ID
   bridge_logo: string | null           // BGL ref ID
@@ -126,12 +129,15 @@ export interface ModelGenSpec {
   headstock_style: string | null       // HST ref ID
   headstock_face: string | null        // HDF ref ID
   headstock_logo: string | null        // HGL ref ID
+  headstock_binding: string | null     // HDB ref ID
 
   trem_arm: string | null              // TRM ref ID
 
   left_handed_available: string | null // LHA ref ID
   specification_source: string | null  // SPC ref ID
   notes: string | null
+  production_year_start: number | null
+  production_year_end: number | null
   created_at: string | null
   updated_at: string | null
 }
@@ -195,6 +201,7 @@ export interface ModelSpec {
   headstock_face: string | null             // HDF ref ID
   headstock_logo: string | null             // HGL ref ID
   headstock_decorative_routing: string | null // HDR ref ID
+  headstock_binding: string | null          // HDB ref ID
 
   // Body (physical)
   weight_kg: number | null

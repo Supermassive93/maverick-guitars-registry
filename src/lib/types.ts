@@ -180,7 +180,8 @@ export interface ModelSpec {
   neck_wood: string | null             // NWD ref ID
   neck_profile: string | null          // NPR ref ID
   fretboard_wood: string | null        // FWD ref ID
-  fretboard_markers: string | null     // FMK ref ID
+  fretboard_markers: string | null      // FMK ref ID
+  side_dot_markers: string | null       // SDM ref ID
   fretboard_radius_mm: number | null
   fret_count: string | null            // FRT ref ID
   scale_length: string | null          // SCL ref ID

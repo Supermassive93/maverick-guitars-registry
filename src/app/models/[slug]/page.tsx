@@ -247,6 +247,7 @@ function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears }
 
       <SpecRow label="Fretboard"            value={r(refMap, spec.fretboard_wood)} />
       <SpecRow label="Fretboard markers"    value={r(refMap, spec.fretboard_markers)} />
+      <SpecRow label="Side-dot markers"     value={r(refMap, spec.side_dot_markers)} />
       <SpecRow label="Fretboard radius"     value={spec.fretboard_radius_mm != null ? `${spec.fretboard_radius_mm}mm` : null} />
       <SpecRow label="Fret count"           value={r(refMap, spec.fret_count)} />
       <SpecRow label="Scale length"         value={r(refMap, spec.scale_length)} />

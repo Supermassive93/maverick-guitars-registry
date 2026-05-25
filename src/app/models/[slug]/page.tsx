@@ -675,18 +675,23 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
         </div>
       )}
 
-      {/* Gen 1 & Gen 2 specification columns */}
+      {/* Generation specification columns — standard Gen 1/Gen 2, or actual gens for non-standard models */}
       <div style={{ paddingTop: '40px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {(['GEN-0001', 'GEN-0002'] as const).map(genId => {
-            const gs = genSpecs.find(g => g.generation === genId) ?? null
-            return (
-              <div key={genId}>
-                {sectionHead(r(refMap, genId) ?? genId)}
-                <GenIndicatorBlock spec={gs ?? {}} refMap={refMap} />
-              </div>
-            )
-          })}
+          {(() => {
+            const standardGens = ['GEN-0001', 'GEN-0002']
+            const hasNonStandard = genSpecs.some(g => !standardGens.includes(g.generation))
+            const columns = hasNonStandard ? genSpecs.map(g => g.generation) : standardGens
+            return columns.map(genId => {
+              const gs = genSpecs.find(g => g.generation === genId) ?? null
+              return (
+                <div key={genId}>
+                  {sectionHead(r(refMap, genId) ?? genId)}
+                  <GenIndicatorBlock spec={gs ?? {}} refMap={refMap} />
+                </div>
+              )
+            })
+          })()}
         </div>
       </div>
 

@@ -81,22 +81,28 @@ export default async function ModelsPage() {
   }
 
   const colourRows = (rawColours ?? []) as ColourRow[]
-  const col2001  = colourRows.filter(r => r.category === 'COL' && r.metadata?.source_year === 2001)
-  const col2002  = colourRows.filter(r => r.category === 'COL' && r.metadata?.source_year === 2002)
   const cscRows  = colourRows.filter(r => r.category === 'CSC' && r.id !== 'CSC-0004')
   const hwcRows  = colourRows.filter(r => r.category === 'HWC' && r.id !== 'HWC-0004')
   const pkcRows  = colourRows.filter(r => r.category === 'PKC'  && r.id !== 'PKC-0005')
   const cpkcRows = colourRows.filter(r => r.category === 'CPKC' && r.id !== 'CPKC-0005')
 
-  // Derive 2006 palette from model_source_colours entries linked to 2006 source materials
+  // Group factory body colours by model year from model_source_colours — dynamic, no hardcoded years
   type SourceColourEntry = { available_colours: string[]; source_materials: { year: string | null } | null }
-  const col2006Ids = new Set<string>()
+  const yearToColourIds = new Map<string, Set<string>>()
   for (const row of (rawSourceColours ?? []) as SourceColourEntry[]) {
-    if (row.source_materials?.year === '2006') {
-      for (const id of row.available_colours) col2006Ids.add(id)
-    }
+    const year = row.source_materials?.year
+    if (!year) continue
+    const existing = yearToColourIds.get(year) ?? new Set<string>()
+    for (const id of (row.available_colours ?? [])) existing.add(id)
+    yearToColourIds.set(year, existing)
   }
-  const col2006 = colourRows.filter(r => r.category === 'COL' && col2006Ids.has(r.id))
+  const sortedColourYears = [...yearToColourIds.keys()].sort()
+  const colByYear = new Map(
+    sortedColourYears.map(year => [
+      year,
+      colourRows.filter(r => r.category === 'COL' && (yearToColourIds.get(year)?.has(r.id) ?? false)),
+    ])
+  )
 
   const electricSeries = SERIES_ORDER.filter(s => !BASS_SERIES.includes(s))
   const bassSeries = SERIES_ORDER.filter(s => BASS_SERIES.includes(s))
@@ -622,134 +628,50 @@ export default async function ModelsPage() {
           </p>
         </div>
 
-        {/* Factory colours — 2001 Brochure */}
-        {col2001.length > 0 && (
-          <div style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ marginBottom: '24px' }}>
-              <p style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
-                color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
-              }}>Factory Colours · {col2001.length} colours</p>
-              <h3 style={{
-                fontFamily: 'var(--font-bebas)', fontSize: 'clamp(28px, 3vw, 44px)',
-                letterSpacing: '2px', color: '#c8a96e', lineHeight: 1,
-              }}>2001 Brochure</h3>
-            </div>
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-              gap: '1px', background: 'rgba(255,255,255,0.06)',
-            }}>
-              {col2001.map(row => {
-                const { code, name } = swatchLabel(row.display_name)
-                return (
-                  <div key={row.id} style={{ background: '#161616' }}>
-                    <div
-                      title={row.metadata?.hex_note ?? undefined}
-                      style={{ height: '100px', background: swatchBg(row) }}
-                    />
-                    <div style={{ padding: '12px 14px' }}>
-                      {code && <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '20px', letterSpacing: '2px', color: '#c8a96e', lineHeight: 1, marginBottom: '3px' }}>{code}</div>}
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96', lineHeight: 1.4 }}>{name}</div>
-                      {row.metadata?.pattern && (
-                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: '#3a3835', marginTop: '6px' }}>
-                          {row.metadata.pattern}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Factory colours — 2002 Catalogue */}
-        {col2002.length > 0 && (
-          <div style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ marginBottom: '24px' }}>
-              <p style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
-                color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
-              }}>Factory Colours · {col2002.length} colours</p>
-              <h3 style={{
-                fontFamily: 'var(--font-bebas)', fontSize: 'clamp(28px, 3vw, 44px)',
-                letterSpacing: '2px', color: '#c8a96e', lineHeight: 1,
-              }}>2002 Catalogue</h3>
-            </div>
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-              gap: '1px', background: 'rgba(255,255,255,0.06)',
-            }}>
-              {col2002.map(row => {
-                const { code, name } = swatchLabel(row.display_name)
-                return (
-                  <div key={row.id} style={{ background: '#161616' }}>
-                    <div
-                      title={row.metadata?.hex_note ?? undefined}
-                      style={{ height: '100px', background: swatchBg(row) }}
-                    />
-                    <div style={{ padding: '12px 14px' }}>
-                      {code && <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '20px', letterSpacing: '2px', color: '#c8a96e', lineHeight: 1, marginBottom: '3px' }}>{code}</div>}
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96', lineHeight: 1.4 }}>{name}</div>
-                      {row.metadata?.pattern && (
-                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: '#3a3835', marginTop: '6px' }}>
-                          {row.metadata.pattern}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Factory colours — 2006 */}
-        {col2006.length > 0 && (
-          <div style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ marginBottom: '24px' }}>
-              <p style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
-                color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
-              }}>Factory Colours · {col2006.length} colours</p>
-              <h3 style={{
-                fontFamily: 'var(--font-bebas)', fontSize: 'clamp(28px, 3vw, 44px)',
-                letterSpacing: '2px', color: '#c8a96e', lineHeight: 1,
-              }}>2006 Confirmed</h3>
-              <p style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57',
-                marginTop: '8px', lineHeight: 1.6, maxWidth: '560px',
+        {/* Factory colours — dynamic by model year */}
+        {sortedColourYears.map(year => {
+          const colours = colByYear.get(year) ?? []
+          if (!colours.length) return null
+          return (
+            <div key={year} style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ marginBottom: '24px' }}>
+                <p style={{
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+                  color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
+                }}>Factory Colours · {colours.length} colours</p>
+                <h3 style={{
+                  fontFamily: 'var(--font-bebas)', fontSize: 'clamp(28px, 3vw, 44px)',
+                  letterSpacing: '2px', color: '#c8a96e', lineHeight: 1,
+                }}>{year}</h3>
+              </div>
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                gap: '1px', background: 'rgba(255,255,255,0.06)',
               }}>
-                Colours confirmed available in 2006 via press sources. These are a subset of the 2002 catalogue palette carried forward.
-              </p>
-            </div>
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-              gap: '1px', background: 'rgba(255,255,255,0.06)',
-            }}>
-              {col2006.map(row => {
-                const { code, name } = swatchLabel(row.display_name)
-                return (
-                  <div key={row.id} style={{ background: '#161616' }}>
-                    <div
-                      title={row.metadata?.hex_note ?? undefined}
-                      style={{ height: '100px', background: swatchBg(row) }}
-                    />
-                    <div style={{ padding: '12px 14px' }}>
-                      {code && <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '20px', letterSpacing: '2px', color: '#c8a96e', lineHeight: 1, marginBottom: '3px' }}>{code}</div>}
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96', lineHeight: 1.4 }}>{name}</div>
-                      {row.metadata?.pattern && (
-                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: '#3a3835', marginTop: '6px' }}>
-                          {row.metadata.pattern}
-                        </div>
-                      )}
+                {colours.map(row => {
+                  const { code, name } = swatchLabel(row.display_name)
+                  return (
+                    <div key={row.id} style={{ background: '#161616' }}>
+                      <div
+                        title={row.metadata?.hex_note ?? undefined}
+                        style={{ height: '100px', background: swatchBg(row) }}
+                      />
+                      <div style={{ padding: '12px 14px' }}>
+                        {code && <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '20px', letterSpacing: '2px', color: '#c8a96e', lineHeight: 1, marginBottom: '3px' }}>{code}</div>}
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96', lineHeight: 1.4 }}>{name}</div>
+                        {row.metadata?.pattern && (
+                          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: '#3a3835', marginTop: '6px' }}>
+                            {row.metadata.pattern}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )
+        })}
 
         {/* Factory pickup colours */}
         {pkcRows.length > 0 && (

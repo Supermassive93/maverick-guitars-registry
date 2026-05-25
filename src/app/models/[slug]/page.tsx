@@ -239,8 +239,6 @@ function SpecBlock({ spec, refMap, bsaMetaMap, productionYears }: { spec: Partia
 
       <SpecGroup label="Neck" />
       <SpecRow label="Neck mount"           value={r(refMap, spec.neck_mount)} />
-      <SpecRow label="Neck wood"            value={r(refMap, spec.neck_wood)} />
-      <SpecRow label="Neck profile"         value={r(refMap, spec.neck_profile)} />
 
       <SpecRow label="Fretboard"            value={r(refMap, spec.fretboard_wood)} />
       <SpecRow label="Fretboard markers"    value={r(refMap, spec.fretboard_markers)} />
@@ -278,11 +276,11 @@ function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refM
       <SpecRow label="Trem arm"         value={r(refMap, spec.trem_arm)} />
 
       <SpecGroup label="Neck" />
+      <SpecRow label="Neck wood"         value={r(refMap, spec.neck_wood)} />
+      <SpecRow label="Neck profile"      value={r(refMap, spec.neck_profile)} />
       <SpecRow label="Neck construction" value={r(refMap, spec.neck_construction)} />
       <SpecRow label="Neck finish"       value={r(refMap, spec.neck_finish)} />
-      <SpecRow label="Neck profile"      value={r(refMap, spec.neck_profile)} />
       <SpecRow label="Neck binding"      value={r(refMap, spec.neck_binding)} />
-      <SpecRow label="Skunk stripe"      value={r(refMap, spec.skunk_stripe)} />
 
       <SpecGroup label="Headstock" />
       <SpecRow label="Headstock logo"   value={r(refMap, spec.headstock_logo)} />

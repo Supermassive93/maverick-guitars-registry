@@ -300,6 +300,7 @@ function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refM
 
 const MODEL_NICKNAMES: Record<string, string> = {
   'SF-1': 'Streetfighter',
+  'SF-3': 'Streetfighter',
 }
 
 function resolveSlug(slug: string, models: { model: string }[]): string {

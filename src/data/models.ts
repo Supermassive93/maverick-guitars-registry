@@ -77,6 +77,19 @@ export const MODEL_CATALOGUE: ModelData[] = [
     rarity: 'Extremely rare',
   },
   {
+    model: 'SF-3',
+    series: 'Evolution',
+    description: 'A premium Streetfighter prototype reviewed in Guitarist Winter 2001 that never entered mass production. The F-series body shape in special-reserve swamp ash — two-piece bookmatched — paired with DiMarzio Air Zone and Air Norton Airbuckers and a 5-way lever switch offering split-coil single-coil tones in positions 2 and 4. Available in Honeyburst only. Approximately 50% UK assembly. One of the most spec-complete Maverick prototypes documented.',
+    specs: [
+      { key: 'Body style', value: 'Superstrat' },
+      { key: 'Body wood', value: 'Special Reserve Swamp Ash' },
+      { key: 'Pickup config', value: 'HH + 5-way coil split' },
+      { key: 'Bridge', value: 'Maverick Floyd Rose — Licensed' },
+      { key: 'Fretboard', value: 'Grade AA Indian Rosewood' },
+    ],
+    rarity: 'Pre-production prototype — never entered mass production',
+  },
+  {
     model: 'X1',
     series: 'Evolution',
     description: 'Explorer/Mockingbird-influenced body with aggressive angular styling. Available in both 6 and 7-string configurations. Used by Mindstorms and American Headcharge. The heaviest-looking guitar Maverick produced.',

@@ -2,6 +2,7 @@ import { MODEL_CATALOGUE, SERIES_ORDER, BASS_SERIES } from '@/data/models'
 
 const MODEL_NICKNAMES: Record<string, string> = {
   'SF-1': 'Streetfighter',
+  'SF-3': 'Streetfighter',
 }
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { Metadata } from 'next'

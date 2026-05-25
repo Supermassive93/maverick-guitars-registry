@@ -208,11 +208,12 @@ function PickupSwatches({ pickupIds, pickupMetaMap, refMap }: {
 }
 
 // Universal specification — all fields that apply across all generations
-function SpecBlock({ spec, refMap, productionYears }: { spec: Partial<ModelSpec>; refMap: Record<string, string>; productionYears: string | null }) {
+function SpecBlock({ spec, refMap, bsaMetaMap, productionYears }: { spec: Partial<ModelSpec>; refMap: Record<string, string>; bsaMetaMap: Record<string, { maverick_body_name?: string }>; productionYears: string | null }) {
   return (
     <div>
       <SpecGroup label="Body" />
-      <SpecRow label="Body shape analogue"   value={r(refMap, spec.body_shape_analogue)} />
+      <SpecRow label="Body design analogue"  value={r(refMap, spec.body_shape_analogue)} />
+      <SpecRow label="Maverick body family"  value={spec.body_shape_analogue ? (bsaMetaMap[spec.body_shape_analogue]?.maverick_body_name ?? null) : null} />
       <SpecRow label="Body wood"            value={r(refMap, spec.body_wood)} />
       <SpecRow label="Body construction"    value={r(refMap, spec.body_construction)} />
       <SpecRow label="Joint type"           value={r(refMap, spec.joint_type)} />
@@ -239,11 +240,15 @@ function SpecBlock({ spec, refMap, productionYears }: { spec: Partial<ModelSpec>
       <SpecGroup label="Neck" />
       <SpecRow label="Neck mount"           value={r(refMap, spec.neck_mount)} />
       <SpecRow label="Neck wood"            value={r(refMap, spec.neck_wood)} />
+      <SpecRow label="Neck profile"         value={r(refMap, spec.neck_profile)} />
 
       <SpecRow label="Fretboard"            value={r(refMap, spec.fretboard_wood)} />
+      <SpecRow label="Fretboard markers"    value={r(refMap, spec.fretboard_markers)} />
+      <SpecRow label="Fretboard radius"     value={spec.fretboard_radius_mm != null ? `${spec.fretboard_radius_mm}mm` : null} />
       <SpecRow label="Fret count"           value={r(refMap, spec.fret_count)} />
       <SpecRow label="Scale length"         value={r(refMap, spec.scale_length)} />
       <SpecRow label="Nut type"             value={r(refMap, spec.nut_type)} />
+      <SpecRow label="Nut width"            value={spec.nut_width != null ? `${spec.nut_width}mm` : null} />
 
       <SpecGroup label="Headstock" />
       <SpecRow label="Headstock style"      value={r(refMap, spec.headstock_style)} />
@@ -251,6 +256,7 @@ function SpecBlock({ spec, refMap, productionYears }: { spec: Partial<ModelSpec>
       <SpecRow label="Decorative headstock routing" value={r(refMap, spec.headstock_decorative_routing)} />
 
       <SpecGroup label="Other" />
+      <SpecRow label="Weight"               value={spec.weight_kg != null ? `${spec.weight_kg}kg` : null} />
       <SpecRow label="Production years"     value={productionYears} />
       <SpecRow label="Left handed option"   value={r(refMap, spec.left_handed_available)} />
       <SpecRow label="Serial prefix"        value={spec.serial_prefix} />
@@ -269,6 +275,7 @@ function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refM
 
       <SpecGroup label="Hardware" />
       <SpecRow label="Bridge logo"      value={r(refMap, spec.bridge_logo)} />
+      <SpecRow label="Trem arm"         value={r(refMap, spec.trem_arm)} />
 
       <SpecGroup label="Neck" />
       <SpecRow label="Neck construction" value={r(refMap, spec.neck_construction)} />
@@ -340,15 +347,18 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     supabase.from('model_specifications').select('*').eq('parent_model_id', spec.id),
     supabase.from('model_gen_specs').select('*').eq('model_id', spec.id).order('generation'),
     supabase.from('guitars').select('serial_number_only').eq('model_id', spec.id).eq('status', 'Approved'),
-    supabase.from('ref_values').select('id, metadata').in('category', ['COL', 'CSC', 'HWC', 'PKC', 'CPKC']).eq('is_active', true),
+    supabase.from('ref_values').select('id, metadata').in('category', ['COL', 'CSC', 'HWC', 'PKC', 'CPKC', 'BSA']).eq('is_active', true),
     parentSpecPromise,
     supabase.from('model_source_colours').select('available_colours, available_custom_shop_colours, available_hardware_colours, available_pickup_colours, available_custom_shop_pickup_colours, notes, year_qualifier, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
   ])
 
   const colourMetaMap: Record<string, ColourMeta> = {}
   const pickupMetaMap: Record<string, PickupMeta> = {}
+  const bsaMetaMap: Record<string, { maverick_body_name?: string }> = {}
   for (const row of (rawColourMeta ?? []) as { id: string; metadata: Record<string, unknown> | null }[]) {
-    if (row.id.startsWith('PKC-') || row.id.startsWith('CPKC-')) {
+    if (row.id.startsWith('BSA-')) {
+      bsaMetaMap[row.id] = (row.metadata ?? {}) as { maverick_body_name?: string }
+    } else if (row.id.startsWith('PKC-') || row.id.startsWith('CPKC-')) {
       pickupMetaMap[row.id] = (row.metadata ?? {}) as PickupMeta
     } else {
       colourMetaMap[row.id] = (row.metadata ?? {}) as ColourMeta
@@ -383,6 +393,17 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   const customShopPickupColourIds = [...new Set(
     sourceColours.flatMap(sc => sc.available_custom_shop_pickup_colours ?? [])
   )]
+
+  // Group factory body colours by year_qualifier — deduplicated across all sources for that year
+  const factoryColoursByYear = new Map<string, string[]>()
+  for (const sc of sourceColours) {
+    if (!sc.source_materials || sc.source_materials.title === 'Pending — Source Required') continue
+    if (!sc.year_qualifier) continue
+    const existing = factoryColoursByYear.get(sc.year_qualifier) ?? []
+    const merged = [...new Set([...existing, ...(sc.available_colours ?? [])])]
+    factoryColoursByYear.set(sc.year_qualifier, merged)
+  }
+  const sortedFactoryYears = [...factoryColoursByYear.keys()].sort()
 
   // Derive production years from source material years linked via model_source_colours.
   // DO NOT hardcode — add a model_source_colours row to extend the window.
@@ -514,29 +535,26 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
           {/* Col 1 — Universal spec */}
           <div>
             {sectionHead('Universal Specification')}
-            <SpecBlock spec={spec} refMap={refMap} productionYears={productionYears} />
+            <SpecBlock spec={spec} refMap={refMap} bsaMetaMap={bsaMetaMap} productionYears={productionYears} />
           </div>
 
           {/* Col 2 — Body colours + Hardware colours */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
 
-            {/* Factory body colours by source year */}
+            {/* Factory body colours grouped by year — deduplicated across sources */}
             <div>
               {sectionHead('Factory Body Colours')}
-              {sourceColours.filter(sc => sc.source_materials && sc.source_materials.title !== 'Pending — Source Required').length > 0 ? (
+              {sortedFactoryYears.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-                  {sourceColours.filter(sc => sc.source_materials && sc.source_materials.title !== 'Pending — Source Required').map((sc, i) => (
-                    <div key={sc.source_materials?.id ?? i}>
+                  {sortedFactoryYears.map(year => (
+                    <div key={year}>
                       <p style={{
                         fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px',
                         textTransform: 'uppercase', color: '#5c5a57', marginBottom: '12px',
                       }}>
-                        {sourceLabel(sc.source_materials)}
+                        Available Colours {year}
                       </p>
-                      <ColourSwatches colours={sc.available_colours} colourMetaMap={colourMetaMap} refMap={refMap} />
-                      {sc.notes && (
-                        <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#3a3835', marginTop: '8px' }}>{sc.notes}</p>
-                      )}
+                      <ColourSwatches colours={factoryColoursByYear.get(year) ?? []} colourMetaMap={colourMetaMap} refMap={refMap} />
                     </div>
                   ))}
                 </div>

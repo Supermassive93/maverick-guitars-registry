@@ -127,6 +127,8 @@ export interface ModelGenSpec {
   headstock_face: string | null        // HDF ref ID
   headstock_logo: string | null        // HGL ref ID
 
+  trem_arm: string | null              // TRM ref ID
+
   left_handed_available: string | null // LHA ref ID
   specification_source: string | null  // SPC ref ID
   notes: string | null
@@ -178,17 +180,23 @@ export interface ModelSpec {
   neck_wood: string | null             // NWD ref ID
   neck_profile: string | null          // NPR ref ID
   fretboard_wood: string | null        // FWD ref ID
+  fretboard_markers: string | null     // FMK ref ID
+  fretboard_radius_mm: number | null
   fret_count: string | null            // FRT ref ID
   scale_length: string | null          // SCL ref ID
   neck_binding: string | null          // NKB ref ID
   skunk_stripe: string | null          // SKS ref ID
   nut_type: string | null              // NUT ref ID
+  nut_width: number | null             // mm
 
   // Headstock
   headstock_style: string | null            // HST ref ID
   headstock_face: string | null             // HDF ref ID
   headstock_logo: string | null             // HGL ref ID
   headstock_decorative_routing: string | null // HDR ref ID
+
+  // Body (physical)
+  weight_kg: number | null
 
   // Other
   left_handed_available: string | null // LHA ref ID

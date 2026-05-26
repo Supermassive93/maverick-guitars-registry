@@ -232,7 +232,7 @@ function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears, 
       <SpecRow label="Coil tap"             value={r(refMap, spec.coil_tap)} />
       <SpecRow label="Selector switch type" value={
         versionedSpecs['switch_type']?.length > 0
-          ? versionedSpecs['switch_type'].map(v => `${v.value}${v.year ? ` (${v.year})` : ''}`).join(' → ')
+          ? versionedSpecs['switch_type'].map(v => `${r(refMap, v.value) ?? v.value}${v.year ? ` (${v.year})` : ''}`).join(' → ')
           : r(refMap, spec.switch_type)
       } />
       <SpecRow label="Volume pot"           value={r(refMap, spec.volume_pot)} />
@@ -249,7 +249,6 @@ function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears, 
 
       <SpecRow label="Fretboard"            value={r(refMap, spec.fretboard_wood)} />
       <SpecRow label="Fretboard markers"    value={r(refMap, spec.fretboard_markers)} />
-      <SpecRow label="Side-dot markers"     value={r(refMap, spec.side_dot_markers)} />
       <SpecRow label="Fretboard radius"     value={spec.fretboard_radius_mm != null ? `${spec.fretboard_radius_mm}mm` : null} />
       <SpecRow label="Fret count"           value={r(refMap, spec.fret_count)} />
       <SpecRow label="Scale length"         value={r(refMap, spec.scale_length)} />
@@ -263,7 +262,6 @@ function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears, 
       <SpecGroup label="Headstock" />
       <SpecRow label="Headstock style"      value={r(refMap, spec.headstock_style)} />
       <SpecRow label="Headstock face"       value={r(refMap, spec.headstock_face)} />
-      <SpecRow label="Headstock binding"    value={r(refMap, spec.headstock_binding)} />
       <SpecRow label="Decorative headstock routing" value={r(refMap, spec.headstock_decorative_routing)} />
 
       <SpecGroup label="Other" />
@@ -305,6 +303,7 @@ function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refM
       <SpecRow label="Neck construction" value={r(refMap, spec.neck_construction)} />
       <SpecRow label="Neck finish"       value={r(refMap, spec.neck_finish)} />
       <SpecRow label="Neck binding"      value={r(refMap, spec.neck_binding)} />
+      <SpecRow label="Side-dot markers" value={r(refMap, spec.side_dot_markers)} />
 
       <SpecGroup label="Headstock" />
       <SpecRow label="Headstock logo"    value={r(refMap, spec.headstock_logo)} />
@@ -367,6 +366,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     { data: parentSpecData },
     { data: rawSourceColours },
     { data: rawSpecSources },
+    { data: rawAppearances },
   ] = await Promise.all([
     getRefValues(),
     supabase.from('model_specifications').select('*').eq('parent_model_id', spec.id),
@@ -376,6 +376,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     parentSpecPromise,
     supabase.from('model_source_colours').select('available_colours, available_custom_shop_colours, available_hardware_colours, available_pickup_colours, available_custom_shop_pickup_colours, notes, year_qualifier, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
     supabase.from('model_spec_sources').select('field_name, field_value, source_materials(year, title)').eq('spec_id', spec.id).not('field_value', 'is', null),
+    supabase.from('model_appearances').select('appears_in, source_materials(year)').eq('model_id', spec.id),
   ])
 
   const colourMetaMap: Record<string, ColourMeta> = {}
@@ -447,23 +448,33 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   }
   const sortedFactoryYears = [...factoryColoursByYear.keys()].sort((a, b) => parseInt(a) - parseInt(b))
 
-  // Derive production years from source material years linked via model_source_colours.
-  // DO NOT hardcode — add a model_source_colours row to extend the window.
-  const sourceYears = sourceColours
-    .map(sc => sc.source_materials?.year)
-    .filter((y): y is string => y != null)
-    .map(y => parseInt(y))
+  // Derive production years from model_appearances.
+  // start = MIN(appears_in=true year); end = MIN(appears_in=false year) - 1, or MAX(true year) if no confirmed absences.
+  // To correct a model's production window, add rows to model_appearances.
+  type AppearanceRow = { appears_in: boolean; source_materials: { year: string | null } | null }
+  const appearances = (rawAppearances ?? []) as AppearanceRow[]
+  const trueYears = appearances
+    .filter(a => a.appears_in && a.source_materials?.year != null)
+    .map(a => parseInt(a.source_materials!.year!))
     .filter(y => !isNaN(y))
     .sort((a, b) => a - b)
-  const singleYear = sourceYears.length > 0 && sourceYears[0] === sourceYears[sourceYears.length - 1]
+  const falseYears = appearances
+    .filter(a => !a.appears_in && a.source_materials?.year != null)
+    .map(a => parseInt(a.source_materials!.year!))
+    .filter(y => !isNaN(y))
+  const yearStart = trueYears.length > 0 ? trueYears[0] : null
+  const yearEnd = falseYears.length > 0
+    ? Math.min(...falseYears) - 1
+    : trueYears.length > 0 ? trueYears[trueYears.length - 1] : null
+  const singleYear = yearStart != null && yearStart === yearEnd
   const yearQualifier = singleYear
     ? (sourceColours.find(sc => sc.year_qualifier)?.year_qualifier ?? null)
     : null
-  const productionYears = sourceYears.length === 0
+  const productionYears = yearStart == null
     ? null
     : singleYear
-      ? yearQualifier ? `${yearQualifier} ${sourceYears[0]}` : String(sourceYears[0])
-      : `${sourceYears[0]}–${sourceYears[sourceYears.length - 1]}`
+      ? yearQualifier ? `${yearQualifier} ${yearStart}` : String(yearStart)
+      : `${yearStart}–${yearEnd}`
 
   const serials = (rawRegistry ?? [])
     .map((g: { serial_number_only: number | null }) => g.serial_number_only)
@@ -682,6 +693,12 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
                   <div style={{ display: 'flex', gap: '16px', padding: '6px 0' }}>
                     <span style={{ color: '#5c5a57', width: '120px', flexShrink: 0, fontFamily: 'var(--font-dm-mono)', fontSize: '11px' }}>Bridge</span>
                     <span style={{ color: '#f0ede8', fontSize: '13px' }}>{r(refMap, v.bridge_type)}</span>
+                  </div>
+                )}
+                {v.nut_type && (
+                  <div style={{ display: 'flex', gap: '16px', padding: '6px 0' }}>
+                    <span style={{ color: '#5c5a57', width: '120px', flexShrink: 0, fontFamily: 'var(--font-dm-mono)', fontSize: '11px' }}>Nut type</span>
+                    <span style={{ color: '#f0ede8', fontSize: '13px' }}>{r(refMap, v.nut_type)}</span>
                   </div>
                 )}
                 {v.description && (

@@ -119,6 +119,7 @@ export interface ModelGenSpec {
   neck_wood: string | null             // NWD ref ID
   neck_profile: string | null          // NPR ref ID
   fretboard_wood: string | null        // FWD ref ID
+  side_dot_markers: string | null      // SDM ref ID
   fret_count: string | null            // FRT ref ID
   scale_length: string | null          // SCL ref ID
   neck_binding: string | null          // NKB ref ID
@@ -211,10 +212,10 @@ export interface ModelSpec {
   original_rrp: number | null
   left_handed_rrp: number | null
   // NOTE: production_years is NOT stored — it is derived at render time from
-  // model_source_colours → source_materials.year (min–max range).
+  // model_appearances → source_materials.year.
+  // start = MIN(appears_in=true year); end = MIN(appears_in=false year) - 1, or MAX(true year).
   // Do NOT add a production_years column to model_specifications.
-  // To extend a model's production window, add a model_source_colours entry
-  // linking the model to the relevant source material.
+  // To correct a model's production window, add rows to model_appearances.
 
   // Metadata
   specification_source: string | null  // SPC ref ID

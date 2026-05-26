@@ -241,7 +241,7 @@ function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears, 
       <SpecRow label="Coil tap"             value={r(refMap, spec.coil_tap)} />
       <SpecRow label="Selector switch type" value={
         versionedSpecs['switch_type']?.length > 0
-          ? versionedSpecs['switch_type'].map(v => `${r(refMap, v.value) ?? v.value}${v.year ? ` (${v.year})` : ''}`).join(' → ')
+          ? versionedSpecs['switch_type'].map(v => `${r(refMap, v.value) ?? v.value}${versionedSpecs['switch_type'].length > 1 && v.year ? ` (${v.year})` : ''}`).join(' → ')
           : r(refMap, spec.switch_type)
       } />
       <SpecRow label="Volume pot"           value={r(refMap, spec.volume_pot)} />

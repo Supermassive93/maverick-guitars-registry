@@ -585,7 +585,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
       </div>
 
       {/* Universal specification + Available colours */}
-      <div style={{ marginBottom: '48px', paddingBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{ marginBottom: '48px', paddingBottom: '40px' }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
 
           {/* Col 1 — Universal spec */}
@@ -666,7 +666,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
 
       {/* HT Variants */}
       {variants.length > 0 && (
-        <div style={{ marginBottom: '48px', paddingBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ marginBottom: '48px', paddingBottom: '40px' }}>
           {sectionHead('HT Variants')}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1px', background: 'rgba(255,255,255,0.06)' }}>
             {variants.map(v => (
@@ -714,7 +714,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
       )}
 
       {/* Generation specification comparison table */}
-      <div style={{ paddingTop: '40px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{ paddingTop: '40px' }}>
         {(() => {
           const standardGens = ['GEN-0001', 'GEN-0002']
           const hasNonStandard = genSpecs.some(g => !standardGens.includes(g.generation))

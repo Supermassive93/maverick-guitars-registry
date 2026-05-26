@@ -490,7 +490,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
 
   const sectionHead = (label: string) => (
     <p style={{
-      fontSize: '10px', fontFamily: 'var(--font-dm-mono)', color: '#5c5a57',
+      fontSize: '10px', fontFamily: 'var(--font-dm-mono)', color: '#c8a96e',
       letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px',
     }}>
       {label}
@@ -605,8 +605,8 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
                   {sortedFactoryYears.map(year => (
                     <div key={year}>
                       <p style={{
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px',
-                        textTransform: 'uppercase', color: '#5c5a57', marginBottom: '12px',
+                        fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '2px',
+                        textTransform: 'uppercase', color: '#3a3835', marginBottom: '12px',
                       }}>
                         Available Colours {year}
                       </p>
@@ -651,7 +651,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
 
             {/* Available hardware colours — aggregated across full production run */}
             <div>
-              {sectionHead('Available Hardware Colours')}
+              {sectionHead('Factory Hardware Colours')}
               {hardwareColourIds.length > 0 ? (
                 <ColourSwatches colours={hardwareColourIds} colourMetaMap={colourMetaMap} refMap={refMap} />
               ) : (

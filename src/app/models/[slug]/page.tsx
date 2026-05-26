@@ -212,6 +212,15 @@ type VersionedValue = { value: string; year: string | null; title: string }
 function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears, hidePickups, hideTunerStyle }: { spec: Partial<ModelSpec>; refMap: Record<string, string>; bsaMetaMap: Record<string, { maverick_body_name?: string }>; versionedSpecs: Record<string, VersionedValue[]>; productionYears: string | null; hidePickups?: boolean; hideTunerStyle?: boolean }) {
   return (
     <div>
+      <SpecGroup label="Production Info" />
+      <SpecRow label="Production years"     value={productionYears} />
+      {/* TODO: Serial Range — derive min/max serial_number_only from approved registry guitars for this model */}
+      <SpecRow label="Serial range"         value={null} />
+      <SpecRow label="Original RRP"         value={spec.original_rrp != null ? `£${spec.original_rrp}` : 'Unknown'} />
+      <SpecRow label="Serial prefix"        value={spec.serial_prefix} />
+      <SpecRow label="Weight"               value={spec.weight_kg != null ? `${spec.weight_kg}kg` : null} />
+      <SpecRow label="Left handed option"   value={r(refMap, spec.left_handed_available)} />
+
       <SpecGroup label="Body" />
       <SpecRow label="Body design analogue"  value={r(refMap, spec.body_shape_analogue)} />
       <SpecRow label="Maverick body family"  value={spec.body_shape_analogue ? (bsaMetaMap[spec.body_shape_analogue]?.maverick_body_name ?? null) : null} />
@@ -246,7 +255,6 @@ function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears, 
 
       <SpecGroup label="Neck" />
       <SpecRow label="Neck mount"           value={r(refMap, spec.neck_mount)} />
-
       <SpecRow label="Fretboard"            value={r(refMap, spec.fretboard_wood)} />
       <SpecRow label="Fretboard markers"    value={r(refMap, spec.fretboard_markers)} />
       <SpecRow label="Fretboard radius"     value={spec.fretboard_radius_mm != null ? `${spec.fretboard_radius_mm}mm` : null} />
@@ -263,13 +271,6 @@ function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears, 
       <SpecRow label="Headstock style"      value={r(refMap, spec.headstock_style)} />
       <SpecRow label="Headstock face"       value={r(refMap, spec.headstock_face)} />
       <SpecRow label="Decorative headstock routing" value={r(refMap, spec.headstock_decorative_routing)} />
-
-      <SpecGroup label="Other" />
-      <SpecRow label="Weight"               value={spec.weight_kg != null ? `${spec.weight_kg}kg` : null} />
-      <SpecRow label="Production years"     value={productionYears} />
-      <SpecRow label="Left handed option"   value={r(refMap, spec.left_handed_available)} />
-      <SpecRow label="Serial prefix"        value={spec.serial_prefix} />
-      <SpecRow label="Original RRP"         value={spec.original_rrp != null ? `£${spec.original_rrp}` : 'Unknown'} />
     </div>
   )
 }
@@ -285,6 +286,8 @@ function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refM
   return (
     <div>
       <SpecRow label="Production years" value={productionYearDisplay} />
+      {/* TODO: Serial range — derive min/max serial_number_only from approved registry guitars matching this model_id + generation */}
+      <SpecRow label="Serial range"     value={null} />
       <SpecGroup label="Pickups & electronics" />
       <SpecRow label="Neck pickup"      value={r(refMap, spec.neck_pickup)} />
       <SpecRow label="Middle pickup"    value={r(refMap, spec.middle_pickup)} />

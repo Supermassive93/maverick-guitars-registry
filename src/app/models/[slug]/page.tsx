@@ -256,7 +256,6 @@ function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears, 
       <SpecGroup label="Neck" />
       <SpecRow label="Neck mount"           value={r(refMap, spec.neck_mount)} />
       <SpecRow label="Fretboard"            value={r(refMap, spec.fretboard_wood)} />
-      <SpecRow label="Fretboard markers"    value={r(refMap, spec.fretboard_markers)} />
       <SpecRow label="Fretboard radius"     value={spec.fretboard_radius_mm != null ? `${spec.fretboard_radius_mm}mm` : null} />
       <SpecRow label="Fret count"           value={r(refMap, spec.fret_count)} />
       <SpecRow label="Scale length"         value={r(refMap, spec.scale_length)} />
@@ -292,7 +291,7 @@ function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refM
       <SpecRow label="Neck pickup"      value={r(refMap, spec.neck_pickup)} />
       <SpecRow label="Middle pickup"    value={r(refMap, spec.middle_pickup)} />
       <SpecRow label="Bridge pickup"    value={r(refMap, spec.bridge_pickup)} />
-      <SpecRow label="Switch knob"      value={r(refMap, spec.switch_knob)} />
+      <SpecRow label="Selector switch knob" value={r(refMap, spec.switch_knob)} />
       <SpecRow label="Pickup surrounds" value={r(refMap, spec.pickup_surrounds)} />
 
       <SpecGroup label="Hardware" />
@@ -301,9 +300,7 @@ function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refM
       <SpecRow label="Trem arm"         value={r(refMap, spec.trem_arm)} />
 
       <SpecGroup label="Neck" />
-      <SpecRow label="Neck wood"         value={r(refMap, spec.neck_wood)} />
       <SpecRow label="Neck profile"      value={r(refMap, spec.neck_profile)} />
-      <SpecRow label="Neck construction" value={r(refMap, spec.neck_construction)} />
       <SpecRow label="Neck finish"       value={r(refMap, spec.neck_finish)} />
       <SpecRow label="Neck binding"      value={r(refMap, spec.neck_binding)} />
       <SpecRow label="Side-dot markers" value={r(refMap, spec.side_dot_markers)} />
@@ -451,8 +448,16 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   }
   const sortedFactoryYears = [...factoryColoursByYear.keys()].sort((a, b) => parseInt(a) - parseInt(b))
 
+  // Collect undated factory body colours — confirmed but pending source citation
+  const undatedFactoryColourIds = [...new Set(
+    sourceColours
+      .filter(sc => !sc.source_materials?.year)
+      .flatMap(sc => sc.available_colours ?? [])
+  )]
+
   // Derive production years from model_appearances.
-  // start = MIN(appears_in=true year); end = MIN(appears_in=false year) - 1, or MAX(true year) if no confirmed absences.
+  // start = MIN(true years), or MAX(false years before first true) + 1 if confirmed absences precede first appearance.
+  // end   = MIN(false years after last true) - 1, or MAX(true years) if no confirmed absences follow.
   // To correct a model's production window, add rows to model_appearances.
   type AppearanceRow = { appears_in: boolean; source_materials: { year: string | null } | null }
   const appearances = (rawAppearances ?? []) as AppearanceRow[]
@@ -465,10 +470,16 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     .filter(a => !a.appears_in && a.source_materials?.year != null)
     .map(a => parseInt(a.source_materials!.year!))
     .filter(y => !isNaN(y))
-  const yearStart = trueYears.length > 0 ? trueYears[0] : null
-  const yearEnd = falseYears.length > 0
-    ? Math.min(...falseYears) - 1
-    : trueYears.length > 0 ? trueYears[trueYears.length - 1] : null
+  const firstTrue = trueYears.length > 0 ? trueYears[0] : null
+  const lastTrue  = trueYears.length > 0 ? trueYears[trueYears.length - 1] : null
+  const falseYearsBefore = firstTrue != null ? falseYears.filter(y => y < firstTrue) : []
+  const falseYearsAfter  = lastTrue  != null ? falseYears.filter(y => y > lastTrue)  : []
+  const yearStart = firstTrue != null
+    ? (falseYearsBefore.length > 0 ? Math.max(...falseYearsBefore) + 1 : firstTrue)
+    : null
+  const yearEnd = lastTrue != null
+    ? (falseYearsAfter.length > 0 ? Math.min(...falseYearsAfter) - 1 : lastTrue)
+    : null
   const singleYear = yearStart != null && yearStart === yearEnd
   const yearQualifier = singleYear
     ? (sourceColours.find(sc => sc.year_qualifier)?.year_qualifier ?? null)
@@ -600,7 +611,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
             {/* Factory body colours grouped by year — deduplicated across sources */}
             <div>
               {sectionHead('Factory Body Colours')}
-              {sortedFactoryYears.length > 0 ? (
+              {sortedFactoryYears.length > 0 || undatedFactoryColourIds.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
                   {sortedFactoryYears.map(year => (
                     <div key={year}>
@@ -613,6 +624,17 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
                       <ColourSwatches colours={factoryColoursByYear.get(year) ?? []} colourMetaMap={colourMetaMap} refMap={refMap} />
                     </div>
                   ))}
+                  {undatedFactoryColourIds.length > 0 && (
+                    <div>
+                      <p style={{
+                        fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '2px',
+                        textTransform: 'uppercase', color: '#3a3835', marginBottom: '12px',
+                      }}>
+                        Available Colours — Source Pending
+                      </p>
+                      <ColourSwatches colours={undatedFactoryColourIds} colourMetaMap={colourMetaMap} refMap={refMap} />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b' }}>No colour data yet</p>
@@ -776,7 +798,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
               {dataRow('Neck pickup',      columns.map(id => r(refMap, gsFor(id).neck_pickup)))}
               {dataRow('Middle pickup',    columns.map(id => r(refMap, gsFor(id).middle_pickup)))}
               {dataRow('Bridge pickup',    columns.map(id => r(refMap, gsFor(id).bridge_pickup)))}
-              {dataRow('Switch knob',      columns.map(id => r(refMap, gsFor(id).switch_knob)))}
+              {dataRow('Selector switch knob', columns.map(id => r(refMap, gsFor(id).switch_knob)))}
               {dataRow('Pickup surrounds', columns.map(id => r(refMap, gsFor(id).pickup_surrounds)))}
 
               {/* Hardware */}
@@ -792,8 +814,9 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
               {dataRow('Neck profile',      columns.map(id => r(refMap, gsFor(id).neck_profile)))}
               {dataRow('Neck construction', columns.map(id => r(refMap, gsFor(id).neck_construction)))}
               {dataRow('Neck finish',       columns.map(id => r(refMap, gsFor(id).neck_finish)))}
-              {dataRow('Neck binding',      columns.map(id => r(refMap, gsFor(id).neck_binding)))}
-              {dataRow('Side-dot markers',  columns.map(id => r(refMap, gsFor(id).side_dot_markers)))}
+              {dataRow('Neck binding',        columns.map(id => r(refMap, gsFor(id).neck_binding)))}
+              {dataRow('Side-dot markers',   columns.map(id => r(refMap, gsFor(id).side_dot_markers)))}
+              {dataRow('Fretboard markers',  columns.map(id => r(refMap, gsFor(id).fretboard_markers)))}
 
               {/* Headstock */}
               {groupHeader('Headstock')}

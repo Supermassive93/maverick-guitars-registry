@@ -120,6 +120,7 @@ export interface ModelGenSpec {
   neck_profile: string | null          // NPR ref ID
   fretboard_wood: string | null        // FWD ref ID
   side_dot_markers: string | null      // SDM ref ID
+  fretboard_markers: string | null     // FMK ref ID
   fret_count: string | null            // FRT ref ID
   scale_length: string | null          // SCL ref ID
   neck_binding: string | null          // NKB ref ID

@@ -713,12 +713,11 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
         </div>
       )}
 
-      {/* Generation specification columns */}
+      {/* Generation specification comparison table */}
       <div style={{ paddingTop: '40px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         {(() => {
           const standardGens = ['GEN-0001', 'GEN-0002']
           const hasNonStandard = genSpecs.some(g => !standardGens.includes(g.generation))
-          // Preferred display order — Gen 0.5 before Gen 1 before Gen 2, pre-production last
           const GEN_ORDER = ['GEN-0005', 'GEN-0001', 'GEN-0002', 'GEN-0003', 'GEN-0004']
           const columns = hasNonStandard
             ? [...new Set(genSpecs.map(g => g.generation))].sort(
@@ -729,18 +728,78 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
                 }
               )
             : standardGens
-          const colClass = columns.length >= 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'
+
+          const gsFor = (genId: string): Partial<ModelGenSpec> =>
+            genSpecs.find(g => g.generation === genId) ?? {}
+
+          const genYears = (gs: Partial<ModelGenSpec>): string | null => {
+            if (gs.production_year_start == null) return null
+            return gs.production_year_start === gs.production_year_end
+              ? String(gs.production_year_start)
+              : `${gs.production_year_start}–${gs.production_year_end}`
+          }
+
+          const groupHeader = (label: string) => (
+            <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: '#3a3835', marginTop: '16px', marginBottom: '4px' }}>
+              {label}
+            </p>
+          )
+          const dataRow = (label: string, values: (string | null | undefined)[]) => (
+            <div style={{ display: 'flex', gap: '0', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '13px' }}>
+              <span style={{ color: '#5c5a57', width: '180px', flexShrink: 0, fontFamily: 'var(--font-dm-mono)', fontSize: '11px' }}>{label}</span>
+              {values.map((v, i) => (
+                <span key={i} style={{ flex: 1, color: v ? '#f0ede8' : '#2e2d2b', paddingLeft: '16px' }}>{v ?? '—'}</span>
+              ))}
+            </div>
+          )
+
           return (
-            <div className={`grid grid-cols-1 ${colClass} gap-8`}>
-              {columns.map(genId => {
-                const gs = genSpecs.find(g => g.generation === genId) ?? null
-                return (
-                  <div key={genId}>
-                    {sectionHead(r(refMap, genId) ?? genId)}
-                    <GenIndicatorBlock spec={gs ?? {}} refMap={refMap} />
+            <div>
+              {/* Column headers */}
+              <div style={{ display: 'flex', paddingBottom: '12px', marginBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ width: '180px', flexShrink: 0 }} />
+                {columns.map(genId => (
+                  <div key={genId} style={{ flex: 1, paddingLeft: '16px', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', color: '#c8a96e' }}>
+                    {r(refMap, genId) ?? genId}
                   </div>
-                )
-              })}
+                ))}
+              </div>
+
+              {/* Production Info */}
+              {groupHeader('Production Info')}
+              {dataRow('Production years', columns.map(id => genYears(gsFor(id))))}
+              {/* TODO: Serial range — derive min/max serial_number_only from registry guitars matching this model_id + generation */}
+              {dataRow('Serial range', columns.map(() => null))}
+
+              {/* Pickups & electronics */}
+              {groupHeader('Pickups & electronics')}
+              {dataRow('Neck pickup',      columns.map(id => r(refMap, gsFor(id).neck_pickup)))}
+              {dataRow('Middle pickup',    columns.map(id => r(refMap, gsFor(id).middle_pickup)))}
+              {dataRow('Bridge pickup',    columns.map(id => r(refMap, gsFor(id).bridge_pickup)))}
+              {dataRow('Switch knob',      columns.map(id => r(refMap, gsFor(id).switch_knob)))}
+              {dataRow('Pickup surrounds', columns.map(id => r(refMap, gsFor(id).pickup_surrounds)))}
+
+              {/* Hardware */}
+              {groupHeader('Hardware')}
+              {dataRow('Hardware colour', columns.map(id => r(refMap, gsFor(id).hardware_colour)))}
+              {dataRow('Tuner style',     columns.map(id => r(refMap, gsFor(id).tuner_style)))}
+              {dataRow('Bridge logo',     columns.map(id => r(refMap, gsFor(id).bridge_logo)))}
+              {dataRow('Trem arm',        columns.map(id => r(refMap, gsFor(id).trem_arm)))}
+
+              {/* Neck */}
+              {groupHeader('Neck')}
+              {dataRow('Neck wood',         columns.map(id => r(refMap, gsFor(id).neck_wood)))}
+              {dataRow('Neck profile',      columns.map(id => r(refMap, gsFor(id).neck_profile)))}
+              {dataRow('Neck construction', columns.map(id => r(refMap, gsFor(id).neck_construction)))}
+              {dataRow('Neck finish',       columns.map(id => r(refMap, gsFor(id).neck_finish)))}
+              {dataRow('Neck binding',      columns.map(id => r(refMap, gsFor(id).neck_binding)))}
+              {dataRow('Side-dot markers',  columns.map(id => r(refMap, gsFor(id).side_dot_markers)))}
+
+              {/* Headstock */}
+              {groupHeader('Headstock')}
+              {dataRow('Headstock logo',    columns.map(id => r(refMap, gsFor(id).headstock_logo)))}
+              {dataRow('Headstock binding', columns.map(id => r(refMap, gsFor(id).headstock_binding)))}
+
             </div>
           )
         })()}

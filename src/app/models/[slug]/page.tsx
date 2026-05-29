@@ -142,7 +142,7 @@ function PickupSwatches({ pickupIds, pickupMetaMap, refMap, neckPkp, middlePkp, 
 
         return (
           <div key={id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end' }}>
               {icons.length > 0
                 ? icons.map((html, i) => (
                     <div key={i} style={{ lineHeight: 0 }} dangerouslySetInnerHTML={{ __html: html }} />

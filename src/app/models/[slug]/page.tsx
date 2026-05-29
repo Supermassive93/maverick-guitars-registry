@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getRefValues, r } from '@/lib/ref-values'
 import type { ModelSpec, ModelGenSpec } from '@/lib/types'
+import { resolvePickupSvg, type SvgMapRow } from '@/lib/pickup-svg'
+import { MODEL_CATALOGUE, SERIES_ORDER, BASS_SERIES } from '@/data/models'
 
 export const revalidate = 60
 
@@ -105,99 +107,55 @@ function ColourSwatches({ colours, colourMetaMap, refMap }: {
   )
 }
 
-function HumbuckerIcon({ meta }: { meta: PickupMeta | null }) {
-  const style = meta?.style ?? 'covered'
-  const primary = meta?.hex_primary ?? '#1e1c1a'
-  const secondary = meta?.hex_secondary ?? primary
-  const line = 'rgba(255,255,255,0.45)'
-  const pole = 'rgba(0,0,0,0.55)'
-  const sw = '13.75'
-  const cys = [300, 505.5, 710.5, 917, 1123, 1329]
-  const screwYs = [257.5, 462.5, 668.5, 874.5, 1080.5, 1286.5]
-
-  if (style === 'open_coil') {
-    return (
-      <svg viewBox="3319 111 766 1407" width="38" height="70" style={{ display: 'block' }}>
-        {/* Bobbin fills */}
-        <rect x="3326" y="118" width="365" height="1393" rx="182" fill={primary} />
-        <rect x="3713" y="118" width="365" height="1393" rx="182" fill={secondary} />
-        {/* Pole fills */}
-        {cys.map(cy => <circle key={`l${cy}`} cx="3508.5" cy={cy} r="60.5" fill={pole} />)}
-        {cys.map(cy => <circle key={`r${cy}`} cx="3895.5" cy={cy} r="60.5" fill={pole} />)}
-        {/* Outer housing outline */}
-        <path d="M3326 243.335C3326 174.114 3382.11 118 3451.34 118L3952.67 118C4021.89 118 4078 174.114 4078 243.335L4078 1385.67C4078 1454.89 4021.89 1511 3952.67 1511L3451.34 1511C3382.11 1511 3326 1454.89 3326 1385.67Z" stroke={line} strokeWidth={sw} strokeMiterlimit="8" fill="none" />
-        {/* Left bobbin */}
-        <g stroke={line} strokeWidth={sw} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit="10">
-          <path d="M3508.5 118C3609.29 118 3691 199.484 3691 300"/>
-          <path d="M3326 300C3326 199.484 3407.71 118 3508.5 118"/>
-          <path d="M3508.5 1511C3407.71 1511 3326 1429.52 3326 1329"/>
-          <path d="M3691 1329C3691 1429.52 3609.29 1511 3508.5 1511"/>
-          <path d="M3326 300 3326 1329.12"/>
-          <path d="M3691 300 3691 1329.12"/>
-          {cys.map(cy => <circle key={cy} cx="3508.5" cy={cy} r="60.5"/>)}
-        </g>
-        {/* Right bobbin */}
-        <g stroke={line} strokeWidth={sw} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit="10">
-          <path d="M3895.5 118C3996.29 118 4078 199.484 4078 300"/>
-          <path d="M3713 300C3713 199.484 3794.71 118 3895.5 118"/>
-          <path d="M3895.5 1511C3794.71 1511 3713 1429.52 3713 1329"/>
-          <path d="M4078 1329C4078 1429.52 3996.29 1511 3895.5 1511"/>
-          <path d="M3713 300 3713 1329.12"/>
-          <path d="M4078 300 4078 1329.12"/>
-          {cys.map(cy => <circle key={cy} cx="3895.5" cy={cy} r="60.5"/>)}
-        </g>
-        {screwYs.map(y => (
-          <path key={y} d="M0 0 85.8837 85.8837" stroke={line} strokeWidth="22.9167" strokeMiterlimit="8" fill="none" transform={`matrix(-1 0 0 1 3551.38 ${y})`}/>
-        ))}
-      </svg>
-    )
-  }
-
-  // Covered
-  return (
-    <svg viewBox="2362 111 766 1407" width="38" height="70" style={{ display: 'block' }}>
-      {/* Body fill */}
-      <rect x="2369" y="118" width="752" height="1393" rx="125" fill={primary} />
-      {/* Pole piece fills */}
-      {cys.map(cy => <circle key={cy} cx="2551.5" cy={cy} r="60.5" fill={pole} />)}
-      {/* Outer housing outline */}
-      <path d="M2369 243.335C2369 174.114 2425.11 118 2494.34 118L2995.67 118C3064.89 118 3121 174.114 3121 243.335L3121 1385.67C3121 1454.89 3064.89 1511 2995.67 1511L2494.34 1511C2425.11 1511 2369 1454.89 2369 1385.67Z" stroke={line} strokeWidth={sw} strokeMiterlimit="8" fill="none" />
-      {/* Rails and pole circles */}
-      <g stroke={line} strokeWidth={sw} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit="10">
-        <path d="M2369 300 2369 1329.12"/>
-        <path d="M3121 300 3121 1329.12"/>
-        {cys.map(cy => <circle key={cy} cx="2551.5" cy={cy} r="60.5"/>)}
-      </g>
-      {screwYs.map(y => (
-        <path key={y} d="M0 0 85.8837 85.8837" stroke={line} strokeWidth="22.9167" strokeMiterlimit="8" fill="none" transform={`matrix(-1 0 0 1 2594.38 ${y})`}/>
-      ))}
-    </svg>
-  )
-}
-
-function PickupSwatches({ pickupIds, pickupMetaMap, refMap }: {
+function PickupSwatches({ pickupIds, pickupMetaMap, refMap, neckPkp, middlePkp, bridgePkp, svgMap }: {
   pickupIds: string[]
   pickupMetaMap: Record<string, PickupMeta>
   refMap: Record<string, string>
+  neckPkp: string | null
+  middlePkp: string | null
+  bridgePkp: string | null
+  svgMap: SvgMapRow[]
 }) {
   if (!pickupIds.length) return null
+
+  // Active positions in bridge→middle→neck order (left to right), excluding None (PKP-0010)
+  const positions: Array<{ pkpId: string; posId: string }> = []
+  if (bridgePkp && bridgePkp !== 'PKP-0010') positions.push({ pkpId: bridgePkp, posId: 'POS-0003' })
+  if (middlePkp && middlePkp !== 'PKP-0010') positions.push({ pkpId: middlePkp, posId: 'POS-0002' })
+  if (neckPkp   && neckPkp   !== 'PKP-0010') positions.push({ pkpId: neckPkp,   posId: 'POS-0001' })
+
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', paddingTop: '4px' }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', paddingTop: '4px' }}>
       {pickupIds.map(id => {
-        const full = r(refMap, id) ?? id
-        const parts = full.split(' — ')
-        const code  = parts.length >= 2 ? parts[0] : ''
-        const label = parts.length >= 2 ? parts[1] : full
-        const meta = pickupMetaMap[id] ?? null
+        const full    = r(refMap, id) ?? id
+        const parts   = full.split(' — ')
+        const code    = parts.length >= 2 ? parts[0] : ''
+        const label   = parts.length >= 2 ? parts[1] : full
+        const meta    = pickupMetaMap[id] ?? null
+        const primary = meta?.hex_primary ?? '#1e1c1a'
+        const secondary = meta?.hex_secondary ?? undefined
+        const pkcStyle  = meta?.style ?? null
+
+        const icons = positions
+          .map(({ pkpId, posId }) => resolvePickupSvg(svgMap, pkpId, posId, pkcStyle, primary, secondary))
+          .filter((s): s is string => s !== null)
+
         return (
-          <div key={id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            <HumbuckerIcon meta={meta} />
+          <div key={id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end' }}>
+              {icons.length > 0
+                ? icons.map((html, i) => (
+                    <div key={i} style={{ lineHeight: 0 }} dangerouslySetInnerHTML={{ __html: html }} />
+                  ))
+                : <div style={{ width: 38, height: 70, background: primary, borderRadius: 4 }} />
+              }
+            </div>
             {code && (
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#c8a96e', letterSpacing: '0.5px' }}>
                 {code}
               </div>
             )}
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', color: '#5c5a57', textAlign: 'center', maxWidth: '56px', lineHeight: 1.4 }}>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', color: '#5c5a57', textAlign: 'center', maxWidth: '80px', lineHeight: 1.4 }}>
               {label}
             </div>
           </div>
@@ -214,12 +172,14 @@ function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears, 
     <div>
       <SpecGroup label="Production Info" />
       <SpecRow label="Production years"     value={productionYears} />
+      <SpecRow label="Strings"              value={spec.string_count != null ? `${spec.string_count}-string` : null} />
       {/* TODO: Serial Range — derive min/max serial_number_only from approved registry guitars for this model */}
       <SpecRow label="Serial range"         value={null} />
       <SpecRow label="Original RRP"         value={spec.original_rrp != null ? `£${spec.original_rrp}` : 'Unknown'} />
       <SpecRow label="Serial prefix"        value={spec.serial_prefix} />
       <SpecRow label="Weight"               value={spec.weight_kg != null ? `${spec.weight_kg}kg` : null} />
       <SpecRow label="Left handed option"   value={r(refMap, spec.left_handed_available)} />
+      <SpecRow label="Left handed RRP"      value={spec.left_handed_rrp != null ? `£${spec.left_handed_rrp}` : null} />
 
       <SpecGroup label="Body" />
       <SpecRow label="Body design analogue"  value={r(refMap, spec.body_shape_analogue)} />
@@ -255,6 +215,7 @@ function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears, 
 
       <SpecGroup label="Neck" />
       <SpecRow label="Neck mount"           value={r(refMap, spec.neck_mount)} />
+      <SpecRow label="Truss rod"            value={r(refMap, spec.truss_rod)} />
       <SpecRow label="Fretboard"            value={r(refMap, spec.fretboard_wood)} />
       <SpecRow label="Fretboard radius"     value={spec.fretboard_radius_mm != null ? `${spec.fretboard_radius_mm}mm` : null} />
       <SpecRow label="Fret count"           value={r(refMap, spec.fret_count)} />
@@ -339,10 +300,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 }
 
+const toSlug = (model: string) => model.toLowerCase().replace(/\s+/g, '-')
+
+const ORDERED_MODELS = [
+  ...SERIES_ORDER.filter(s => !BASS_SERIES.includes(s)).flatMap(s => MODEL_CATALOGUE.filter(m => m.series === s)),
+  ...SERIES_ORDER.filter(s => BASS_SERIES.includes(s)).flatMap(s => MODEL_CATALOGUE.filter(m => m.series === s)),
+]
+
 export default async function ModelPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const { data: allModels } = await supabase.from('model_specifications').select('model')
   const modelName = resolveSlug(slug, allModels ?? [])
+
+  const currentIndex = ORDERED_MODELS.findIndex(m => toSlug(m.model) === slug)
+  const prevModel = currentIndex > 0 ? ORDERED_MODELS[currentIndex - 1] : null
+  const nextModel = currentIndex < ORDERED_MODELS.length - 1 ? ORDERED_MODELS[currentIndex + 1] : null
 
   const { data: specRaw } = await supabase
     .from('model_specifications')
@@ -367,6 +339,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     { data: rawSourceColours },
     { data: rawSpecSources },
     { data: rawAppearances },
+    { data: rawSvgMap },
   ] = await Promise.all([
     getRefValues(),
     supabase.from('model_specifications').select('*').eq('parent_model_id', spec.id),
@@ -377,6 +350,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     supabase.from('model_source_colours').select('available_colours, available_custom_shop_colours, available_hardware_colours, available_pickup_colours, available_custom_shop_pickup_colours, notes, year_qualifier, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
     supabase.from('model_spec_sources').select('field_name, field_value, source_materials(year, title)').eq('spec_id', spec.id).not('field_value', 'is', null),
     supabase.from('model_appearances').select('appears_in, source_materials(year)').eq('model_id', spec.id),
+    supabase.from('pickup_svg_map').select('pkp_id, pos_id, pkc_style, text_variant, svg_filename'),
   ])
 
   const colourMetaMap: Record<string, ColourMeta> = {}
@@ -395,7 +369,15 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   const variants = (rawVariants ?? []) as ModelSpec[]
   const genSpecs = (rawGenSpecs ?? []) as ModelGenSpec[]
   const parentSpec = parentSpecData as { id: string; model: string } | null
-  const hasGenPickups = genSpecs.some(gs => gs.neck_pickup || gs.bridge_pickup)
+  const svgMap = (rawSvgMap ?? []) as SvgMapRow[]
+
+  // Derive representative PKP IDs from the first gen spec that has pickup data
+  const pkpGenSpec = genSpecs.find(gs => gs.neck_pickup || gs.bridge_pickup) ?? genSpecs[0]
+  const neckPkp   = pkpGenSpec?.neck_pickup   ?? null
+  const middlePkp = pkpGenSpec?.middle_pickup ?? null
+  const bridgePkp = pkpGenSpec?.bridge_pickup ?? null
+
+  const hasGenPickups = genSpecs.length > 0
   const hasGenTunerStyle = genSpecs.some(gs => gs.tuner_style)
 
   // Versioned spec values — field_name → [{value, year, title}] sorted by year
@@ -511,11 +493,27 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
 
-      {/* Back nav */}
-      <div style={{ marginBottom: '24px' }}>
-        <Link href="/models" className="link-muted" style={{ fontSize: '13px', fontFamily: 'var(--font-dm-mono)', letterSpacing: '0.5px' }}>
-          ← Model Guide
-        </Link>
+      {/* Model navigation */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+        <div style={{ flex: 1 }}>
+          {prevModel ? (
+            <Link href={`/models/${toSlug(prevModel.model)}`} className="link-muted" style={{ fontSize: '13px', fontFamily: 'var(--font-dm-mono)', letterSpacing: '0.5px' }}>
+              ← Previous Model ({prevModel.model})
+            </Link>
+          ) : <span />}
+        </div>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <Link href="/models" className="link-muted" style={{ fontSize: '13px', fontFamily: 'var(--font-dm-mono)', letterSpacing: '0.5px' }}>
+            ↑ Return to Model Guide
+          </Link>
+        </div>
+        <div style={{ flex: 1, textAlign: 'right' }}>
+          {nextModel ? (
+            <Link href={`/models/${toSlug(nextModel.model)}`} className="link-muted" style={{ fontSize: '13px', fontFamily: 'var(--font-dm-mono)', letterSpacing: '0.5px' }}>
+              Next Model ({nextModel.model}) →
+            </Link>
+          ) : <span />}
+        </div>
       </div>
 
       {/* Header */}
@@ -645,7 +643,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
             <div>
               {sectionHead('Factory Pickup Colours')}
               {pickupColourIds.length > 0 ? (
-                <PickupSwatches pickupIds={pickupColourIds} pickupMetaMap={pickupMetaMap} refMap={refMap} />
+                <PickupSwatches pickupIds={pickupColourIds} pickupMetaMap={pickupMetaMap} refMap={refMap} neckPkp={neckPkp} middlePkp={middlePkp} bridgePkp={bridgePkp} svgMap={svgMap} />
               ) : (
                 <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b' }}>No pickup colour data yet</p>
               )}
@@ -665,7 +663,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
             <div>
               {sectionHead('Custom Shop Pickup Colours')}
               {customShopPickupColourIds.length > 0 ? (
-                <PickupSwatches pickupIds={customShopPickupColourIds} pickupMetaMap={pickupMetaMap} refMap={refMap} />
+                <PickupSwatches pickupIds={customShopPickupColourIds} pickupMetaMap={pickupMetaMap} refMap={refMap} neckPkp={neckPkp} middlePkp={middlePkp} bridgePkp={bridgePkp} svgMap={svgMap} />
               ) : (
                 <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#2e2d2b' }}>No custom shop pickup data yet</p>
               )}

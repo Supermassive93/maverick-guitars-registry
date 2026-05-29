@@ -209,6 +209,7 @@ export interface ModelSpec {
   weight_kg: number | null
 
   // Other
+  string_count: number | null
   left_handed_available: string | null // LHA ref ID
   original_rrp: number | null
   left_handed_rrp: number | null

@@ -184,6 +184,7 @@ export interface ModelSpec {
 
   // Neck
   neck_mount: string | null            // NMT ref ID — universal mount type (bolt-on / set / through)
+  truss_rod: string | null             // TRD ref ID
   neck_construction: string | null     // NCK ref ID — now null; construction (1-piece/2-piece) lives in gen specs
   neck_wood: string | null             // NWD ref ID
   neck_profile: string | null          // NPR ref ID

@@ -125,7 +125,7 @@ function PickupSwatches({ pickupIds, pickupMetaMap, refMap, neckPkp, middlePkp, 
   if (neckPkp   && neckPkp   !== 'PKP-0010') positions.push({ pkpId: neckPkp,   posId: 'POS-0001' })
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', paddingTop: '4px' }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '40px', paddingTop: '4px' }}>
       {pickupIds.map(id => {
         const full    = r(refMap, id) ?? id
         const parts   = full.split(' — ')

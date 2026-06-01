@@ -812,6 +812,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
               {dataRow('Neck profile',      columns.map(id => r(refMap, gsFor(id).neck_profile)))}
               {dataRow('Neck construction', columns.map(id => r(refMap, gsFor(id).neck_construction)))}
               {dataRow('Neck finish',       columns.map(id => r(refMap, gsFor(id).neck_finish)))}
+              {dataRow('Truss rod cover',   columns.map(id => r(refMap, gsFor(id).truss_rod_cover)))}
               {dataRow('Neck binding',        columns.map(id => r(refMap, gsFor(id).neck_binding)))}
               {dataRow('Side-dot markers',   columns.map(id => r(refMap, gsFor(id).side_dot_markers)))}
               {dataRow('Fretboard markers',  columns.map(id => r(refMap, gsFor(id).fretboard_markers)))}

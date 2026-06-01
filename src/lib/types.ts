@@ -127,6 +127,7 @@ export interface ModelGenSpec {
   skunk_stripe: string | null          // SKS ref ID
   nut_type: string | null              // NUT ref ID
   neck_finish: string | null           // NKF ref ID
+  truss_rod_cover: string | null       // TRC ref ID
 
   headstock_style: string | null       // HST ref ID
   headstock_face: string | null        // HDF ref ID

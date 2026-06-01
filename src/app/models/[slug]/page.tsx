@@ -167,7 +167,7 @@ function PickupSwatches({ pickupIds, pickupMetaMap, refMap, neckPkp, middlePkp, 
 
 // Universal specification — all fields that apply across all generations
 type VersionedValue = { value: string; year: string | null; title: string }
-function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears, hidePickups, hideTunerStyle }: { spec: Partial<ModelSpec>; refMap: Record<string, string>; bsaMetaMap: Record<string, { maverick_body_name?: string }>; versionedSpecs: Record<string, VersionedValue[]>; productionYears: string | null; hidePickups?: boolean; hideTunerStyle?: boolean }) {
+function SpecBlock({ spec, refMap, versionedSpecs, productionYears, hidePickups, hideTunerStyle }: { spec: Partial<ModelSpec>; refMap: Record<string, string>; versionedSpecs: Record<string, VersionedValue[]>; productionYears: string | null; hidePickups?: boolean; hideTunerStyle?: boolean }) {
   return (
     <div>
       <SpecGroup label="Production Info" />
@@ -183,7 +183,7 @@ function SpecBlock({ spec, refMap, bsaMetaMap, versionedSpecs, productionYears, 
 
       <SpecGroup label="Body" />
       <SpecRow label="Body design analogue"  value={r(refMap, spec.body_shape_analogue)} />
-      <SpecRow label="Maverick body family"  value={spec.body_shape_analogue ? (bsaMetaMap[spec.body_shape_analogue]?.maverick_body_name ?? null) : null} />
+      <SpecRow label="Maverick body family"  value={r(refMap, spec.maverick_body_family)} />
       <SpecRow label="Body wood"            value={r(refMap, spec.body_wood)} />
       <SpecRow label="Body construction"    value={r(refMap, spec.body_construction)} />
       <SpecRow label="Joint type"           value={r(refMap, spec.joint_type)} />
@@ -345,7 +345,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     supabase.from('model_specifications').select('*').eq('parent_model_id', spec.id),
     supabase.from('model_gen_specs').select('*').eq('model_id', spec.id).order('generation'),
     supabase.from('guitars').select('serial_number_only').eq('model_id', spec.id).eq('status', 'Approved'),
-    supabase.from('ref_values').select('id, metadata').in('category', ['COL', 'CSC', 'HWC', 'PKC', 'CPKC', 'BSA']).eq('is_active', true),
+    supabase.from('ref_values').select('id, metadata').in('category', ['COL', 'CSC', 'HWC', 'PKC', 'CPKC']).eq('is_active', true),
     parentSpecPromise,
     supabase.from('model_source_colours').select('available_colours, available_custom_shop_colours, available_hardware_colours, available_pickup_colours, available_custom_shop_pickup_colours, notes, year_qualifier, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
     supabase.from('model_spec_sources').select('field_name, field_value, source_materials(year, title)').eq('spec_id', spec.id).not('field_value', 'is', null),
@@ -355,11 +355,8 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
 
   const colourMetaMap: Record<string, ColourMeta> = {}
   const pickupMetaMap: Record<string, PickupMeta> = {}
-  const bsaMetaMap: Record<string, { maverick_body_name?: string }> = {}
   for (const row of (rawColourMeta ?? []) as { id: string; metadata: Record<string, unknown> | null }[]) {
-    if (row.id.startsWith('BSA-')) {
-      bsaMetaMap[row.id] = (row.metadata ?? {}) as { maverick_body_name?: string }
-    } else if (row.id.startsWith('PKC-') || row.id.startsWith('CPKC-')) {
+    if (row.id.startsWith('PKC-') || row.id.startsWith('CPKC-')) {
       pickupMetaMap[row.id] = (row.metadata ?? {}) as PickupMeta
     } else {
       colourMetaMap[row.id] = (row.metadata ?? {}) as ColourMeta
@@ -600,7 +597,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
           {/* Col 1 — Universal spec */}
           <div>
             {sectionHead('Universal Specification')}
-            <SpecBlock spec={spec} refMap={refMap} bsaMetaMap={bsaMetaMap} versionedSpecs={versionedSpecs} productionYears={productionYears} hidePickups={hasGenPickups} hideTunerStyle={hasGenTunerStyle} />
+            <SpecBlock spec={spec} refMap={refMap} versionedSpecs={versionedSpecs} productionYears={productionYears} hidePickups={hasGenPickups} hideTunerStyle={hasGenTunerStyle} />
           </div>
 
           {/* Col 2 — Body colours + Hardware colours */}

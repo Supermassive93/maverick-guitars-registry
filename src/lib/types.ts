@@ -155,6 +155,7 @@ export interface ModelSpec {
 
   // Body
   body_shape_analogue: string | null        // BSA ref ID
+  maverick_body_family: string | null       // MBF ref ID
   body_wood: string | null                  // BWD ref ID
   body_construction: string | null          // BCN ref ID
   body_bookmatched: string | null

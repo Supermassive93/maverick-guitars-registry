@@ -167,7 +167,7 @@ function PickupSwatches({ pickupIds, pickupMetaMap, refMap, neckPkp, middlePkp, 
 
 // Universal specification — all fields that apply across all generations
 type VersionedValue = { value: string; year: string | null; title: string }
-function SpecBlock({ spec, refMap, versionedSpecs, productionYears, hidePickups, hideTunerStyle }: { spec: Partial<ModelSpec>; refMap: Record<string, string>; versionedSpecs: Record<string, VersionedValue[]>; productionYears: string | null; hidePickups?: boolean; hideTunerStyle?: boolean }) {
+function SpecBlock({ spec, refMap, versionedSpecs, productionYears, hidePickups }: { spec: Partial<ModelSpec>; refMap: Record<string, string>; versionedSpecs: Record<string, VersionedValue[]>; productionYears: string | null; hidePickups?: boolean }) {
   return (
     <div>
       <SpecGroup label="Production Info" />
@@ -206,7 +206,6 @@ function SpecBlock({ spec, refMap, versionedSpecs, productionYears, hidePickups,
 
       <SpecGroup label="Hardware" />
       <SpecRow label="Bridge"               value={r(refMap, spec.bridge_type)} />
-      {!hideTunerStyle && <SpecRow label="Tuner style" value={r(refMap, spec.tuner_style)} />}
 
       <SpecGroup label="Neck" />
       <SpecRow label="Neck mount"           value={r(refMap, spec.neck_mount)} />
@@ -248,7 +247,6 @@ function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refM
       <SpecRow label="Pickup surrounds" value={r(refMap, spec.pickup_surrounds)} />
 
       <SpecGroup label="Hardware" />
-      <SpecRow label="Tuner style"      value={r(refMap, spec.tuner_style)} />
       <SpecRow label="Bridge logo"      value={r(refMap, spec.bridge_logo)} />
       <SpecRow label="Trem arm"         value={r(refMap, spec.trem_arm)} />
 
@@ -365,7 +363,6 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   const bridgePkp = pkpGenSpec?.bridge_pickup ?? null
 
   const hasGenPickups = genSpecs.length > 0
-  const hasGenTunerStyle = genSpecs.some(gs => gs.tuner_style)
 
   // Versioned spec values — field_name → [{value, year, title}] sorted by year
   const versionedSpecs: Record<string, VersionedValue[]> = {}
@@ -568,7 +565,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
           {/* Col 1 — Universal spec */}
           <div>
             {sectionHead('Universal Specification')}
-            <SpecBlock spec={spec} refMap={refMap} versionedSpecs={versionedSpecs} productionYears={productionYears} hidePickups={hasGenPickups} hideTunerStyle={hasGenTunerStyle} />
+            <SpecBlock spec={spec} refMap={refMap} versionedSpecs={versionedSpecs} productionYears={productionYears} hidePickups={hasGenPickups} />
           </div>
 
           {/* Col 2 — Body colours + Hardware colours */}

@@ -338,7 +338,6 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     { data: parentSpecData },
     { data: rawSourceColours },
     { data: rawSpecSources },
-    { data: rawAppearances },
     { data: rawSvgMap },
   ] = await Promise.all([
     getRefValues(),
@@ -349,7 +348,6 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     parentSpecPromise,
     supabase.from('model_source_colours').select('available_colours, available_custom_shop_colours, available_hardware_colours, available_pickup_colours, available_custom_shop_pickup_colours, notes, year_qualifier, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
     supabase.from('model_spec_sources').select('field_name, field_value, source_materials(year, title)').eq('spec_id', spec.id).not('field_value', 'is', null),
-    supabase.from('model_appearances').select('appears_in, source_materials(year)').eq('model_id', spec.id),
     supabase.from('pickup_svg_map').select('pkp_id, pos_id, pkc_style, text_variant, svg_filename'),
   ])
 
@@ -434,31 +432,12 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
       .flatMap(sc => sc.available_colours ?? [])
   )]
 
-  // Derive production years from model_appearances.
-  // start = MIN(true years), or MAX(false years before first true) + 1 if confirmed absences precede first appearance.
-  // end   = MIN(false years after last true) - 1, or MAX(true years) if no confirmed absences follow.
-  // To correct a model's production window, add rows to model_appearances.
-  type AppearanceRow = { appears_in: boolean; source_materials: { year: string | null } | null }
-  const appearances = (rawAppearances ?? []) as AppearanceRow[]
-  const trueYears = appearances
-    .filter(a => a.appears_in && a.source_materials?.year != null)
-    .map(a => parseInt(a.source_materials!.year!))
-    .filter(y => !isNaN(y))
-    .sort((a, b) => a - b)
-  const falseYears = appearances
-    .filter(a => !a.appears_in && a.source_materials?.year != null)
-    .map(a => parseInt(a.source_materials!.year!))
-    .filter(y => !isNaN(y))
-  const firstTrue = trueYears.length > 0 ? trueYears[0] : null
-  const lastTrue  = trueYears.length > 0 ? trueYears[trueYears.length - 1] : null
-  const falseYearsBefore = firstTrue != null ? falseYears.filter(y => y < firstTrue) : []
-  const falseYearsAfter  = lastTrue  != null ? falseYears.filter(y => y > lastTrue)  : []
-  const yearStart = firstTrue != null
-    ? (falseYearsBefore.length > 0 ? Math.max(...falseYearsBefore) + 1 : firstTrue)
-    : null
-  const yearEnd = lastTrue != null
-    ? (falseYearsAfter.length > 0 ? Math.min(...falseYearsAfter) - 1 : lastTrue)
-    : null
+  // Derive universal production years from gen spec production_year_start/end.
+  // start = MIN(production_year_start), end = MAX(production_year_end) across all gen specs.
+  const genYearStarts = genSpecs.map(gs => gs.production_year_start).filter((y): y is number => y != null)
+  const genYearEnds   = genSpecs.map(gs => gs.production_year_end).filter((y): y is number => y != null)
+  const yearStart = genYearStarts.length > 0 ? Math.min(...genYearStarts) : null
+  const yearEnd   = genYearEnds.length > 0   ? Math.max(...genYearEnds)   : null
   const singleYear = yearStart != null && yearStart === yearEnd
   const yearQualifier = singleYear
     ? (sourceColours.find(sc => sc.year_qualifier)?.year_qualifier ?? null)

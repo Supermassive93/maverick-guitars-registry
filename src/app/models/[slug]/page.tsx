@@ -816,8 +816,9 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
 
               {/* Headstock */}
               {groupHeader('Headstock')}
-              {dataRow('Headstock logo',    columns.map(id => r(refMap, gsFor(id).headstock_logo)))}
-              {dataRow('Headstock binding', columns.map(id => r(refMap, gsFor(id).headstock_binding)))}
+              {dataRow('Headstock logo',       columns.map(id => r(refMap, gsFor(id).headstock_logo)))}
+              {dataRow('Headstock trademark', columns.map(id => r(refMap, gsFor(id).headstock_trademark)))}
+              {dataRow('Headstock binding',   columns.map(id => r(refMap, gsFor(id).headstock_binding)))}
 
             </div>
           )

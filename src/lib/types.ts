@@ -132,6 +132,7 @@ export interface ModelGenSpec {
   headstock_style: string | null       // HST ref ID
   headstock_face: string | null        // HDF ref ID
   headstock_logo: string | null        // HGL ref ID
+  headstock_trademark: string | null   // HTM ref ID
   headstock_binding: string | null     // HDB ref ID
 
   trem_arm: string | null              // TRM ref ID

@@ -193,11 +193,6 @@ function SpecBlock({ spec, refMap, versionedSpecs, productionYears, hidePickups,
 
       <SpecGroup label="Pickups & electronics" />
       <SpecRow label="Pickup configuration" value={r(refMap, spec.pickup_configuration)} />
-      {!hidePickups && <>
-        <SpecRow label="Neck pickup"        value={r(refMap, spec.neck_pickup)} />
-        <SpecRow label="Middle pickup"      value={r(refMap, spec.middle_pickup)} />
-        <SpecRow label="Bridge pickup"      value={r(refMap, spec.bridge_pickup)} />
-      </>}
       <SpecRow label="Coil tap"             value={r(refMap, spec.coil_tap)} />
       <SpecRow label="Selector switch type" value={
         versionedSpecs['switch_type']?.length > 0
@@ -249,9 +244,6 @@ function GenIndicatorBlock({ spec, refMap }: { spec: Partial<ModelGenSpec>; refM
       {/* TODO: Serial range — derive min/max serial_number_only from approved registry guitars matching this model_id + generation */}
       <SpecRow label="Serial range"     value={null} />
       <SpecGroup label="Pickups & electronics" />
-      <SpecRow label="Neck pickup"      value={r(refMap, spec.neck_pickup)} />
-      <SpecRow label="Middle pickup"    value={r(refMap, spec.middle_pickup)} />
-      <SpecRow label="Bridge pickup"    value={r(refMap, spec.bridge_pickup)} />
       <SpecRow label="Selector switch knob" value={r(refMap, spec.switch_knob)} />
       <SpecRow label="Pickup surrounds" value={r(refMap, spec.pickup_surrounds)} />
 

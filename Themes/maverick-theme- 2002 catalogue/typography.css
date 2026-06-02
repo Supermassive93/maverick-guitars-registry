@@ -1,0 +1,311 @@
+/*
+ * Maverick Guitars 2002 — typography.css
+ *
+ * Semantic type classes derived from catalogue analysis.
+ * Import after globals.css.
+ *
+ * Font loading: fonts are imported in globals.css.
+ * All colour references use CSS custom properties from globals.css.
+ */
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   WORDMARK / LOGO SCRIPT
+   "Maverick" calligraphic signature — used as logo/wordmark
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.type-wordmark {
+  font-family: var(--font-script);
+  font-weight: 700;
+  font-size: clamp(2rem, 6vw, 4rem);
+  line-height: 1;
+  color: var(--color-ghost-white);
+  /* Catalogue uses a silver/steel tone on the cover */
+}
+
+/* Red script variant — used on interior spread headings */
+.type-wordmark--red {
+  color: var(--color-maverick-red);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DISPLAY HEADINGS
+   Large section titles: "THE ETHOS OF EVOLUTION", "THE CUSTOM SHOP"
+   Condensed heavy slab — Bebas Neue approximation
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.type-display {
+  font-family: var(--font-display);
+  font-weight: 400; /* Bebas Neue has no weight axis — 400 renders at full black weight */
+  font-size: clamp(3rem, 8vw, 6rem);
+  line-height: 1.0;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--color-ghost-white);
+  position: relative;
+}
+
+/* Ghost/emboss effect — large faded duplicate behind the heading */
+/* Apply to a wrapper element; the ::before pseudo-element handles the ghost */
+.type-display--ghost {
+  position: relative;
+  display: inline-block;
+}
+.type-display--ghost::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  transform: scale(1.04);
+  transform-origin: left center;
+  color: var(--color-ghost-white);
+  opacity: 0.07;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+.type-display--ghost > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MODEL NAME DISPLAY
+   "F1", "F-2", "Streetfighter", "Matrix", "X-Treme", "Species 2" etc.
+   Condensed heavy sans + distressed/eroded texture treatment
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.type-model-name {
+  font-family: var(--font-model);
+  font-weight: 800;
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  line-height: 1.0;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary); /* Steel silver — matches catalogue's mid-tone treatment */
+  position: relative;
+}
+
+/*
+ * DISTRESSED TEXT TREATMENT
+ * The catalogue uses an eroded/cracked letterform effect on model names.
+ * This is approximated on the web via:
+ *   1. A crack/noise SVG texture overlay (crack-texture.svg)
+ *   2. mix-blend-mode: multiply on the texture
+ *   3. CSS filter for slight contrast boost
+ *
+ * To use: wrap .type-model-name in .distressed-text-wrap
+ * Place crack-texture.svg from this package in /public/textures/
+ */
+.distressed-text-wrap {
+  position: relative;
+  display: inline-block;
+}
+.distressed-text-wrap::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  background-image: url('/textures/crack-overlay.svg');
+  background-size: cover;
+  mix-blend-mode: multiply;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Ghost duplicate behind model name (large, faded — as seen behind F1, F3 etc.) */
+.type-model-name--ghost {
+  position: relative;
+}
+.type-model-name--ghost::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  transform: scale(1.06) translateX(-2%);
+  transform-origin: left center;
+  color: var(--color-text-secondary);
+  opacity: 0.06;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  pointer-events: none;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SERIES SUBHEADER
+   Small label above model name: "MAVERICK EVOLUTION" in tiny caps
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.type-series-sub {
+  font-family: var(--font-series);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-maverick-red);
+  display: block;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   BODY COPY
+   Catalogue body paragraphs — humanist sans, generous leading
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.type-body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: var(--color-text-primary);
+}
+
+.type-body--large {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+
+.type-body p + p {
+  margin-top: 1em;
+}
+
+/* Strong within body copy */
+.type-body strong {
+  font-weight: 700;
+  color: var(--color-ghost-white);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SPEC / CALLOUT TEXT
+   "Fixed Bridge colour options:", "Available in either Floyd Rose or..."
+   Bold label + regular list, same family as body
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.type-spec-label {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--color-ghost-white);
+}
+
+.type-spec-value {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   COLOUR KEY TABLE
+   "STANDARD COLOUR KEY:" / AQ - Aquamarine / CBK - Cosmos Black etc.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.type-colour-key-heading {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ghost-white);
+}
+
+.type-colour-key-code {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  color: var(--color-ghost-white);
+}
+
+.type-colour-key-name {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PRESS QUOTE
+   Review excerpts (back page): italic body + bold source attribution
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.type-quote {
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-style: italic;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--color-text-primary);
+}
+
+.type-quote-attribution {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-style: normal;
+  font-size: 0.875rem;
+  color: var(--color-ghost-white);
+  margin-top: 0.4em;
+  display: block;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CAPTION / COLOUR LABEL
+   Rotated colour name labels on guitar necks: "Lunar Blue", "Tribal Red"
+   Small, light, often rotated -90deg
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.type-colour-caption {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--color-ghost-white);
+  white-space: nowrap;
+}
+
+/* Rotated variant for vertical neck labels */
+.type-colour-caption--vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PAGE NUMBER
+   Bottom corner page numbers
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.type-page-number {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ARTIST CREDIT
+   Bottom of page: "NUMBER ONE SON", "KOLIBRIEN", "PITCHSHIFTER"
+   Tight-tracked bold caps
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.type-artist-credit {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}

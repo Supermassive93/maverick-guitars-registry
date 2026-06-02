@@ -1,0 +1,126 @@
+/*
+ * Maverick Guitars 2002 — globals.css
+ * Import in Next.js: app/layout.tsx or pages/_app.tsx
+ *
+ * Defines :root CSS custom properties that back both:
+ *   - tailwind.config.ts (via var() references)
+ *   - tokens.ts (documents the same values for inline styles)
+ *
+ * Importing this file IS the single source of truth.
+ * Change a value here → updates everywhere.
+ */
+
+/* ── GOOGLE FONTS IMPORT ──────────────────────────────────────────────────── */
+/* Paste into <head> or use @next/font if you prefer Next.js font optimisation */
+/*
+  Dancing Script (script logo)     — weights 400, 700
+  Bebas Neue (display headings)    — weight 400 (it's inherently black-weight)
+  Barlow Condensed (model names)   — weights 600, 700, 800
+  Source Sans 3 (body copy)        — weights 300, 400, 600, 700
+*/
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Bebas+Neue&family=Barlow+Condensed:wght@600;700;800&family=Source+Sans+3:wght@300;400;600;700&display=swap');
+
+
+/* ── CSS CUSTOM PROPERTIES ────────────────────────────────────────────────── */
+:root {
+
+  /* Backgrounds */
+  --color-bg-primary:        #0a0a0c;
+  --color-bg-secondary:      #1a1a1f;
+  --color-bg-tertiary:       #242428;
+
+  /* Section backgrounds — cracked tints per series */
+  --color-bg-teal-cracked:   #1a3840;
+  --color-bg-green-cracked:  #1e2e18;
+  --color-bg-purple-cracked: #1e1e38;
+  --color-bg-rust-cracked:   #2a1510;
+  --color-bg-blue-cracked:   #151828;
+
+  /* Text */
+  --color-text-primary:      #e8e8e0;
+  --color-text-secondary:    #c8c8cc;
+  --color-text-muted:        #888890;
+  --color-text-inverted:     #0a0a0c;
+
+  /* Brand accents */
+  --color-maverick-red:      #cc2222;
+  --color-gold-chrome:       #d4a840;
+  --color-ghost-white:       #e8e8e0;
+
+  /* Borders */
+  --color-border-subtle:     #2e2e36;
+  --color-border-mid:        #484858;
+  --color-border-strong:     #888890;
+
+  /* Typography */
+  --font-script:    'Dancing Script', Pacifico, cursive;
+  --font-display:   'Bebas Neue', 'Barlow Condensed', Oswald, sans-serif;
+  --font-model:     'Barlow Condensed', Oswald, sans-serif;
+  --font-series:    'Barlow Condensed', Oswald, sans-serif;
+  --font-body:      'Source Sans 3', 'Nunito Sans', sans-serif;
+
+  /* Page chrome */
+  --page-header-strip-height: 8px;
+  --page-header-strip-color:  #3a3a42;
+}
+
+
+/* ── BASE RESET ───────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+img, video {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ── PAGE HEADER STRIP ────────────────────────────────────────────────────── */
+/* The 8px grey strip at the top of every inner spread page */
+.page-header-strip {
+  width: 100%;
+  height: var(--page-header-strip-height);
+  background: var(--page-header-strip-color);
+}
+
+/* ── SERIES HEADER BAR ────────────────────────────────────────────────────── */
+/* e.g. "EVOLUTION series" / "D-TOX series" — top-right of inner pages */
+.series-header {
+  font-family: var(--font-series);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+.series-header strong {
+  font-weight: 700;
+  color: var(--color-ghost-white);
+}
+
+/* ── SECTION BG TINTS ─────────────────────────────────────────────────────── */
+.section-evolution  { background-color: var(--color-bg-teal-cracked);   }
+.section-dtox       { background-color: var(--color-bg-purple-cracked); }
+.section-century    { background-color: var(--color-bg-green-cracked);  }
+.section-xtreme     { background-color: var(--color-bg-rust-cracked);   }
+.section-nemesis    { background-color: var(--color-bg-blue-cracked);   }

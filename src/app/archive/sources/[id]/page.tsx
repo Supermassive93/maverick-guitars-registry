@@ -34,6 +34,7 @@ const navLinkStyle: React.CSSProperties = {
 }
 
 type SourceImage = { id: string; page_number: number | null; image_url: string; caption: string | null }
+type SourceDocument = { id: string; label: string; file_url: string }
 
 export default async function SourcePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -41,13 +42,15 @@ export default async function SourcePage({ params }: { params: Promise<{ id: str
 
   // The detail page resolves by id regardless of is_published, so a citation link to an
   // unpublished source still works — only the Archive listing and prev/next cycle skip it.
-  const [{ data: sourceRaw }, { data: imagesRaw }] = await Promise.all([
+  const [{ data: sourceRaw }, { data: imagesRaw }, { data: documentsRaw }] = await Promise.all([
     supabase.from('source_materials').select('*').eq('id', id).single(),
     supabase.from('source_material_images').select('*').eq('source_material_id', id).order('page_number', { ascending: true, nullsFirst: false }),
+    supabase.from('source_material_documents').select('*').eq('source_material_id', id).order('created_at', { ascending: true }),
   ])
   if (!sourceRaw) notFound()
   const source = sourceRaw as SourceMaterial
   const images = (imagesRaw ?? []) as SourceImage[]
+  const documents = (documentsRaw ?? []) as SourceDocument[]
 
   const ordered = await getOrderedSources()
   const currentIndex = ordered.findIndex(s => s.id === id)
@@ -184,6 +187,38 @@ export default async function SourcePage({ params }: { params: Promise<{ id: str
                 <div style={{ padding: '8px 10px', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#5c5a57' }}>
                   {img.caption ?? (img.page_number ? `Page ${img.page_number}` : 'Reference photo')}
                 </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Documents — original PDFs (catalogue scans, press clippings, IPO filings) */}
+      {documents.length > 0 && (
+        <div style={{ marginBottom: '40px' }}>
+          <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', color: '#3a3835', marginBottom: '16px' }}>
+            Documents
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'rgba(255,255,255,0.06)' }}>
+            {documents.map(doc => (
+              <a
+                key={doc.id}
+                href={doc.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  background: '#161616', padding: '12px 14px', textDecoration: 'none',
+                }}
+              >
+                <span style={{
+                  fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '1px', textTransform: 'uppercase',
+                  color: '#8b6e3f', background: 'rgba(200,169,110,0.08)', padding: '2px 7px', flexShrink: 0,
+                }}>
+                  PDF
+                </span>
+                <span style={{ fontSize: '13px', color: '#f0ede8' }}>{doc.label}</span>
+                <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57' }}>View →</span>
               </a>
             ))}
           </div>

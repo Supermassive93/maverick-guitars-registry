@@ -145,7 +145,6 @@ export interface ModelGenSpec {
   spec_options: Record<string, string[]> | null  // field_name → [ref IDs]; renders as bullet list
 
   left_handed_available: string | null // LHA ref ID
-  specification_source: string | null  // SPC ref ID
   notes: string | null
   production_year_start: number | null
   production_year_end: number | null
@@ -158,6 +157,7 @@ export interface ModelSpec {
   id: string
   model: string
   parent_model_id: string | null
+  display_order: number | null
   series: string | null             // SER ref ID
   serial_prefix: string | null
   catalogue_year: string | null     // CYR ref ID (legacy — kept for reference)
@@ -302,49 +302,6 @@ export interface Article {
   updated_at: string | null
 }
 
-export interface Database {
-  public: {
-    Tables: {
-      guitars: {
-        Row: Guitar
-        Insert: Omit<Guitar, 'id' | 'mgr_id' | 'date_submitted' | 'last_updated'>
-        Update: Partial<Omit<Guitar, 'id' | 'mgr_id'>>
-      }
-      model_specifications: {
-        Row: ModelSpec
-        Insert: Omit<ModelSpec, 'id'>
-        Update: Partial<Omit<ModelSpec, 'id'>>
-      }
-      model_gen_specs: {
-        Row: ModelGenSpec
-        Insert: Omit<ModelGenSpec, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<ModelGenSpec, 'id' | 'created_at'>>
-      }
-      profiles: {
-        Row: Profile
-        Insert: Omit<Profile, 'created_at'>
-        Update: Partial<Omit<Profile, 'id' | 'created_at'>>
-      }
-      source_materials: {
-        Row: SourceMaterial
-        Insert: Omit<SourceMaterial, 'id' | 'created_at'>
-        Update: Partial<Omit<SourceMaterial, 'id' | 'created_at'>>
-      }
-      articles: {
-        Row: Article
-        Insert: Omit<Article, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<Article, 'id' | 'created_at'>>
-      }
-      generation_indicators: {
-        Row: GenerationIndicator
-        Insert: Omit<GenerationIndicator, 'id' | 'created_at'>
-        Update: Partial<Omit<GenerationIndicator, 'id' | 'created_at'>>
-      }
-      generation_indicator_sources: {
-        Row: GenerationIndicatorSource
-        Insert: Omit<GenerationIndicatorSource, 'id' | 'created_at'>
-        Update: Partial<Omit<GenerationIndicatorSource, 'id' | 'created_at'>>
-      }
-    }
-  }
-}
+// The Database type (used to type the Supabase clients) is auto-generated from the live
+// schema — see src/lib/database.types.ts. Regenerate that file when the schema changes;
+// don't hand-maintain a Database interface here, that's what fell behind before.

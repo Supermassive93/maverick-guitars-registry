@@ -4,6 +4,7 @@ import type { SourceMaterial, Article } from '@/lib/types'
 import Link from 'next/link'
 import { getEvidenceTypes, UNSOURCED_LABEL, UNSOURCED_DESCRIPTION } from '@/lib/evidence'
 import { EvidenceBadge, UnsourcedBadge } from '@/components/EvidenceBadge'
+import { monoLabel } from '@/lib/text-styles'
 
 export const metadata: Metadata = {
   title: 'Archive — Maverick Guitars Registry',
@@ -44,7 +45,7 @@ export default async function ArchivePage() {
         }} />
         <div style={{ position: 'relative' }}>
           <p style={{
-            fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+            ...monoLabel('11px', '3px'),
             color: '#c8a96e', textTransform: 'uppercase', marginBottom: '16px',
           }}>Archive</p>
           <h1 style={{
@@ -79,7 +80,7 @@ export default async function ArchivePage() {
       <section id="history" style={{ scrollMarginTop: '100px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ padding: '5rem 4rem 3rem' }}>
           <p style={{
-            fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+            ...monoLabel('11px', '3px'),
             color: '#5c5a57', textTransform: 'uppercase', marginBottom: '16px',
           }}>Company History</p>
           <h2 style={{
@@ -157,7 +158,7 @@ export default async function ArchivePage() {
       <section id="source-archive" style={{ scrollMarginTop: '100px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ padding: '5rem 4rem 3rem' }}>
           <p style={{
-            fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+            ...monoLabel('11px', '3px'),
             color: '#5c5a57', textTransform: 'uppercase', marginBottom: '16px',
           }}>Primary Sources</p>
           <h2 style={{
@@ -248,7 +249,7 @@ export default async function ArchivePage() {
       <section id="methodology" style={{ scrollMarginTop: '100px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ padding: '5rem 4rem 3rem' }}>
           <p style={{
-            fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+            ...monoLabel('11px', '3px'),
             color: '#5c5a57', textTransform: 'uppercase', marginBottom: '16px',
           }}>How We Source This</p>
           <h2 style={{
@@ -358,7 +359,7 @@ export default async function ArchivePage() {
       <section id="articles" style={{ scrollMarginTop: '100px' }}>
         <div style={{ padding: '5rem 4rem 3rem' }}>
           <p style={{
-            fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+            ...monoLabel('11px', '3px'),
             color: '#5c5a57', textTransform: 'uppercase', marginBottom: '16px',
           }}>Community</p>
           <h2 style={{

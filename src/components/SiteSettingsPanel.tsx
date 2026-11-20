@@ -25,10 +25,15 @@ export default function SiteSettingsPanel({ initial }: { initial: Settings }) {
     setSaving(key)
     setErrors(prev => ({ ...prev, [key]: undefined }))
 
+    const payload: Partial<Record<keyof Settings, boolean>> & { updated_at: string } = {
+      updated_at: new Date().toISOString(),
+    }
+    payload[key] = newValue
+
     const supabase = createSupabaseBrowserClient()
     const { error } = await supabase
       .from('site_settings')
-      .update({ [key]: newValue, updated_at: new Date().toISOString() })
+      .update(payload)
       .eq('id', true)
 
     setSaving(null)

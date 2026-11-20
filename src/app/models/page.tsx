@@ -1,14 +1,16 @@
-import { MODEL_CATALOGUE, SERIES_ORDER, BASS_SERIES } from '@/data/models'
 import { readPickupSvg, injectPickupColors } from '@/lib/pickup-svg'
 
 const MODEL_NICKNAMES: Record<string, string> = {
   'SF-1': 'Streetfighter',
   'SF-3': 'Streetfighter',
 }
+
+const BASS_SERIES_ID = 'SER-0004' // Nemesis
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import ModelCard from '@/components/ModelCard'
+import { monoLabel } from '@/lib/text-styles'
 
 export const metadata: Metadata = {
   title: 'Model Guide — Maverick Guitars Registry',
@@ -49,19 +51,23 @@ export default async function ModelsPage() {
     parent_model_id: string | null
     description: string | null
     rarity: string | null
+    series: string | null
+    display_order: number | null
   }
   const [{ data: rawSpecRows }, { data: rawCounts }, { data: rawColours }, { data: rawSourceColours }] = await Promise.all([
     supabase
       .from('model_specifications')
-      .select('id, model, parent_model_id, description, rarity'),
+      .select('id, model, parent_model_id, description, rarity, series, display_order')
+      .is('parent_model_id', null)
+      .order('display_order'),
     supabase
       .from('guitars')
       .select('model_id')
       .eq('status', 'Approved'),
     supabase
       .from('ref_values')
-      .select('id, category, display_name, descriptor, metadata')
-      .in('category', ['COL', 'CSC', 'HWC', 'PKC', 'CPKC', 'BNC', 'FMC'])
+      .select('id, category, display_name, descriptor, metadata, sort_order')
+      .in('category', ['COL', 'CSC', 'HWC', 'PKC', 'CPKC', 'BNC', 'FMC', 'SER'])
       .eq('is_active', true)
       .order('sort_order'),
     supabase
@@ -69,10 +75,7 @@ export default async function ModelsPage() {
       .select('available_colours, source_materials(year)'),
   ])
 
-  const specByModel = new Map<string, SpecRow>()
-  for (const row of (rawSpecRows ?? []) as SpecRow[]) {
-    specByModel.set(row.model, row)
-  }
+  const specRows = (rawSpecRows ?? []) as SpecRow[]
 
   // Only show rarity once ≥ 3 approved guitars exist for the model, keyed by model_id UUID
   const registryCountByModel = new Map<string, number>()
@@ -82,6 +85,8 @@ export default async function ModelsPage() {
   }
 
   const colourRows = (rawColours ?? []) as ColourRow[]
+  const seriesRows = colourRows.filter(r => r.category === 'SER')
+  const seriesLabelById = new Map(seriesRows.map(r => [r.id, r.display_name]))
   const cscRows  = colourRows.filter(r => r.category === 'CSC'  && r.id !== 'CSC-0004')
   const hwcRows  = colourRows.filter(r => r.category === 'HWC'  && r.id !== 'HWC-0004')
   const pkcRows  = colourRows.filter(r => r.category === 'PKC'  && r.id !== 'PKC-0005')
@@ -107,11 +112,11 @@ export default async function ModelsPage() {
     ])
   )
 
-  const electricSeries = SERIES_ORDER.filter(s => !BASS_SERIES.includes(s))
-  const bassSeries = SERIES_ORDER.filter(s => BASS_SERIES.includes(s))
+  const electricSeries = seriesRows.filter(r => r.id !== BASS_SERIES_ID).map(r => r.id)
+  const bassSeries = seriesRows.filter(r => r.id === BASS_SERIES_ID).map(r => r.id)
 
-  function seriesModels(series: string) {
-    return MODEL_CATALOGUE.filter(m => m.series === series)
+  function seriesModels(seriesId: string) {
+    return specRows.filter(m => m.series === seriesId)
   }
 
   function swatchBg(row: ColourRow): string {
@@ -158,6 +163,7 @@ export default async function ModelsPage() {
 
   function SeriesSection({ series, bass = false }: { series: string; bass?: boolean }) {
     const models = seriesModels(series)
+    const seriesLabel = seriesLabelById.get(series) ?? series
     const accentColor = bass ? '#9e9b96' : '#c8a96e'
 
     return (
@@ -167,7 +173,7 @@ export default async function ModelsPage() {
       }}>
         <div style={{ marginBottom: '20px' }}>
           <p style={{
-            fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+            ...monoLabel('11px', '3px'),
             color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
           }}>
             {models.length} {models.length === 1 ? 'model' : 'models'}
@@ -178,7 +184,7 @@ export default async function ModelsPage() {
             letterSpacing: '2px', lineHeight: 1,
             color: accentColor,
           }}>
-            {series}
+            {seriesLabel}
           </h2>
         </div>
 
@@ -190,16 +196,13 @@ export default async function ModelsPage() {
           paddingBottom: '2px',
         }}>
           {models.map(m => {
-            const spec = specByModel.get(m.model)
-            const description = spec?.description ?? m.description
-            const rarityRaw = spec?.rarity ?? m.rarity
-            const rarity = (registryCountByModel.get(spec?.id ?? '') ?? 0) >= 3 ? rarityRaw : null
+            const rarity = (registryCountByModel.get(m.id) ?? 0) >= 3 ? m.rarity : null
             return (
               <ModelCard
                 key={m.model}
                 model={m.model}
                 nickname={MODEL_NICKNAMES[m.model]}
-                description={description ?? null}
+                description={m.description}
                 rarity={rarity ?? null}
                 slug={m.model.toLowerCase().replace(/\s+/g, '-')}
                 accentColor={accentColor}
@@ -228,7 +231,7 @@ export default async function ModelsPage() {
         }} />
         <div style={{ position: 'relative' }}>
           <p style={{
-            fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+            ...monoLabel('11px', '3px'),
             color: '#c8a96e', textTransform: 'uppercase', marginBottom: '16px',
           }}>
             Model Guide
@@ -283,7 +286,7 @@ export default async function ModelsPage() {
         background: 'rgba(255,255,255,0.02)',
       }}>
         <p style={{
-          fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+          ...monoLabel('11px', '3px'),
           color: '#5c5a57', textTransform: 'uppercase', marginBottom: '12px',
         }}>
           Low end
@@ -344,7 +347,7 @@ export default async function ModelsPage() {
           }} />
           <div style={{ position: 'relative' }}>
             <p style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+              ...monoLabel('11px', '3px'),
               color: '#c8a96e', textTransform: 'uppercase', marginBottom: '16px',
             }}>Generation Guide</p>
             <h2 style={{
@@ -379,7 +382,7 @@ export default async function ModelsPage() {
         {/* Generation timeline */}
         <div style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <p style={{
-            fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+            ...monoLabel('11px', '3px'),
             color: '#5c5a57', textTransform: 'uppercase', marginBottom: '24px',
           }}>Production timeline</p>
           <div style={{
@@ -410,7 +413,7 @@ export default async function ModelsPage() {
         {/* Quickest test */}
         <div style={{ padding: '4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <p style={{
-            fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+            ...monoLabel('11px', '3px'),
             color: '#5c5a57', textTransform: 'uppercase', marginBottom: '16px',
           }}>The quickest test</p>
           <h3 style={{
@@ -457,7 +460,7 @@ export default async function ModelsPage() {
           {/* Column headers */}
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr', gap: '1px', background: 'rgba(255,255,255,0.06)', marginBottom: '1px' }}>
             <div style={{ background: '#111', padding: '0.75rem 1.5rem' }}>
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', color: '#5c5a57' }}>Feature</span>
+              <span style={{ ...monoLabel('10px', '2px'), textTransform: 'uppercase', color: '#5c5a57' }}>Feature</span>
             </div>
             <div style={{ background: '#111', padding: '0.75rem 1.5rem', borderLeft: '1px solid rgba(255,255,255,0.06)' }}>
               <span style={{ fontFamily: 'var(--font-bebas)', fontSize: '18px', letterSpacing: '2px', color: '#b8965a' }}>Gen 0.5</span>
@@ -539,7 +542,7 @@ export default async function ModelsPage() {
                   {row.note && (
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#5c5a57', marginBottom: '6px', lineHeight: 1.4 }}>{row.note}</div>
                   )}
-                  <div style={{ display: 'inline-block', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase', color: confColour, background: confBg, padding: '2px 7px' }}>
+                  <div style={{ display: 'inline-block', ...monoLabel('10px', '1.5px'), textTransform: 'uppercase', color: confColour, background: confBg, padding: '2px 7px' }}>
                     {row.confidence}
                   </div>
                 </div>
@@ -622,7 +625,7 @@ export default async function ModelsPage() {
           }} />
           <div style={{ position: 'relative' }}>
             <p style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+              ...monoLabel('11px', '3px'),
               color: '#c8a96e', textTransform: 'uppercase', marginBottom: '16px',
             }}>Colour Guide</p>
             <h2 style={{
@@ -659,7 +662,7 @@ export default async function ModelsPage() {
             <div key={year} style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
               <div style={{ marginBottom: '24px' }}>
                 <p style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+                  ...monoLabel('11px', '3px'),
                   color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
                 }}>Factory Colours · {colours.length} colours</p>
                 <h3 style={{
@@ -683,7 +686,7 @@ export default async function ModelsPage() {
                         {code && <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '20px', letterSpacing: '2px', color: '#c8a96e', lineHeight: 1, marginBottom: '3px' }}>{code}</div>}
                         <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96', lineHeight: 1.4 }}>{name}</div>
                         {row.metadata?.pattern && (
-                          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: '#3a3835', marginTop: '6px' }}>
+                          <div style={{ ...monoLabel('9px', '1px'), textTransform: 'uppercase', color: '#3a3835', marginTop: '6px' }}>
                             {row.metadata.pattern}
                           </div>
                         )}
@@ -701,7 +704,7 @@ export default async function ModelsPage() {
           <div style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             <div style={{ marginBottom: '24px' }}>
               <p style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+                ...monoLabel('11px', '3px'),
                 color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
               }}>Factory Pickup Colours · {pkcRows.length} options</p>
               <h3 style={{
@@ -736,7 +739,7 @@ export default async function ModelsPage() {
           <div style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             <div style={{ marginBottom: '24px' }}>
               <p style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+                ...monoLabel('11px', '3px'),
                 color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
               }}>Hardware Finishes · {hwcRows.length} options</p>
               <h3 style={{
@@ -760,7 +763,7 @@ export default async function ModelsPage() {
                       {code && <div style={{ fontFamily: 'var(--font-bebas)', fontSize: '20px', letterSpacing: '2px', color: '#c8a96e', lineHeight: 1, marginBottom: '3px' }}>{code}</div>}
                       <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#9e9b96', lineHeight: 1.4 }}>{name}</div>
                       {row.metadata?.pattern && (
-                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: '#3a3835', marginTop: '6px' }}>
+                        <div style={{ ...monoLabel('9px', '1px'), textTransform: 'uppercase', color: '#3a3835', marginTop: '6px' }}>
                           {row.metadata.pattern}
                         </div>
                       )}
@@ -777,7 +780,7 @@ export default async function ModelsPage() {
           <div style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             <div style={{ marginBottom: '24px' }}>
               <p style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+                ...monoLabel('11px', '3px'),
                 color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
               }}>Binding · {bncRows.length} options</p>
               <h3 style={{
@@ -813,7 +816,7 @@ export default async function ModelsPage() {
           <div style={{ padding: '3rem 4rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             <div style={{ marginBottom: '24px' }}>
               <p style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+                ...monoLabel('11px', '3px'),
                 color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
               }}>Fretboard Markers · {fmcRows.length} options</p>
               <h3 style={{
@@ -849,7 +852,7 @@ export default async function ModelsPage() {
           <div style={{ padding: '3rem 4rem' }}>
             <div style={{ marginBottom: '24px' }}>
               <p style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+                ...monoLabel('11px', '3px'),
                 color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
               }}>Custom Shop · {cscRows.length} options</p>
               <h3 style={{
@@ -878,7 +881,7 @@ export default async function ModelsPage() {
                         </div>
                       )}
                       {row.metadata?.pattern && (
-                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase', color: '#3a3835', marginTop: '6px' }}>
+                        <div style={{ ...monoLabel('9px', '1px'), textTransform: 'uppercase', color: '#3a3835', marginTop: '6px' }}>
                           {row.metadata.pattern}
                         </div>
                       )}
@@ -895,7 +898,7 @@ export default async function ModelsPage() {
           <div style={{ padding: '3rem 4rem' }}>
             <div style={{ marginBottom: '24px' }}>
               <p style={{
-                fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+                ...monoLabel('11px', '3px'),
                 color: '#5c5a57', textTransform: 'uppercase', marginBottom: '8px',
               }}>Custom Shop · {cpkcRows.length} options</p>
               <h3 style={{

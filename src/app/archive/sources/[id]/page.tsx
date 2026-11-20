@@ -4,6 +4,7 @@ import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { SourceMaterial } from '@/lib/types'
+import { monoLabel } from '@/lib/text-styles'
 
 export const revalidate = 60
 
@@ -89,7 +90,7 @@ export default async function SourcePage({ params }: { params: Promise<{ id: str
       <div style={{ marginBottom: '32px', paddingBottom: '32px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{
           display: 'inline-block',
-          fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '2px', textTransform: 'uppercase',
+          ...monoLabel('11px', '2px'), textTransform: 'uppercase',
           color: '#8b6e3f', background: 'rgba(200,169,110,0.08)', padding: '3px 9px', marginBottom: '14px',
         }}>
           {source.material_type}{source.year ? ` · ${source.year}` : ''}
@@ -141,7 +142,7 @@ export default async function SourcePage({ params }: { params: Promise<{ id: str
 
       {/* Full source text */}
       <div style={{ marginBottom: '40px' }}>
-        <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', color: '#3a3835', marginBottom: '16px' }}>
+        <p style={{ ...monoLabel('10px', '2px'), textTransform: 'uppercase', color: '#3a3835', marginBottom: '16px' }}>
           Source Text
         </p>
         {source.extracted_text ? (
@@ -161,7 +162,7 @@ export default async function SourcePage({ params }: { params: Promise<{ id: str
       {/* Images */}
       {images.length > 0 && (
         <div style={{ marginBottom: '40px' }}>
-          <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', color: '#3a3835', marginBottom: '8px' }}>
+          <p style={{ ...monoLabel('10px', '2px'), textTransform: 'uppercase', color: '#3a3835', marginBottom: '8px' }}>
             Images
           </p>
           {source.image_credit && (
@@ -201,7 +202,7 @@ export default async function SourcePage({ params }: { params: Promise<{ id: str
       {/* Documents — original PDFs (catalogue scans, press clippings, IPO filings) */}
       {documents.length > 0 && (
         <div style={{ marginBottom: '40px' }}>
-          <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', color: '#3a3835', marginBottom: '16px' }}>
+          <p style={{ ...monoLabel('10px', '2px'), textTransform: 'uppercase', color: '#3a3835', marginBottom: '16px' }}>
             Documents
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'rgba(255,255,255,0.06)' }}>
@@ -217,7 +218,7 @@ export default async function SourcePage({ params }: { params: Promise<{ id: str
                 }}
               >
                 <span style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '1px', textTransform: 'uppercase',
+                  ...monoLabel('10px', '1px'), textTransform: 'uppercase',
                   color: '#8b6e3f', background: 'rgba(200,169,110,0.08)', padding: '2px 7px', flexShrink: 0,
                 }}>
                   PDF
@@ -237,7 +238,7 @@ export default async function SourcePage({ params }: { params: Promise<{ id: str
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '1px', textTransform: 'uppercase',
+              ...monoLabel('11px', '1px'), textTransform: 'uppercase',
               color: '#c8a96e', textDecoration: 'none',
               borderBottom: '1px solid rgba(200,169,110,0.3)', paddingBottom: '2px',
             }}

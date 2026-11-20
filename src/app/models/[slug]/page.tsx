@@ -5,13 +5,13 @@ import { supabase } from '@/lib/supabase'
 import { getRefValues, r } from '@/lib/ref-values'
 import type { ModelSpec, ModelGenSpec } from '@/lib/types'
 import { resolvePickupSvg, type SvgMapRow } from '@/lib/pickup-svg'
-import { MODEL_CATALOGUE, SERIES_ORDER, BASS_SERIES } from '@/data/models'
 import {
   getEvidenceTypes, getModelFieldCitations, getGenFieldCitations, getGuitarMgrIdMap, getParentModelMap,
   flattenFieldCitations, flattenGenFieldCitations, collectGuitarIds, collectParentModelIds, buildClusterGroups,
   type FieldCitations, type EvidenceTypeMap, type EvidenceLinkContext,
 } from '@/lib/evidence'
 import { EvidenceCluster } from '@/components/EvidenceCluster'
+import { monoLabel } from '@/lib/text-styles'
 
 export const revalidate = 60
 
@@ -67,7 +67,7 @@ function SpecRow({ label, value, evidence }: { label: string; value: string | nu
 function SpecGroup({ label }: { label: string }) {
   return (
     <p style={{
-      fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '2px',
+      ...monoLabel('9px', '2px'),
       textTransform: 'uppercase', color: '#3a3835',
       marginTop: '16px', marginBottom: '4px',
     }}>
@@ -306,15 +306,30 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 const toSlug = (model: string) => model.toLowerCase().replace(/\s+/g, '-')
 
-const ORDERED_MODELS = [
-  ...SERIES_ORDER.filter(s => !BASS_SERIES.includes(s)).flatMap(s => MODEL_CATALOGUE.filter(m => m.series === s)),
-  ...SERIES_ORDER.filter(s => BASS_SERIES.includes(s)).flatMap(s => MODEL_CATALOGUE.filter(m => m.series === s)),
-]
+const BASS_SERIES_ID = 'SER-0004' // Nemesis
 
 export default async function ModelPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const { data: allModels } = await supabase.from('model_specifications').select('model')
+  const [{ data: allModels }, { data: rawOrderedModels }, { data: rawSeriesOrder }] = await Promise.all([
+    supabase.from('model_specifications').select('model'),
+    supabase.from('model_specifications').select('model, series, display_order').is('parent_model_id', null),
+    supabase.from('ref_values').select('id, sort_order').eq('category', 'SER').eq('is_active', true),
+  ])
   const modelName = resolveSlug(slug, allModels ?? [])
+
+  // Display order: electric series first (by SER sort_order), bass (Nemesis) series last, matching the
+  // Model Guide grid — within a series, by that series' own display_order (a deliberate curatorial choice).
+  type OrderedRow = { model: string; series: string | null; display_order: number | null }
+  const seriesSort = new Map(((rawSeriesOrder ?? []) as { id: string; sort_order: number }[]).map(s => [s.id, s.sort_order]))
+  const ORDERED_MODELS = ((rawOrderedModels ?? []) as OrderedRow[]).slice().sort((a, b) => {
+    const aBass = a.series === BASS_SERIES_ID ? 1 : 0
+    const bBass = b.series === BASS_SERIES_ID ? 1 : 0
+    if (aBass !== bBass) return aBass - bBass
+    const aSort = seriesSort.get(a.series ?? '') ?? 0
+    const bSort = seriesSort.get(b.series ?? '') ?? 0
+    if (aSort !== bSort) return aSort - bSort
+    return (a.display_order ?? 0) - (b.display_order ?? 0)
+  })
 
   const currentIndex = ORDERED_MODELS.findIndex(m => toSlug(m.model) === slug)
   const prevModel = currentIndex > 0 ? ORDERED_MODELS[currentIndex - 1] : null
@@ -527,7 +542,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
       <div style={{ marginBottom: '40px', paddingBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px', flexWrap: 'wrap' }}>
           {seriesLabel && (
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px', color: '#c8a96e', textTransform: 'uppercase' }}>
+            <span style={{ ...monoLabel('11px', '3px'), color: '#c8a96e', textTransform: 'uppercase' }}>
               {seriesLabel}
             </span>
           )}
@@ -579,7 +594,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
           <Link
             href={`/?model=${spec.model}`}
             style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '1px',
+              ...monoLabel('11px', '1px'),
               color: '#c8a96e', border: '1px solid rgba(200,169,110,0.3)',
               padding: '5px 12px', textDecoration: 'none',
             }}
@@ -624,7 +639,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
                   {sortedFactoryYears.map(year => (
                     <div key={year}>
                       <p style={{
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '2px',
+                        ...monoLabel('9px', '2px'),
                         textTransform: 'uppercase', color: '#3a3835', marginBottom: '12px',
                       }}>
                         Available Colours {year}
@@ -635,7 +650,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
                   {undatedFactoryColourIds.length > 0 && (
                     <div>
                       <p style={{
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '2px',
+                        ...monoLabel('9px', '2px'),
                         textTransform: 'uppercase', color: '#3a3835', marginBottom: '12px',
                       }}>
                         Available Colours — Source Pending
@@ -786,7 +801,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
           }
 
           const groupHeader = (label: string) => (
-            <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: '#3a3835', marginTop: '16px', marginBottom: '4px' }}>
+            <p style={{ ...monoLabel('9px', '2px'), textTransform: 'uppercase', color: '#3a3835', marginTop: '16px', marginBottom: '4px' }}>
               {label}
             </p>
           )
@@ -841,7 +856,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
               <div style={{ display: 'flex', paddingBottom: '12px', marginBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                 <div style={{ width: '180px', flexShrink: 0 }} />
                 {columns.map(genId => (
-                  <div key={genId} style={{ flex: 1, paddingLeft: '16px', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', color: '#c8a96e' }}>
+                  <div key={genId} style={{ flex: 1, paddingLeft: '16px', ...monoLabel('10px', '2px'), textTransform: 'uppercase', color: '#c8a96e' }}>
                     {r(refMap, genId) ?? genId}
                   </div>
                 ))}

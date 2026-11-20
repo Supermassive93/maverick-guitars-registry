@@ -6,6 +6,12 @@ import { getRefValues, r } from '@/lib/ref-values'
 import type { ModelSpec, ModelGenSpec } from '@/lib/types'
 import { resolvePickupSvg, type SvgMapRow } from '@/lib/pickup-svg'
 import { MODEL_CATALOGUE, SERIES_ORDER, BASS_SERIES } from '@/data/models'
+import {
+  getEvidenceTypes, getModelFieldCitations, getGenFieldCitations, getGuitarMgrIdMap, getParentModelMap,
+  flattenFieldCitations, flattenGenFieldCitations, collectGuitarIds, collectParentModelIds, buildClusterGroups,
+  type FieldCitations, type EvidenceTypeMap, type EvidenceLinkContext,
+} from '@/lib/evidence'
+import { EvidenceCluster } from '@/components/EvidenceCluster'
 
 export const revalidate = 60
 
@@ -41,17 +47,18 @@ function swatchBg(refId: string, meta: ColourMeta | null): string | null {
 }
 
 // Always renders — shows "—" for null so every field is visible for review
-function SpecRow({ label, value }: { label: string; value: string | number | null | undefined }) {
+function SpecRow({ label, value, evidence }: { label: string; value: string | number | null | undefined; evidence?: React.ReactNode }) {
   const hasValue = value !== null && value !== undefined && value !== ''
   return (
     <div style={{
-      display: 'flex', gap: '16px', padding: '8px 0',
+      display: 'flex', gap: '16px', padding: '8px 0', alignItems: 'center',
       borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '13px',
     }}>
       <span style={{ color: '#5c5a57', width: '180px', flexShrink: 0, fontFamily: 'var(--font-dm-mono)', fontSize: '11px' }}>
         {label}
       </span>
-      <span style={{ color: hasValue ? '#f0ede8' : '#2e2d2b' }}>{hasValue ? String(value) : '—'}</span>
+      <span style={{ color: hasValue ? '#f0ede8' : '#2e2d2b', flex: 1 }}>{hasValue ? String(value) : '—'}</span>
+      {evidence && <span style={{ flexShrink: 0 }}>{evidence}</span>}
     </div>
   )
 }
@@ -167,59 +174,71 @@ function PickupSwatches({ pickupIds, pickupMetaMap, refMap, neckPkp, middlePkp, 
 
 // Universal specification — all fields that apply across all generations
 type VersionedValue = { value: string; year: string | null; title: string }
-function SpecBlock({ spec, refMap, versionedSpecs, productionYears, hidePickups }: { spec: Partial<ModelSpec>; refMap: Record<string, string>; versionedSpecs: Record<string, VersionedValue[]>; productionYears: string | null; hidePickups?: boolean }) {
+function SpecBlock({ spec, refMap, versionedSpecs, productionYears, hidePickups, citationsByField, evidenceTypes, linkContext }: {
+  spec: Partial<ModelSpec>
+  refMap: Record<string, string>
+  versionedSpecs: Record<string, VersionedValue[]>
+  productionYears: string | null
+  hidePickups?: boolean
+  citationsByField: FieldCitations
+  evidenceTypes: EvidenceTypeMap
+  linkContext: EvidenceLinkContext
+}) {
+  const cluster = (fieldName: string) => (
+    <EvidenceCluster groups={buildClusterGroups(citationsByField[fieldName] ?? [], evidenceTypes, linkContext)} />
+  )
   return (
     <div>
       <SpecGroup label="Production Info" />
       <SpecRow label="Production years"     value={productionYears} />
-      <SpecRow label="Strings"              value={spec.string_count != null ? `${spec.string_count}-string` : null} />
+      <SpecRow label="Strings"              value={spec.string_count != null ? `${spec.string_count}-string` : null} evidence={cluster('string_count')} />
       {/* TODO: Serial Range — derive min/max serial_number_only from approved registry guitars for this model */}
       <SpecRow label="Serial range"         value={null} />
-      <SpecRow label="Original RRP"         value={spec.original_rrp != null ? `£${spec.original_rrp}` : 'Unknown'} />
-      <SpecRow label="Serial prefix"        value={spec.serial_prefix} />
-      <SpecRow label="Weight"               value={spec.weight_kg != null ? `${spec.weight_kg}kg` : null} />
-      <SpecRow label="Left handed option"   value={r(refMap, spec.left_handed_available)} />
-      <SpecRow label="Left handed RRP"      value={spec.left_handed_rrp != null ? `£${spec.left_handed_rrp}` : null} />
+      <SpecRow label="Original RRP"         value={spec.original_rrp != null ? `£${spec.original_rrp}` : 'Unknown'} evidence={cluster('original_rrp')} />
+      <SpecRow label="Serial prefix"        value={spec.serial_prefix} evidence={cluster('serial_prefix')} />
+      <SpecRow label="Weight"               value={spec.weight_kg != null ? `${spec.weight_kg}kg` : null} evidence={cluster('weight_kg')} />
+      <SpecRow label="Left handed option"   value={r(refMap, spec.left_handed_available)} evidence={cluster('left_handed_available')} />
+      <SpecRow label="Left handed RRP"      value={spec.left_handed_rrp != null ? `£${spec.left_handed_rrp}` : null} evidence={cluster('left_handed_rrp')} />
 
       <SpecGroup label="Body" />
-      <SpecRow label="Body design analogue"  value={r(refMap, spec.body_shape_analogue)} />
-      <SpecRow label="Maverick body family"  value={r(refMap, spec.maverick_body_family)} />
-      <SpecRow label="Body wood"            value={r(refMap, spec.body_wood)} />
-      <SpecRow label="Body construction"    value={r(refMap, spec.body_construction)} />
-      <SpecRow label="Joint type"           value={r(refMap, spec.joint_type)} />
-      <SpecRow label="Bookmatched"          value={r(refMap, spec.body_bookmatched)} />
-      <SpecRow label="Body contouring"       value={r(refMap, spec.body_carving)} />
-      <SpecRow label="Decorative body routing" value={r(refMap, spec.body_decorative_routing)} />
+      <SpecRow label="Body design analogue"  value={r(refMap, spec.body_shape_analogue)} evidence={cluster('body_shape_analogue')} />
+      <SpecRow label="Maverick body family"  value={r(refMap, spec.maverick_body_family)} evidence={cluster('maverick_body_family')} />
+      <SpecRow label="Body wood"            value={r(refMap, spec.body_wood)} evidence={cluster('body_wood')} />
+      <SpecRow label="Body construction"    value={r(refMap, spec.body_construction)} evidence={cluster('body_construction')} />
+      <SpecRow label="Joint type"           value={r(refMap, spec.joint_type)} evidence={cluster('joint_type')} />
+      <SpecRow label="Bookmatched"          value={r(refMap, spec.body_bookmatched)} evidence={cluster('body_bookmatched')} />
+      <SpecRow label="Body contouring"       value={r(refMap, spec.body_carving)} evidence={cluster('body_carving')} />
+      <SpecRow label="Decorative body routing" value={r(refMap, spec.body_decorative_routing)} evidence={cluster('body_decorative_routing')} />
 
       <SpecGroup label="Pickups & electronics" />
-      <SpecRow label="Pickup configuration" value={r(refMap, spec.pickup_configuration)} />
-      <SpecRow label="Coil tap"             value={r(refMap, spec.coil_tap)} />
-      <SpecRow label="Volume pot"           value={r(refMap, spec.volume_pot)} />
-      <SpecRow label="Volume pot count"     value={spec.volume_pot_count} />
-      <SpecRow label="Tone pot"             value={r(refMap, spec.tone_pot)} />
-      <SpecRow label="Tone pot count"       value={spec.tone_pot_count} />
+      <SpecRow label="Pickup configuration" value={r(refMap, spec.pickup_configuration)} evidence={cluster('pickup_configuration')} />
+      <SpecRow label="Coil tap"             value={r(refMap, spec.coil_tap)} evidence={cluster('coil_tap')} />
+      <SpecRow label="Volume pot"           value={r(refMap, spec.volume_pot)} evidence={cluster('volume_pot')} />
+      <SpecRow label="Volume pot count"     value={spec.volume_pot_count} evidence={cluster('volume_pot_count')} />
+      <SpecRow label="Tone pot"             value={r(refMap, spec.tone_pot)} evidence={cluster('tone_pot')} />
+      <SpecRow label="Tone pot count"       value={spec.tone_pot_count} evidence={cluster('tone_pot_count')} />
 
       <SpecGroup label="Hardware" />
-      <SpecRow label="Bridge"               value={r(refMap, spec.bridge_type)} />
+      <SpecRow label="Bridge"               value={r(refMap, spec.bridge_type)} evidence={cluster('bridge_type')} />
 
       <SpecGroup label="Neck" />
-      <SpecRow label="Neck mount"           value={r(refMap, spec.neck_mount)} />
-      <SpecRow label="Truss rod"            value={r(refMap, spec.truss_rod)} />
-      <SpecRow label="Fretboard"            value={r(refMap, spec.fretboard_wood)} />
-      <SpecRow label="Fretboard radius"     value={spec.fretboard_radius_mm != null ? `${spec.fretboard_radius_mm}mm` : null} />
-      <SpecRow label="Fret count"           value={r(refMap, spec.fret_count)} />
-      <SpecRow label="Scale length"         value={r(refMap, spec.scale_length)} />
-      <SpecRow label="Nut type"             value={r(refMap, spec.nut_type)} />
+      <SpecRow label="Neck mount"           value={r(refMap, spec.neck_mount)} evidence={cluster('neck_mount')} />
+      <SpecRow label="Truss rod"            value={r(refMap, spec.truss_rod)} evidence={cluster('truss_rod')} />
+      <SpecRow label="Fretboard"            value={r(refMap, spec.fretboard_wood)} evidence={cluster('fretboard_wood')} />
+      <SpecRow label="Fretboard radius"     value={spec.fretboard_radius_mm != null ? `${spec.fretboard_radius_mm}mm` : null} evidence={cluster('fretboard_radius_mm')} />
+      <SpecRow label="Fret count"           value={r(refMap, spec.fret_count)} evidence={cluster('fret_count')} />
+      <SpecRow label="Scale length"         value={r(refMap, spec.scale_length)} evidence={cluster('scale_length')} />
+      <SpecRow label="Nut type"             value={r(refMap, spec.nut_type)} evidence={cluster('nut_type')} />
       <SpecRow label="Nut width"            value={
         versionedSpecs['nut_width']?.length > 1
           ? versionedSpecs['nut_width'].map(v => `${v.value}${v.year ? ` (${v.year})` : ''}`).join(' → ')
           : spec.nut_width != null ? `${spec.nut_width}mm` : null
-      } />
+      } evidence={cluster('nut_width')} />
 
       <SpecGroup label="Headstock" />
-      <SpecRow label="Headstock style"      value={r(refMap, spec.headstock_style)} />
-      <SpecRow label="Headstock face"       value={r(refMap, spec.headstock_face)} />
-      <SpecRow label="Decorative headstock routing" value={r(refMap, spec.headstock_decorative_routing)} />
+      <SpecRow label="Headstock style"      value={r(refMap, spec.headstock_style)} evidence={cluster('headstock_style')} />
+      <SpecRow label="Headstock face"       value={r(refMap, spec.headstock_face)} evidence={cluster('headstock_face')} />
+      <SpecRow label="Decorative headstock routing" value={r(refMap, spec.headstock_decorative_routing)} evidence={cluster('headstock_decorative_routing')} />
     </div>
   )
 }
@@ -324,6 +343,8 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     { data: rawSourceColours },
     { data: rawSpecSources },
     { data: rawSvgMap },
+    evidenceTypes,
+    modelFieldCitations,
   ] = await Promise.all([
     getRefValues(),
     supabase.from('model_specifications').select('*').eq('parent_model_id', spec.id),
@@ -334,7 +355,22 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     supabase.from('model_source_colours').select('available_colours, available_custom_shop_colours, available_hardware_colours, available_pickup_colours, available_custom_shop_pickup_colours, notes, year_qualifier, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
     supabase.from('model_spec_sources').select('field_name, field_value, source_materials(year, title)').eq('spec_id', spec.id).not('field_value', 'is', null),
     supabase.from('pickup_svg_map').select('pkp_id, pos_id, pkc_style, text_variant, svg_filename'),
+    getEvidenceTypes(),
+    getModelFieldCitations(spec.id),
   ])
+
+  const genSpecs = (rawGenSpecs ?? []) as ModelGenSpec[]
+
+  // Gen-layer citations depend on knowing the gen specs' ids, so this is a second pass
+  const genFieldCitations = await getGenFieldCitations(genSpecs.map(gs => gs.id))
+
+  // Evidence citation links — resolved once per page across both layers, reused by every field's icon cluster
+  const flatCitations = [...flattenFieldCitations(modelFieldCitations), ...flattenGenFieldCitations(genFieldCitations)]
+  const [guitarMgrMap, parentModelMap] = await Promise.all([
+    getGuitarMgrIdMap(collectGuitarIds(flatCitations)),
+    getParentModelMap(collectParentModelIds(flatCitations)),
+  ])
+  const evidenceLinkContext: EvidenceLinkContext = { guitarMgrMap, parentModelMap, refMap }
 
   const colourMetaMap: Record<string, ColourMeta> = {}
   const pickupMetaMap: Record<string, PickupMeta> = {}
@@ -347,7 +383,6 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
   }
 
   const variants = (rawVariants ?? []) as ModelSpec[]
-  const genSpecs = (rawGenSpecs ?? []) as ModelGenSpec[]
   const parentSpec = parentSpecData as { id: string; model: string } | null
   const svgMap = (rawSvgMap ?? []) as SvgMapRow[]
 
@@ -572,7 +607,10 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
           {/* Col 1 — Universal spec */}
           <div>
             {sectionHead('Universal Specification')}
-            <SpecBlock spec={spec} refMap={refMap} versionedSpecs={versionedSpecs} productionYears={productionYears} hidePickups={hasGenPickups} />
+            <SpecBlock
+              spec={spec} refMap={refMap} versionedSpecs={versionedSpecs} productionYears={productionYears} hidePickups={hasGenPickups}
+              citationsByField={modelFieldCitations} evidenceTypes={evidenceTypes} linkContext={evidenceLinkContext}
+            />
           </div>
 
           {/* Col 2 — Body colours + Hardware colours */}
@@ -759,20 +797,40 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
             return primary
           }
 
-          const dataRow = (label: string, values: (string | string[] | null | undefined)[]) => (
+          // Citations for one (generation column, field) cell — each generation has its own gen_spec_id,
+          // so the same field can carry different evidence in different columns. Accepts more than
+          // one field_name so a row backed by several columns (e.g. production_year_start/_end) can
+          // merge their citations into one cluster.
+          const clusterForGen = (genId: string, fieldName: string | string[]) => {
+            const gsId = genSpecs.find(g => g.generation === genId)?.id
+            const fieldNames = Array.isArray(fieldName) ? fieldName : [fieldName]
+            const citations = gsId ? fieldNames.flatMap(fn => genFieldCitations[gsId]?.[fn] ?? []) : []
+            return <EvidenceCluster groups={buildClusterGroups(citations, evidenceTypes, evidenceLinkContext)} />
+          }
+
+          const dataRow = (label: string, values: (string | string[] | null | undefined)[], fieldName?: string | string[]) => (
             <div style={{ display: 'flex', gap: '0', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '13px' }}>
               <span style={{ color: '#5c5a57', width: '180px', flexShrink: 0, fontFamily: 'var(--font-dm-mono)', fontSize: '11px' }}>{label}</span>
               {values.map((v, i) => {
+                const cluster = fieldName ? clusterForGen(columns[i], fieldName) : null
                 if (Array.isArray(v)) {
                   return (
-                    <span key={i} style={{ flex: 1, paddingLeft: '16px' }}>
-                      {v.map((item, j) => (
-                        <span key={j} style={{ display: 'block', color: '#f0ede8', lineHeight: 1.7 }}>• {item}</span>
-                      ))}
+                    <span key={i} style={{ flex: 1, paddingLeft: '16px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+                      <span>
+                        {v.map((item, j) => (
+                          <span key={j} style={{ display: 'block', color: '#f0ede8', lineHeight: 1.7 }}>• {item}</span>
+                        ))}
+                      </span>
+                      {cluster && <span style={{ flexShrink: 0, paddingTop: '2px' }}>{cluster}</span>}
                     </span>
                   )
                 }
-                return <span key={i} style={{ flex: 1, color: v ? '#f0ede8' : '#2e2d2b', paddingLeft: '16px' }}>{v ?? '—'}</span>
+                return (
+                  <span key={i} style={{ flex: 1, paddingLeft: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <span style={{ color: v ? '#f0ede8' : '#2e2d2b' }}>{v ?? '—'}</span>
+                    {cluster}
+                  </span>
+                )
               })}
             </div>
           )
@@ -791,49 +849,49 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
 
               {/* Production Info */}
               {groupHeader('Production Info')}
-              {dataRow('Production years', columns.map(id => genYears(gsFor(id))))}
+              {dataRow('Production years', columns.map(id => genYears(gsFor(id))), ['production_year_start', 'production_year_end'])}
               {/* TODO: Serial range — derive min/max serial_number_only from registry guitars matching this model_id + generation */}
               {dataRow('Serial range', columns.map(() => null))}
-              {dataRow('Serial number style', columns.map(id => r(refMap, gsFor(id).serial_number_style)))}
+              {dataRow('Serial number style', columns.map(id => r(refMap, gsFor(id).serial_number_style)), 'serial_number_style')}
 
               {/* Body */}
               {groupHeader('Body')}
-              {dataRow('Body binding',          columns.map(id => fieldOrOptions(gsFor(id), 'body_binding', r(refMap, gsFor(id).body_binding))))}
-              {dataRow('Tremolo cover routing', columns.map(id => r(refMap, gsFor(id).tremolo_cover_routing)))}
+              {dataRow('Body binding',          columns.map(id => fieldOrOptions(gsFor(id), 'body_binding', r(refMap, gsFor(id).body_binding))), 'body_binding')}
+              {dataRow('Tremolo cover routing', columns.map(id => r(refMap, gsFor(id).tremolo_cover_routing)), 'tremolo_cover_routing')}
 
               {/* Pickups & electronics */}
               {groupHeader('Pickups & electronics')}
-              {dataRow('Selector switch type', columns.map(id => r(refMap, gsFor(id).switch_type)))}
-              {dataRow('Neck pickup',      columns.map(id => r(refMap, gsFor(id).neck_pickup)))}
-              {dataRow('Middle pickup',    columns.map(id => r(refMap, gsFor(id).middle_pickup)))}
-              {dataRow('Bridge pickup',    columns.map(id => r(refMap, gsFor(id).bridge_pickup)))}
-              {dataRow('Selector switch knob', columns.map(id => r(refMap, gsFor(id).switch_knob)))}
-              {dataRow('Pickup surrounds', columns.map(id => r(refMap, gsFor(id).pickup_surrounds)))}
+              {dataRow('Selector switch type', columns.map(id => r(refMap, gsFor(id).switch_type)), 'switch_type')}
+              {dataRow('Neck pickup',      columns.map(id => r(refMap, gsFor(id).neck_pickup)), 'neck_pickup')}
+              {dataRow('Middle pickup',    columns.map(id => r(refMap, gsFor(id).middle_pickup)), 'middle_pickup')}
+              {dataRow('Bridge pickup',    columns.map(id => r(refMap, gsFor(id).bridge_pickup)), 'bridge_pickup')}
+              {dataRow('Selector switch knob', columns.map(id => r(refMap, gsFor(id).switch_knob)), 'switch_knob')}
+              {dataRow('Pickup surrounds', columns.map(id => r(refMap, gsFor(id).pickup_surrounds)), 'pickup_surrounds')}
 
               {/* Hardware */}
               {groupHeader('Hardware')}
-              {dataRow('Hardware colour', columns.map(id => r(refMap, gsFor(id).hardware_colour)))}
-              {dataRow('Tuner style',     columns.map(id => r(refMap, gsFor(id).tuner_style)))}
-              {dataRow('Jack socket',     columns.map(id => r(refMap, gsFor(id).jack_socket)))}
-              {dataRow('Bridge logo',     columns.map(id => r(refMap, gsFor(id).bridge_logo)))}
-              {dataRow('Trem arm',        columns.map(id => r(refMap, gsFor(id).trem_arm)))}
+              {dataRow('Hardware colour', columns.map(id => r(refMap, gsFor(id).hardware_colour)), 'hardware_colour')}
+              {dataRow('Tuner style',     columns.map(id => r(refMap, gsFor(id).tuner_style)), 'tuner_style')}
+              {dataRow('Jack socket',     columns.map(id => r(refMap, gsFor(id).jack_socket)), 'jack_socket')}
+              {dataRow('Bridge logo',     columns.map(id => r(refMap, gsFor(id).bridge_logo)), 'bridge_logo')}
+              {dataRow('Trem arm',        columns.map(id => r(refMap, gsFor(id).trem_arm)), 'trem_arm')}
 
               {/* Neck */}
               {groupHeader('Neck')}
-              {dataRow('Neck wood',         columns.map(id => r(refMap, gsFor(id).neck_wood)))}
-              {dataRow('Neck profile',      columns.map(id => r(refMap, gsFor(id).neck_profile)))}
-              {dataRow('Neck construction', columns.map(id => r(refMap, gsFor(id).neck_construction)))}
-              {dataRow('Neck finish',       columns.map(id => r(refMap, gsFor(id).neck_finish)))}
-              {dataRow('Truss rod cover',   columns.map(id => r(refMap, gsFor(id).truss_rod_cover)))}
-              {dataRow('Neck binding',      columns.map(id => r(refMap, gsFor(id).neck_binding)))}
-              {dataRow('Side-dot markers',  columns.map(id => r(refMap, gsFor(id).side_dot_markers)))}
-              {dataRow('Fretboard markers', columns.map(id => fieldOrOptions(gsFor(id), 'fretboard_markers', r(refMap, gsFor(id).fretboard_markers))))}
+              {dataRow('Neck wood',         columns.map(id => r(refMap, gsFor(id).neck_wood)), 'neck_wood')}
+              {dataRow('Neck profile',      columns.map(id => r(refMap, gsFor(id).neck_profile)), 'neck_profile')}
+              {dataRow('Neck construction', columns.map(id => r(refMap, gsFor(id).neck_construction)), 'neck_construction')}
+              {dataRow('Neck finish',       columns.map(id => r(refMap, gsFor(id).neck_finish)), 'neck_finish')}
+              {dataRow('Truss rod cover',   columns.map(id => r(refMap, gsFor(id).truss_rod_cover)), 'truss_rod_cover')}
+              {dataRow('Neck binding',      columns.map(id => r(refMap, gsFor(id).neck_binding)), 'neck_binding')}
+              {dataRow('Side-dot markers',  columns.map(id => r(refMap, gsFor(id).side_dot_markers)), 'side_dot_markers')}
+              {dataRow('Fretboard markers', columns.map(id => fieldOrOptions(gsFor(id), 'fretboard_markers', r(refMap, gsFor(id).fretboard_markers))), 'fretboard_markers')}
 
               {/* Headstock */}
               {groupHeader('Headstock')}
-              {dataRow('Headstock logo',       columns.map(id => r(refMap, gsFor(id).headstock_logo)))}
-              {dataRow('Headstock trademark', columns.map(id => r(refMap, gsFor(id).headstock_trademark)))}
-              {dataRow('Headstock binding',   columns.map(id => r(refMap, gsFor(id).headstock_binding)))}
+              {dataRow('Headstock logo',       columns.map(id => r(refMap, gsFor(id).headstock_logo)), 'headstock_logo')}
+              {dataRow('Headstock trademark', columns.map(id => r(refMap, gsFor(id).headstock_trademark)), 'headstock_trademark')}
+              {dataRow('Headstock binding',   columns.map(id => r(refMap, gsFor(id).headstock_binding)), 'headstock_binding')}
 
             </div>
           )

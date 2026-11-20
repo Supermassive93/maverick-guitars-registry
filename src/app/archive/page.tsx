@@ -2,6 +2,8 @@ import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { Metadata } from 'next'
 import type { SourceMaterial, Article } from '@/lib/types'
 import Link from 'next/link'
+import { getEvidenceTypes, UNSOURCED_LABEL, UNSOURCED_DESCRIPTION } from '@/lib/evidence'
+import { EvidenceBadge, UnsourcedBadge } from '@/components/EvidenceBadge'
 
 export const metadata: Metadata = {
   title: 'Archive — Maverick Guitars Registry',
@@ -11,18 +13,21 @@ export const metadata: Metadata = {
 const subNav = [
   { href: '#history', label: 'Company History' },
   { href: '#source-archive', label: 'Source Archive' },
+  { href: '#methodology', label: 'Methodology' },
   { href: '#articles', label: 'Articles & Testimonials' },
 ]
 
 export default async function ArchivePage() {
   const supabase = await createSupabaseServerClient()
 
-  const [{ data: materialsRaw }, { data: articlesRaw }] = await Promise.all([
-    supabase.from('source_materials').select('*').eq('is_published', true).order('year', { ascending: false }),
+  const [{ data: materialsRaw }, { data: articlesRaw }, evidenceTypes] = await Promise.all([
+    supabase.from('source_materials').select('*').eq('is_published', true).order('year', { ascending: true, nullsFirst: false }),
     supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false }),
+    getEvidenceTypes(),
   ])
   const materials = materialsRaw as SourceMaterial[] | null
   const articles = articlesRaw as Article[] | null
+  const evidenceTypeList = Object.values(evidenceTypes).sort((a, b) => a.strength_rank - b.strength_rank)
 
   return (
     <>
@@ -176,7 +181,10 @@ export default async function ArchivePage() {
               background: 'rgba(255,255,255,0.06)',
             }}>
               {materials.map(item => (
-                <div key={item.id} style={{ background: '#161616', padding: '1.75rem' }}>
+                <Link
+                  key={item.id} id={`source-${item.id}`} href={`/archive/sources/${item.id}`}
+                  style={{ display: 'block', background: '#161616', padding: '1.75rem', scrollMarginTop: '100px', textDecoration: 'none' }}
+                >
                   {item.thumbnail_url && (
                     <div style={{
                       width: '100%', aspectRatio: '4/3',
@@ -202,24 +210,17 @@ export default async function ArchivePage() {
                   {item.description && (
                     <p style={{ fontSize: '12px', color: '#5c5a57', lineHeight: 1.6 }}>{item.description}</p>
                   )}
-                  {item.file_url && (
-                    <a
-                      href={item.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display: 'inline-block', marginTop: '16px',
-                        fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
-                        letterSpacing: '1px', textTransform: 'uppercase',
-                        color: '#c8a96e', textDecoration: 'none',
-                        borderBottom: '1px solid rgba(200,169,110,0.3)',
-                        paddingBottom: '2px',
-                      }}
-                    >
-                      View source →
-                    </a>
-                  )}
-                </div>
+                  <span style={{
+                    display: 'inline-block', marginTop: '16px',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+                    letterSpacing: '1px', textTransform: 'uppercase',
+                    color: '#c8a96e',
+                    borderBottom: '1px solid rgba(200,169,110,0.3)',
+                    paddingBottom: '2px',
+                  }}>
+                    View source →
+                  </span>
+                </Link>
               ))}
             </div>
           ) : (
@@ -240,6 +241,116 @@ export default async function ArchivePage() {
               </p>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* ── SECTION 2.5: METHODOLOGY ── */}
+      <section id="methodology" style={{ scrollMarginTop: '100px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ padding: '5rem 4rem 3rem' }}>
+          <p style={{
+            fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '3px',
+            color: '#5c5a57', textTransform: 'uppercase', marginBottom: '16px',
+          }}>How We Source This</p>
+          <h2 style={{
+            fontFamily: 'var(--font-bebas)',
+            fontSize: 'clamp(36px, 5vw, 64px)',
+            letterSpacing: '2px', lineHeight: 1,
+            color: '#f0ede8', marginBottom: '16px',
+          }}>METHODOLOGY</h2>
+          <p style={{ maxWidth: '620px', color: '#9e9b96', fontSize: '15px', lineHeight: 1.7, marginBottom: '40px' }}>
+            Every specification on a model page carries a cluster of small icons showing exactly how we know it.
+            Hover or tap any icon to see the citation itself. This is the key.
+          </p>
+        </div>
+
+        <div style={{ padding: '0 4rem 4rem' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+            gap: '1px',
+            background: 'rgba(255,255,255,0.06)',
+            marginBottom: '48px',
+          }}>
+            {evidenceTypeList.map(et => (
+              <div key={et.id} style={{ background: '#161616', padding: '1.5rem', display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                <EvidenceBadge evidenceType={et} size={22} />
+                <div>
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: '#f0ede8', marginBottom: '4px' }}>
+                    {et.label}
+                  </div>
+                  <p style={{ fontSize: '12px', color: '#5c5a57', lineHeight: 1.6 }}>{et.description}</p>
+                </div>
+              </div>
+            ))}
+            {/* Not a database row — the dashed-ring state shown when a field has no citation at all */}
+            <div style={{ background: '#161616', padding: '1.5rem', display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+              <UnsourcedBadge size={22} />
+              <div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '13px', color: '#f0ede8', marginBottom: '4px' }}>
+                  {UNSOURCED_LABEL}
+                </div>
+                <p style={{ fontSize: '12px', color: '#5c5a57', lineHeight: 1.6 }}>{UNSOURCED_DESCRIPTION}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ padding: '0 4rem 5rem', display: 'flex', flexDirection: 'column', gap: '40px', maxWidth: '900px' }}>
+          <div>
+            <h3 style={{
+              fontFamily: 'var(--font-bebas)', fontSize: '26px', letterSpacing: '2px',
+              color: '#c8a96e', marginBottom: '16px',
+            }}>SOLID VS OUTLINE</h3>
+            <p style={{ color: '#9e9b96', fontSize: '15px', lineHeight: 1.8 }}>
+              A filled, solid icon means the fact is directly attested — stated in a catalogue, visible in a photograph,
+              confirmed by an owner, or seen across several registry examples. An outlined icon means the fact is an
+              assumption rather than a direct citation: <strong style={{ color: '#f0ede8' }}>Inferred</strong> means it was
+              reasoned from other evidence about the same model but not shown or stated directly.{' '}
+              <strong style={{ color: '#f0ede8' }}>Inherited</strong> means it was carried over from a closely related
+              model or variant that shares the part, and has not yet been confirmed for this specific model.
+            </p>
+          </div>
+
+          <div>
+            <h3 style={{
+              fontFamily: 'var(--font-bebas)', fontSize: '26px', letterSpacing: '2px',
+              color: '#c8a96e', marginBottom: '16px',
+            }}>REGISTRY VERIFICATION</h3>
+            <p style={{ color: '#9e9b96', fontSize: '15px', lineHeight: 1.8 }}>
+              A fact becomes &quot;Registry verified&quot; once it has been confirmed across a minimum number of approved,
+              physically inspected guitars in the registry — each one a real submitted instrument, not a catalogue claim.
+              The exact threshold is still being decided as the registry grows.
+            </p>
+          </div>
+
+          <div>
+            <h3 style={{
+              fontFamily: 'var(--font-bebas)', fontSize: '26px', letterSpacing: '2px',
+              color: '#c8a96e', marginBottom: '16px',
+            }}>CORRECTIONS</h3>
+            <p style={{ color: '#9e9b96', fontSize: '15px', lineHeight: 1.8 }}>
+              Every fact on this site is checked against its source before publication, and the archive is never
+              treated as finished. When a citation turns out to be wrong, or better evidence comes along, the record
+              is corrected and the evidence trail updated — specifications here are a current best answer, not a
+              permanent one.
+            </p>
+          </div>
+
+          <div style={{
+            padding: '1.5rem 2rem',
+            background: 'rgba(200,169,110,0.05)',
+            borderLeft: '3px solid rgba(200,169,110,0.3)',
+          }}>
+            <p style={{
+              fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
+              color: '#8b6e3f', lineHeight: 1.7,
+            }}>
+              Spotted a wrong citation, or have evidence that corrects something here? {' '}
+              <Link href="/contribute" style={{ color: '#c8a96e', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+                Tell the archive
+              </Link>.
+            </p>
+          </div>
         </div>
       </section>
 

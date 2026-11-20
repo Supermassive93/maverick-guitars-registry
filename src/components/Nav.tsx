@@ -33,6 +33,7 @@ const sections: NavSection[] = [
     items: [
       { href: '/archive#history', label: 'Company History', description: 'The Maverick story — origin to end' },
       { href: '/archive#source-archive', label: 'Source Archive', description: 'Catalogues, press and primary sources' },
+      { href: '/archive#methodology', label: 'Methodology', description: 'How evidence and citations work' },
       { href: '/archive#articles', label: 'Articles & Testimonials', description: 'Community writing and interviews' },
     ],
   },

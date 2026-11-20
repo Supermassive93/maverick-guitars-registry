@@ -22,12 +22,13 @@ export default async function ProfilePage() {
   const username = profile?.username ?? 'unknown'
   const role = profile?.role ?? 'user'
   const isAdmin = ['admin', 'user_admin', 'super_admin'].includes(role)
+  const isSuperAdmin = role === 'super_admin'
 
   const { data: siteSettingsRaw } = await supabase
     .from('site_settings')
-    .select('submissions_open, registration_open, contributions_open')
+    .select('submissions_open, registration_open, contributions_open, support_open')
     .maybeSingle()
-  const siteSettings = siteSettingsRaw as { submissions_open: boolean; registration_open: boolean; contributions_open: boolean } | null
+  const siteSettings = siteSettingsRaw as { submissions_open: boolean; registration_open: boolean; contributions_open: boolean; support_open: boolean } | null
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: guitarsRaw } = await supabase
@@ -238,11 +239,15 @@ export default async function ProfilePage() {
           }}>
             Site controls
           </p>
-          <SiteSettingsPanel initial={{
-            submissions_open:  siteSettings?.submissions_open  ?? true,
-            registration_open: siteSettings?.registration_open ?? true,
-            contributions_open: siteSettings?.contributions_open ?? true,
-          }} />
+          <SiteSettingsPanel
+            isSuperAdmin={isSuperAdmin}
+            initial={{
+              submissions_open:  siteSettings?.submissions_open  ?? true,
+              registration_open: siteSettings?.registration_open ?? true,
+              contributions_open: siteSettings?.contributions_open ?? true,
+              support_open: siteSettings?.support_open ?? true,
+            }}
+          />
 
           <p style={{
             fontSize: '10px',

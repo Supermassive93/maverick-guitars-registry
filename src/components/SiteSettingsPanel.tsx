@@ -7,15 +7,17 @@ type Settings = {
   submissions_open: boolean
   registration_open: boolean
   contributions_open: boolean
+  support_open: boolean
 }
 
-const FEATURES: { key: keyof Settings; label: string; description: string }[] = [
+const FEATURES: { key: keyof Settings; label: string; description: string; superOnly?: boolean }[] = [
   { key: 'submissions_open',  label: 'Guitar submissions',  description: 'Allow users to submit guitars to the registry' },
   { key: 'registration_open', label: 'New registrations',   description: 'Allow new users to create accounts' },
   { key: 'contributions_open', label: 'Contributions form', description: 'Allow users to submit archive material' },
+  { key: 'support_open', label: 'Support Us page', description: 'Show the live page instead of an In Development placeholder', superOnly: true },
 ]
 
-export default function SiteSettingsPanel({ initial }: { initial: Settings }) {
+export default function SiteSettingsPanel({ initial, isSuperAdmin = false }: { initial: Settings; isSuperAdmin?: boolean }) {
   const [settings, setSettings] = useState<Settings>(initial)
   const [saving, setSaving] = useState<keyof Settings | null>(null)
   const [errors, setErrors] = useState<Partial<Record<keyof Settings, string>>>({})
@@ -46,7 +48,7 @@ export default function SiteSettingsPanel({ initial }: { initial: Settings }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'rgba(255,255,255,0.06)' }}>
-      {FEATURES.map(({ key, label, description }) => {
+      {FEATURES.filter(f => !f.superOnly || isSuperAdmin).map(({ key, label, description }) => {
         const isOn = settings[key]
         const isSaving = saving === key
         const err = errors[key]

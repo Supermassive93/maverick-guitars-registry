@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
+import FormClosed from '@/components/FormClosed'
 
 export const metadata: Metadata = {
   title: 'Support the Archive — Maverick Guitars Registry',
@@ -27,7 +29,20 @@ const tiers = [
   },
 ]
 
-export default function SupportPage() {
+export default async function SupportPage() {
+  const supabase = await createSupabaseServerClient()
+  const { data: settingsRaw } = await supabase.from('site_settings').select('support_open').maybeSingle()
+  const data = settingsRaw as { support_open: boolean } | null
+
+  if (data && !data.support_open) {
+    return (
+      <FormClosed
+        title="IN DEVELOPMENT"
+        message="We're still setting up supporter accounts and payment processing — coming soon. Check back shortly."
+      />
+    )
+  }
+
   return (
     <>
       {/* Header */}

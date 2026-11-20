@@ -1594,6 +1594,7 @@ export type Database = {
           id: boolean
           registration_open: boolean
           submissions_open: boolean
+          support_open: boolean
           updated_at: string | null
           updated_by: string | null
         }
@@ -1602,6 +1603,7 @@ export type Database = {
           id?: boolean
           registration_open?: boolean
           submissions_open?: boolean
+          support_open?: boolean
           updated_at?: string | null
           updated_by?: string | null
         }
@@ -1610,6 +1612,7 @@ export type Database = {
           id?: boolean
           registration_open?: boolean
           submissions_open?: boolean
+          support_open?: boolean
           updated_at?: string | null
           updated_by?: string | null
         }

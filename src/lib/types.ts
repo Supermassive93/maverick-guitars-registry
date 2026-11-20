@@ -257,6 +257,7 @@ export interface SourceMaterial {
   file_url: string | null
   thumbnail_url: string | null
   source_credit: string | null
+  image_credit: string | null
   notes: string | null
   extracted_text: string | null
   page_count: number | null

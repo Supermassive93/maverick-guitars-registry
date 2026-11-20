@@ -161,9 +161,14 @@ export default async function SourcePage({ params }: { params: Promise<{ id: str
       {/* Images */}
       {images.length > 0 && (
         <div style={{ marginBottom: '40px' }}>
-          <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', color: '#3a3835', marginBottom: '16px' }}>
+          <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', color: '#3a3835', marginBottom: '8px' }}>
             Images
           </p>
+          {source.image_credit && (
+            <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57', marginBottom: '16px' }}>
+              {source.image_credit}
+            </p>
+          )}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',

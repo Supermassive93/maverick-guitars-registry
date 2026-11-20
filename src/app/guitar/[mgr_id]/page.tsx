@@ -18,7 +18,7 @@ async function getGuitar(mgr_id: number): Promise<Guitar | null> {
 }
 
 function formatMgrId(id: number) {
-  return `MGR-${String(id).padStart(4, '0')}`
+  return `MGR-${String(id).padStart(5, '0')}`
 }
 
 function SpecBadge({ source }: { source: string | null }) {

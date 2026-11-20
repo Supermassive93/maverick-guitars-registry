@@ -43,7 +43,7 @@ export default async function ProfilePage() {
   const rejected = (guitars ?? []).filter(g => g.status === 'Rejected')
 
   function formatMgrId(id: number) {
-    return `MGR-${String(id).padStart(4, '0')}`
+    return `MGR-${String(id).padStart(5, '0')}`
   }
 
   function StatusBadge({ status }: { status: string }) {

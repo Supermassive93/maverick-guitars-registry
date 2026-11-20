@@ -9,7 +9,7 @@ interface Props {
 }
 
 function formatMgrId(id: number) {
-  return `MGR-${String(id).padStart(4, '0')}`
+  return `MGR-${String(id).padStart(5, '0')}`
 }
 
 function ConfidenceBadge({ source }: { source: string | null }) {

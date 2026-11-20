@@ -205,7 +205,7 @@ function citationToLines(c: ResolvedCitation, et: EvidenceType, ctx: EvidenceLin
       const mgrId = ctx.guitarMgrMap[gid]
       return {
         key: `${c.id}-${gid}`,
-        label: mgrId != null ? `MGR-${String(mgrId).padStart(4, '0')}` : 'Registry guitar',
+        label: mgrId != null ? `MGR-${String(mgrId).padStart(5, '0')}` : 'Registry guitar',
         href: mgrId != null ? `/guitar/${mgrId}` : null,
         excerpt: c.text_excerpt,
       }

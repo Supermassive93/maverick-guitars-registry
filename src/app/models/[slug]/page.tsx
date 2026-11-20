@@ -8,7 +8,7 @@ import { resolvePickupSvg, type SvgMapRow } from '@/lib/pickup-svg'
 import {
   getEvidenceTypes, getModelFieldCitations, getGenFieldCitations, getGuitarMgrIdMap, getParentModelMap,
   flattenFieldCitations, flattenGenFieldCitations, collectGuitarIds, collectParentModelIds, buildClusterGroups,
-  type FieldCitations, type EvidenceTypeMap, type EvidenceLinkContext,
+  type FieldCitations, type EvidenceTypeMap, type EvidenceLinkContext, type ClusterGroup,
 } from '@/lib/evidence'
 import { EvidenceCluster } from '@/components/EvidenceCluster'
 import { monoLabel } from '@/lib/text-styles'
@@ -47,7 +47,10 @@ function swatchBg(refId: string, meta: ColourMeta | null): string | null {
 }
 
 // Always renders — shows "—" for null so every field is visible for review
-function SpecRow({ label, value, evidence }: { label: string; value: string | number | null | undefined; evidence?: React.ReactNode }) {
+// pending: this field isn't a sourcing gap — it's mechanically derived from future registry
+// data (e.g. serial range from approved guitars) and has nothing to cite yet. Shown distinctly
+// from a plain "—" so it doesn't read as "needs a source" alongside fields that do.
+function SpecRow({ label, value, evidence, pending }: { label: string; value: string | number | null | undefined; evidence?: React.ReactNode; pending?: boolean }) {
   const hasValue = value !== null && value !== undefined && value !== ''
   return (
     <div style={{
@@ -57,7 +60,9 @@ function SpecRow({ label, value, evidence }: { label: string; value: string | nu
       <span style={{ color: '#5c5a57', width: '180px', flexShrink: 0, fontFamily: 'var(--font-dm-mono)', fontSize: '11px' }}>
         {label}
       </span>
-      <span style={{ color: hasValue ? '#f0ede8' : '#2e2d2b', flex: 1 }}>{hasValue ? String(value) : '—'}</span>
+      <span style={{ color: hasValue ? '#f0ede8' : '#2e2d2b', flex: 1, fontStyle: pending ? 'italic' : undefined }}>
+        {hasValue ? String(value) : pending ? 'Pending registry data' : '—'}
+      </span>
       {evidence && <span style={{ flexShrink: 0 }}>{evidence}</span>}
     </div>
   )
@@ -174,11 +179,13 @@ function PickupSwatches({ pickupIds, pickupMetaMap, refMap, neckPkp, middlePkp, 
 
 // Universal specification — all fields that apply across all generations
 type VersionedValue = { value: string; year: string | null; title: string }
-function SpecBlock({ spec, refMap, versionedSpecs, productionYears, hidePickups, citationsByField, evidenceTypes, linkContext }: {
+function SpecBlock({ spec, refMap, versionedSpecs, productionYears, serialRangeDisplay, topSerialMgrId, hidePickups, citationsByField, evidenceTypes, linkContext }: {
   spec: Partial<ModelSpec>
   refMap: Record<string, string>
   versionedSpecs: Record<string, VersionedValue[]>
   productionYears: string | null
+  serialRangeDisplay: string | null
+  topSerialMgrId: number | null
   hidePickups?: boolean
   citationsByField: FieldCitations
   evidenceTypes: EvidenceTypeMap
@@ -187,13 +194,23 @@ function SpecBlock({ spec, refMap, versionedSpecs, productionYears, hidePickups,
   const cluster = (fieldName: string) => (
     <EvidenceCluster groups={buildClusterGroups(citationsByField[fieldName] ?? [], evidenceTypes, linkContext)} />
   )
+  // Not a stored citation — a live aggregate over the registry's own serial data. Shown as
+  // Registry verified whenever at least one known serial exists for this model, linking to the
+  // specific guitar holding the top serial (the real submission the range traces back to).
+  const registryVerifiedType = evidenceTypes['SCT-0006']
+  const serialRangeCluster: ClusterGroup[] = serialRangeDisplay != null && registryVerifiedType && topSerialMgrId != null
+    ? [{
+        evidenceType: registryVerifiedType,
+        count: 1,
+        lines: [{ key: 'serial-range', label: `View MGR-${String(topSerialMgrId).padStart(5, '0')}`, href: `/guitar/${topSerialMgrId}`, excerpt: null }],
+      }]
+    : []
   return (
     <div>
       <SpecGroup label="Production Info" />
       <SpecRow label="Production years"     value={productionYears} evidence={cluster('production_years')} />
       <SpecRow label="Strings"              value={spec.string_count != null ? `${spec.string_count}-string` : null} evidence={cluster('string_count')} />
-      {/* TODO: Serial Range — derive min/max serial_number_only from approved registry guitars for this model */}
-      <SpecRow label="Serial range"         value={null} />
+      <SpecRow label="Serial range"         value={serialRangeDisplay} pending={serialRangeDisplay == null} evidence={serialRangeDisplay != null ? <EvidenceCluster groups={serialRangeCluster} /> : undefined} />
       <SpecRow label="Original RRP"         value={spec.original_rrp != null ? `£${spec.original_rrp}` : 'Unknown'} evidence={cluster('original_rrp')} />
       <SpecRow label="Serial prefix"        value={spec.serial_prefix} evidence={cluster('serial_prefix')} />
       <SpecRow label="Weight"               value={spec.weight_kg != null ? `${spec.weight_kg}kg` : null} evidence={cluster('weight_kg')} />
@@ -364,7 +381,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
     getRefValues(),
     supabase.from('model_specifications').select('*').eq('parent_model_id', spec.id),
     supabase.from('model_gen_specs').select('*').eq('model_id', spec.id).order('generation'),
-    supabase.from('guitars').select('serial_number_only').eq('model_id', spec.id).eq('status', 'Approved'),
+    supabase.from('guitars').select('mgr_id, serial_number_only, generation, status').eq('model_id', spec.id),
     supabase.from('ref_values').select('id, metadata').in('category', ['COL', 'CSC', 'HWC', 'PKC', 'CPKC', 'BNC', 'FMC']).eq('is_active', true),
     parentSpecPromise,
     supabase.from('model_source_colours').select('available_colours, available_custom_shop_colours, available_hardware_colours, available_pickup_colours, available_custom_shop_pickup_colours, notes, year_qualifier, source_materials(id, title, year, material_type)').eq('model_id', spec.id),
@@ -494,12 +511,38 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
       ? yearQualifier ? `${yearQualifier} ${yearStart}` : String(yearStart)
       : `${yearStart}–${yearEnd}`
 
-  const serials = (rawRegistry ?? [])
-    .map((g: { serial_number_only: number | null }) => g.serial_number_only)
-    .filter((n): n is number => n != null)
-  const registeredCount = rawRegistry?.length ?? 0
-  const serialMin = serials.length ? Math.min(...serials) : null
-  const serialMax = serials.length ? Math.max(...serials) : null
+  type RegistryRow = { mgr_id: number; serial_number_only: number | null; generation: string | null; status: string }
+  const registryRows = (rawRegistry ?? []) as RegistryRow[]
+  const registeredCount = registryRows.filter(g => g.status === 'Approved').length
+
+  function formatSerial(n: number): string {
+    return spec.serial_prefix ? `${spec.serial_prefix}${String(n).padStart(5, '0')}` : String(n)
+  }
+
+  // The range always starts at 1 and ends at the highest known serial for this model — the
+  // registry confirming guitar #92 exists is evidence #1–91 exist too, regardless of whether
+  // that record itself is a reviewed approval or an auto-extrapolated placeholder. The badge
+  // links to the specific guitar holding that top serial, since it's the real submission the
+  // whole extrapolated range traces back to (populate_serial_range only ever fills gaps below
+  // an approved guitar's own serial, never above it).
+  const topSerialRow = registryRows.reduce<RegistryRow | null>((top, g) => {
+    if (g.serial_number_only == null) return top
+    if (!top || g.serial_number_only > (top.serial_number_only ?? -Infinity)) return g
+    return top
+  }, null)
+  const allSerials = registryRows.map(g => g.serial_number_only).filter((n): n is number => n != null)
+  const serialMax = allSerials.length ? Math.max(...allSerials) : null
+  const serialRangeDisplay = serialMax != null ? `${formatSerial(1)} – ${formatSerial(serialMax)}` : null
+
+  // Per-generation range for the comparison table — the actual confirmed min–max seen within
+  // that one generation (not assumed to start at 1; serials run continuously across the whole
+  // model's production, not reset per generation).
+  function serialRangeForGen(genId: string): string | null {
+    const gens = registryRows.filter(g => g.generation === genId).map(g => g.serial_number_only).filter((n): n is number => n != null)
+    if (gens.length === 0) return null
+    const min = Math.min(...gens), max = Math.max(...gens)
+    return min === max ? formatSerial(min) : `${formatSerial(min)} – ${formatSerial(max)}`
+  }
 
   const seriesLabel = r(refMap, spec.series)
 
@@ -606,9 +649,9 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
               {registeredCount} registered
             </span>
           )}
-          {serialMin != null && serialMax != null && serialMin !== serialMax && (
+          {serialRangeDisplay && (
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57' }}>
-              Serial range {serialMin}–{serialMax}
+              Serial range {serialRangeDisplay}
             </span>
           )}
         </div>
@@ -623,7 +666,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
           <div>
             {sectionHead('Universal Specification')}
             <SpecBlock
-              spec={spec} refMap={refMap} versionedSpecs={versionedSpecs} productionYears={productionYears} hidePickups={hasGenPickups}
+              spec={spec} refMap={refMap} versionedSpecs={versionedSpecs} productionYears={productionYears} serialRangeDisplay={serialRangeDisplay} topSerialMgrId={topSerialRow?.mgr_id ?? null} hidePickups={hasGenPickups}
               citationsByField={modelFieldCitations} evidenceTypes={evidenceTypes} linkContext={evidenceLinkContext}
             />
           </div>
@@ -865,8 +908,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
               {/* Production Info */}
               {groupHeader('Production Info')}
               {dataRow('Production years', columns.map(id => genYears(gsFor(id))), ['production_year_start', 'production_year_end'])}
-              {/* TODO: Serial range — derive min/max serial_number_only from registry guitars matching this model_id + generation */}
-              {dataRow('Serial range', columns.map(() => null))}
+              {dataRow('Serial range', columns.map(id => serialRangeForGen(id)))}
               {dataRow('Serial number style', columns.map(id => r(refMap, gsFor(id).serial_number_style)), 'serial_number_style')}
 
               {/* Body */}

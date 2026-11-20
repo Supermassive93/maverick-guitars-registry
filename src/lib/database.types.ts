@@ -1047,6 +1047,58 @@ export type Database = {
           },
         ]
       }
+      model_photo_appearances: {
+        Row: {
+          created_at: string
+          generation: string | null
+          id: string
+          model_id: string | null
+          notes: string | null
+          source_material_id: string
+          subject: string | null
+        }
+        Insert: {
+          created_at?: string
+          generation?: string | null
+          id?: string
+          model_id?: string | null
+          notes?: string | null
+          source_material_id: string
+          subject?: string | null
+        }
+        Update: {
+          created_at?: string
+          generation?: string | null
+          id?: string
+          model_id?: string | null
+          notes?: string | null
+          source_material_id?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_photo_appearances_generation_fkey"
+            columns: ["generation"]
+            isOneToOne: false
+            referencedRelation: "ref_values"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_photo_appearances_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "model_specifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_photo_appearances_source_material_id_fkey"
+            columns: ["source_material_id"]
+            isOneToOne: false
+            referencedRelation: "source_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       model_pickup_years: {
         Row: {
           bridge_pickup: string | null

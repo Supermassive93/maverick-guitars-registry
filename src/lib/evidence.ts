@@ -30,6 +30,7 @@ export async function getEvidenceTypes(): Promise<EvidenceTypeMap> {
 }
 
 export type SourceMaterialStub = { id: string; title: string; year: string | null }
+export type InferenceStub = { id: string; title: string }
 
 export interface ResolvedCitation {
   id: string
@@ -42,6 +43,8 @@ export interface ResolvedCitation {
   inherited_from_model_id: string | null
   inherited_from_generation: string | null
   guitar_ids: string[] | null
+  inference_id: string | null
+  inference: InferenceStub | null
 }
 
 // field_name -> citations, for the universal (model_specifications) layer
@@ -59,15 +62,17 @@ type RawRow = {
   inherited_from_model_id: string | null
   inherited_from_generation: string | null
   guitar_ids: string[] | null
+  inference_id: string | null
   source_materials: SourceMaterialStub | null
+  inferences: InferenceStub | null
 }
 
 function toResolvedCitation(row: RawRow): ResolvedCitation {
-  const { source_materials, ...rest } = row
-  return { ...rest, source_material: source_materials ?? null }
+  const { source_materials, inferences, ...rest } = row
+  return { ...rest, source_material: source_materials ?? null, inference: inferences ?? null }
 }
 
-const CITATION_COLUMNS = 'id, field_name, source_type, text_excerpt, page_reference, source_material_id, inherited_from_model_id, inherited_from_generation, guitar_ids, source_materials(id, title, year)'
+const CITATION_COLUMNS = 'id, field_name, source_type, text_excerpt, page_reference, source_material_id, inherited_from_model_id, inherited_from_generation, guitar_ids, inference_id, source_materials(id, title, year), inferences(id, title)'
 
 // All citations for a model's universal spec layer, grouped by field_name
 export async function getModelFieldCitations(specId: string): Promise<FieldCitations> {
@@ -182,6 +187,17 @@ export interface ClusterGroup {
 const slugifyModel = (model: string) => model.toLowerCase().replace(/\s+/g, '-')
 
 function citationToLines(c: ResolvedCitation, et: EvidenceType, ctx: EvidenceLinkContext): PanelLine[] {
+  // An inference-backed citation overrides the evidence type's usual link target — it always
+  // points to its entry on the Inferences page, regardless of what SCT-0002 is normally wired to.
+  if (c.inference_id) {
+    return [{
+      key: c.id,
+      label: c.inference?.title ?? 'Read the full reasoning',
+      href: `/archive/inferences#inference-${c.inference_id}`,
+      excerpt: null,
+    }]
+  }
+
   if (et.link_target === 'registry_guitar') {
     const ids = c.guitar_ids ?? []
     if (ids.length === 0) return [{ key: c.id, label: et.description, href: null, excerpt: c.text_excerpt }]

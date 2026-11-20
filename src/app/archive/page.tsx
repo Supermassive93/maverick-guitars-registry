@@ -306,7 +306,12 @@ export default async function ArchivePage() {
               A filled, solid icon means the fact is directly attested — stated in a catalogue, visible in a photograph,
               confirmed by an owner, or seen across several registry examples. An outlined icon means the fact is an
               assumption rather than a direct citation: <strong style={{ color: '#f0ede8' }}>Inferred</strong> means it was
-              reasoned from other evidence about the same model but not shown or stated directly.{' '}
+              reasoned from other evidence about the same model but not shown or stated directly — where that reasoning
+              draws on more than one source, it's written up in full on the{' '}
+              <Link href="/archive/inferences" style={{ color: '#c8a96e', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+                Recorded Inferences
+              </Link>{' '}
+              page.{' '}
               <strong style={{ color: '#f0ede8' }}>Inherited</strong> means it was carried over from a closely related
               model or variant that shares the part, and has not yet been confirmed for this specific model.
             </p>

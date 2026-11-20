@@ -9,6 +9,7 @@ import {
   IconQuestionMark,
   IconBook,
   IconCamera,
+  IconBuildingBank,
   type Icon,
 } from '@tabler/icons-react'
 
@@ -24,6 +25,7 @@ const ICONS: Record<string, Icon> = {
   'question-mark': IconQuestionMark,
   book: IconBook,
   camera: IconCamera,
+  'building-bank': IconBuildingBank,
 }
 
 export function EvidenceIcon({ name, size = 11 }: { name: string; size?: number }) {

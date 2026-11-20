@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Bebas_Neue, DM_Sans, DM_Mono } from 'next/font/google'
 import './globals.css'
 import Nav from '@/components/Nav'
+import EvidencePanelPositioner from '@/components/EvidencePanelPositioner'
 
 const bebasNeue = Bebas_Neue({ variable: '--font-bebas', weight: '400', subsets: ['latin'] })
 const dmSans    = DM_Sans({ variable: '--font-dm-sans', subsets: ['latin'], weight: ['300','400','500'] })
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${bebasNeue.variable} ${dmSans.variable} ${dmMono.variable} antialiased min-h-screen`}>
         <Nav />
+        <EvidencePanelPositioner />
         <main style={{ paddingTop: '56px' }}>{children}</main>
         <footer style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} className="mt-24 py-10 text-center text-sm">
           <p style={{ color: '#5c5a57', fontFamily: 'var(--font-dm-mono)' }}>

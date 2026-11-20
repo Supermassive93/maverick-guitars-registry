@@ -190,7 +190,7 @@ function SpecBlock({ spec, refMap, versionedSpecs, productionYears, hidePickups,
   return (
     <div>
       <SpecGroup label="Production Info" />
-      <SpecRow label="Production years"     value={productionYears} />
+      <SpecRow label="Production years"     value={productionYears} evidence={cluster('production_years')} />
       <SpecRow label="Strings"              value={spec.string_count != null ? `${spec.string_count}-string` : null} evidence={cluster('string_count')} />
       {/* TODO: Serial Range — derive min/max serial_number_only from approved registry guitars for this model */}
       <SpecRow label="Serial range"         value={null} />

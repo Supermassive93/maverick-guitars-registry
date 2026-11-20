@@ -19,22 +19,31 @@ function MethodologyLink() {
   )
 }
 
-// Pure CSS hover/focus — no client JS. The panel is a sibling of the trigger button inside
-// a `.group` wrapper, visible only while the pointer or focus is somewhere inside that one
-// wrapper (group-hover / group-focus-within). This makes it physically impossible for a panel
-// to get stuck open when the cursor moves to a different icon, and avoids a client component
-// (and its own state/effects/listeners) per spec row.
+// Visibility is pure CSS hover/focus — no per-instance client JS or React state. The panel is
+// a sibling of the trigger button inside a `.group` wrapper, visible only while the pointer or
+// focus is somewhere inside that one wrapper (group-hover / group-focus-within). This makes it
+// physically impossible for a panel to get stuck open when the cursor moves to a different icon.
+// A single document-level listener (EvidencePanelPositioner, mounted once in the root layout)
+// separately nudges a panel's horizontal position at hover time if it would overflow the
+// viewport — see that file. It only ever sets a transform on the one panel being opened; it
+// never touches visibility, so it can't reintroduce the stuck-open bug this avoided above.
 //
 // The panel sits flush against the trigger (top: 100%, no gap) and extends all the way down
 // through the card below — the "breathing room" above the card is padding-top on this same
 // element, not an outside margin. That makes the hoverable region one unbroken shape from icon
 // to card, so moving the cursor into the card never crosses a dead zone that would drop the
 // hover and close the panel prematurely.
-function IconWithPanel({ trigger, panelTitle, panelColour, children }: {
+// align: which side of the trigger the panel's own edge sticks to, i.e. which way it grows.
+// 'right' (the default) suits an icon at the right edge of a wide row — the usual spec-sheet
+// case — growing the panel leftward, back over the row. 'left' suits an icon near the left
+// edge of its container, growing the panel rightward instead. Either way, the width clamps to
+// the viewport so a 270px panel can never force horizontal overflow on a narrow screen.
+export function IconWithPanel({ trigger, panelTitle, panelColour, children, align = 'right' }: {
   trigger: React.ReactNode
   panelTitle: string
   panelColour: string
   children: React.ReactNode
+  align?: 'left' | 'right'
 }) {
   return (
     <div className="group" style={{ position: 'relative' }}>
@@ -47,8 +56,12 @@ function IconWithPanel({ trigger, panelTitle, panelColour, children }: {
       </button>
 
       <div
-        className="invisible opacity-0 pointer-events-none group-hover:visible group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100 group-focus-within:pointer-events-auto transition-opacity duration-100"
-        style={{ position: 'absolute', top: '100%', right: 0, zIndex: 40, paddingTop: '10px', width: '270px' }}
+        className="evidence-panel invisible opacity-0 pointer-events-none group-hover:visible group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100 group-focus-within:pointer-events-auto transition-opacity duration-100"
+        style={{
+          position: 'absolute', top: '100%', zIndex: 40, paddingTop: '10px',
+          width: 'min(270px, calc(100vw - 32px))',
+          ...(align === 'right' ? { right: 0 } : { left: 0 }),
+        }}
       >
         <div style={{
           background: '#161616', border: '1px solid rgba(255,255,255,0.12)',
@@ -68,10 +81,10 @@ function IconWithPanel({ trigger, panelTitle, panelColour, children }: {
   )
 }
 
-export function EvidenceCluster({ groups }: { groups: ClusterGroup[] }) {
+export function EvidenceCluster({ groups, align = 'right' }: { groups: ClusterGroup[]; align?: 'left' | 'right' }) {
   if (groups.length === 0) {
     return (
-      <IconWithPanel trigger={<UnsourcedBadge />} panelTitle={UNSOURCED_LABEL} panelColour={UNSOURCED_COLOUR}>
+      <IconWithPanel trigger={<UnsourcedBadge />} panelTitle={UNSOURCED_LABEL} panelColour={UNSOURCED_COLOUR} align={align}>
         <p style={{ fontSize: '12px', color: '#9e9b96', lineHeight: 1.6 }}>{UNSOURCED_DESCRIPTION}</p>
       </IconWithPanel>
     )
@@ -85,6 +98,7 @@ export function EvidenceCluster({ groups }: { groups: ClusterGroup[] }) {
           trigger={<EvidenceBadge evidenceType={g.evidenceType} count={g.count} />}
           panelTitle={g.evidenceType.label}
           panelColour={g.evidenceType.colour}
+          align={align}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {g.lines.map(line => (

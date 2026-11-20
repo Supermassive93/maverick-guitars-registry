@@ -558,6 +558,82 @@ export type Database = {
           },
         ]
       }
+      inference_sources: {
+        Row: {
+          created_at: string
+          id: string
+          inference_id: string
+          note: string | null
+          source_material_id: string
+          source_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inference_id: string
+          note?: string | null
+          source_material_id: string
+          source_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inference_id?: string
+          note?: string | null
+          source_material_id?: string
+          source_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inference_sources_inference_id_fkey"
+            columns: ["inference_id"]
+            isOneToOne: false
+            referencedRelation: "inferences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inference_sources_source_material_id_fkey"
+            columns: ["source_material_id"]
+            isOneToOne: false
+            referencedRelation: "source_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inference_sources_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
+            referencedRelation: "evidence_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inferences: {
+        Row: {
+          created_at: string
+          explanation: string
+          id: string
+          inference_number: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          explanation: string
+          id?: string
+          inference_number?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          explanation?: string
+          id?: string
+          inference_number?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       model_appearances: {
         Row: {
           appears_in: boolean
@@ -607,6 +683,7 @@ export type Database = {
           gen_spec_id: string
           guitar_ids: string[] | null
           id: string
+          inference_id: string | null
           inherited_from_generation: string | null
           inherited_from_model_id: string | null
           page_reference: string | null
@@ -620,6 +697,7 @@ export type Database = {
           gen_spec_id: string
           guitar_ids?: string[] | null
           id?: string
+          inference_id?: string | null
           inherited_from_generation?: string | null
           inherited_from_model_id?: string | null
           page_reference?: string | null
@@ -633,6 +711,7 @@ export type Database = {
           gen_spec_id?: string
           guitar_ids?: string[] | null
           id?: string
+          inference_id?: string | null
           inherited_from_generation?: string | null
           inherited_from_model_id?: string | null
           page_reference?: string | null
@@ -653,6 +732,13 @@ export type Database = {
             columns: ["gen_spec_id"]
             isOneToOne: false
             referencedRelation: "model_gen_specs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_gen_spec_sources_inference_id_fkey"
+            columns: ["inference_id"]
+            isOneToOne: false
+            referencedRelation: "inferences"
             referencedColumns: ["id"]
           },
           {
@@ -1073,6 +1159,7 @@ export type Database = {
           field_value: string | null
           guitar_ids: string[] | null
           id: string
+          inference_id: string | null
           inherited_from_generation: string | null
           inherited_from_model_id: string | null
           page_reference: string | null
@@ -1087,6 +1174,7 @@ export type Database = {
           field_value?: string | null
           guitar_ids?: string[] | null
           id?: string
+          inference_id?: string | null
           inherited_from_generation?: string | null
           inherited_from_model_id?: string | null
           page_reference?: string | null
@@ -1101,6 +1189,7 @@ export type Database = {
           field_value?: string | null
           guitar_ids?: string[] | null
           id?: string
+          inference_id?: string | null
           inherited_from_generation?: string | null
           inherited_from_model_id?: string | null
           page_reference?: string | null
@@ -1115,6 +1204,13 @@ export type Database = {
             columns: ["source_type"]
             isOneToOne: false
             referencedRelation: "ref_values"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_spec_sources_inference_id_fkey"
+            columns: ["inference_id"]
+            isOneToOne: false
+            referencedRelation: "inferences"
             referencedColumns: ["id"]
           },
           {

@@ -14,6 +14,8 @@ type Props = {
   image?: string | null
   /** Override the standard tile width for a special-size tile (e.g. the extra-wide JR4). */
   width?: number
+  /** Position within its series row — lets the deck hover riffle the cards around this one. */
+  index?: number
 }
 
 // Every model tile is the same fixed size on every series row. These are the dimensions the
@@ -23,7 +25,7 @@ type Props = {
 const TILE_WIDTH = 280
 const TILE_HEIGHT = 677
 
-export default function ModelCard({ model, nickname, description, rarity, slug, accentColor, bass = false, image = null, width = TILE_WIDTH }: Props) {
+export default function ModelCard({ model, nickname, description, rarity, slug, accentColor, bass = false, image = null, width = TILE_WIDTH, index = 0 }: Props) {
   const [hovered, setHovered] = useState(false)
 
   // With background art the title sits at the top and the synopsis at the bottom, each on a
@@ -35,7 +37,10 @@ export default function ModelCard({ model, nickname, description, rarity, slug, 
   return (
     <Link
       href={`/models/${slug}`}
+      className="deck-card"
+      data-i={index}
       style={{
+        ['--card-w' as string]: `${width}px`,
         background: image ? `${scrimTop}, ${scrimBottom}, url(${image}) center / cover no-repeat, #161616`
                           : hovered ? '#1e1c1a' : '#161616',
         padding: '2rem',
@@ -47,7 +52,6 @@ export default function ModelCard({ model, nickname, description, rarity, slug, 
         height: `${TILE_HEIGHT}px`,
         boxSizing: 'border-box',
         overflow: 'hidden',
-        transition: 'background 0.15s',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

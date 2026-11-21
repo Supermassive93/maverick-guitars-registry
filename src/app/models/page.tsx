@@ -61,7 +61,7 @@ const DECK_CSS = `
   position: relative;
   flex: 0 0 auto;
   box-shadow: -10px 0 18px rgba(0,0,0,0.5);
-  transition: margin-left 0.28s ease, box-shadow 0.28s ease;
+  transition: margin-left 0.28s ease, transform 0.28s ease, box-shadow 0.28s ease;
 }
 .model-deck .deck-card:first-child { box-shadow: none; }
 /* The synopsis sits in the part of the card that's hidden while it's overlapped, so it fades in
@@ -77,7 +77,8 @@ const DECK_CSS = `
   );
 }
 .model-deck .deck-card:hover {
-  box-shadow: 0 0 0 1px rgba(200,169,110,0.45), 0 12px 36px rgba(0,0,0,0.6);
+  transform: translateY(-8px);
+  box-shadow: 0 0 0 1px rgba(200,169,110,0.45), 0 18px 40px rgba(0,0,0,0.6);
 }
 ` + DECK_HOVER_CSS
 import { createSupabaseServerClient } from '@/lib/supabase-server'

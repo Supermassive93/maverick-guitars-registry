@@ -88,7 +88,7 @@ export default function ModelCard({ model, nickname, description, rarity, slug, 
       )}
 
       {image ? (
-        <p style={{
+        <p className="deck-synopsis" style={{
           marginTop: 'auto', marginBottom: 0,
           fontSize: '14px', color: '#d8d5d0', lineHeight: 1.5,
         }}>
@@ -97,7 +97,7 @@ export default function ModelCard({ model, nickname, description, rarity, slug, 
       ) : (
         /* Fills the rest of the fixed-height tile; text longer than the space fades out at the
            bottom (the full description is on the model's own page). */
-        <div style={{
+        <div className="deck-synopsis" style={{
           flex: 1, minHeight: 0, overflow: 'hidden', marginTop: '12px',
           WebkitMaskImage: 'linear-gradient(to bottom, #000 calc(100% - 40px), transparent 100%)',
           maskImage: 'linear-gradient(to bottom, #000 calc(100% - 40px), transparent 100%)',

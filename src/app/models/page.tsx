@@ -64,6 +64,11 @@ const DECK_CSS = `
   transition: margin-left 0.28s ease, box-shadow 0.28s ease;
 }
 .model-deck .deck-card:first-child { box-shadow: none; }
+/* The synopsis sits in the part of the card that's hidden while it's overlapped, so it fades in
+   when the card is hovered (the last card is always fully visible, so it keeps its text). */
+.model-deck .deck-synopsis { opacity: 0; transition: opacity 0.2s ease 0.1s; }
+.model-deck .deck-card:hover .deck-synopsis,
+.model-deck .deck-card:last-child .deck-synopsis { opacity: 1; }
 .model-deck .deck-card + .deck-card {
   margin-left: clamp(
     calc(var(--deck-min-strip) - var(--card-w)),

@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import FormClosed from '@/components/FormClosed'
+import { IS_LOCAL_DEV } from '@/lib/config'
 import RegisterForm from './RegisterForm'
 
 export default async function RegisterPage() {
@@ -7,7 +8,7 @@ export default async function RegisterPage() {
   const { data: settingsRaw } = await supabase.from('site_settings').select('registration_open').maybeSingle()
   const data = settingsRaw as { registration_open: boolean } | null
 
-  if (data && !data.registration_open) {
+  if (!IS_LOCAL_DEV && data && !data.registration_open) {
     return (
       <FormClosed
         title="REGISTRATION PAUSED"

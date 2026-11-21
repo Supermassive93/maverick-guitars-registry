@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import FormClosed from '@/components/FormClosed'
+import { IS_LOCAL_DEV } from '@/lib/config'
 import ContributeForm from './ContributeForm'
 
 export default async function ContributePage() {
@@ -7,7 +8,7 @@ export default async function ContributePage() {
   const { data: settingsRaw } = await supabase.from('site_settings').select('contributions_open').maybeSingle()
   const data = settingsRaw as { contributions_open: boolean } | null
 
-  if (data && !data.contributions_open) {
+  if (!IS_LOCAL_DEV && data && !data.contributions_open) {
     return (
       <FormClosed
         title="CONTRIBUTIONS PAUSED"

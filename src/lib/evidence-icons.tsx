@@ -10,6 +10,7 @@ import {
   IconBook,
   IconCamera,
   IconBuildingBank,
+  IconPhotoShield,
   type Icon,
 } from '@tabler/icons-react'
 
@@ -26,6 +27,7 @@ const ICONS: Record<string, Icon> = {
   book: IconBook,
   camera: IconCamera,
   'building-bank': IconBuildingBank,
+  'photo-shield': IconPhotoShield,
 }
 
 export function EvidenceIcon({ name, size = 11 }: { name: string; size?: number }) {

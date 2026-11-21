@@ -239,7 +239,7 @@ export default async function ModelsPage() {
       {/* Header */}
       <section id="range" style={{ scrollMarginTop: '56px' }} />{/* anchor target at top */}
       <section style={{
-        padding: '6rem 4rem 4rem',
+        padding: '6rem 4rem 2.5rem',
         borderBottom: '1px solid rgba(255,255,255,0.08)',
         position: 'relative', overflow: 'hidden',
       }}>
@@ -259,21 +259,10 @@ export default async function ModelsPage() {
             fontFamily: 'var(--font-bebas)',
             fontSize: 'clamp(52px, 7vw, 96px)',
             letterSpacing: '3px', lineHeight: 0.92,
-            color: '#f0ede8', marginBottom: '24px',
+            color: '#f0ede8', marginBottom: 0,
           }}>
             THE RANGE
           </h1>
-          <p style={{ maxWidth: '600px', color: '#9e9b96', fontSize: '16px', lineHeight: 1.7 }}>
-            In 1997, hardware designer Trev Wilkinson introduced Maverick Guitars to a small custom
-            workshop in Korea. Recognising the level of hand craftsmanship on offer, Maverick spent
-            the next three years researching what contemporary players needed — and where existing
-            manufacturing fell short. The first guitars reached the market in late 2000.
-          </p>
-          <p style={{ maxWidth: '600px', color: '#9e9b96', fontSize: '16px', lineHeight: 1.7, marginTop: '16px' }}>
-            British-designed and Korean-built, the range spanned 24 models across four catalogue
-            series — featuring the patented Evolution roller volume and tone system as one of several
-            in-house developments that set Maverick apart from the broader market.
-          </p>
         </div>
       </section>
 

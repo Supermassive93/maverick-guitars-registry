@@ -109,6 +109,9 @@ export default async function ArchivePage() {
             <p style={{ color: '#9e9b96', fontSize: '15px', lineHeight: 1.8 }}>
               The brand was built around a collaboration with Trev Wilkinson — one of the UK&apos;s most respected hardware designers, whose name appears on bridges, tuners, roller nuts and locking hardware found on instruments from manufacturers across Europe, Japan and Korea. The Wilkinson hardware DNA runs through the Maverick range at every level, from the Floyd Rose-licensed tremolos to the roller pots and Wilkinson-branded fixed bridges that appear across the catalogue.
             </p>
+            <p style={{ color: '#9e9b96', fontSize: '15px', lineHeight: 1.8, marginTop: '16px' }}>
+              In 1997, hardware designer Trev Wilkinson introduced Maverick Guitars to a small custom workshop in Korea. Recognising the level of hand craftsmanship on offer, Maverick spent the next three years researching what contemporary players needed — and where existing manufacturing fell short. The first guitars reached the market in late 2000.
+            </p>
           </div>
 
           <div>
@@ -116,6 +119,9 @@ export default async function ArchivePage() {
               fontFamily: 'var(--font-bebas)', fontSize: '28px', letterSpacing: '2px',
               color: '#c8a96e', marginBottom: '16px',
             }}>THE RANGE</h3>
+            <p style={{ color: '#9e9b96', fontSize: '15px', lineHeight: 1.8, marginBottom: '16px' }}>
+              British-designed and Korean-built, the range spanned 24 models across four catalogue series — featuring the patented Evolution roller volume and tone system as one of several in-house developments that set Maverick apart from the broader market.
+            </p>
             <p style={{ color: '#9e9b96', fontSize: '15px', lineHeight: 1.8, marginBottom: '16px' }}>
               Maverick targeted the rock and metal player: players who wanted a serious instrument without paying for a US-made guitar. The F-Series superstrats — the F1, F3 and their variants — formed the commercial backbone of the range, competing directly with similarly-priced Ibanez RG and Jackson Dinky models. The F1 in particular became the guitar most associated with the Maverick name.
             </p>

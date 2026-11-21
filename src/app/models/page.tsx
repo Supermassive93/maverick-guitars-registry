@@ -1,4 +1,20 @@
+import { existsSync } from 'node:fs'
+import path from 'node:path'
 import { readPickupSvg, injectPickupColors } from '@/lib/pickup-svg'
+
+// Special-size tiles (the standard width is set in ModelCard). The JR4 picture is wider than the
+// others — 417x600 — so its tile is widened to show it whole at the standard tile height.
+const MODEL_TILE_WIDTHS: Record<string, number> = {
+  'jr4': 470,
+}
+
+// Tile background art lives in public/model-tiles/<model-slug>.jpg — a model gets one by
+// having a file there; models without one keep the plain tile.
+function modelTileImage(slug: string): string | null {
+  return existsSync(path.join(process.cwd(), 'public', 'model-tiles', `${slug}.jpg`))
+    ? `/model-tiles/${slug}.jpg`
+    : null
+}
 
 const MODEL_NICKNAMES: Record<string, string> = {
   'SF-1': 'Streetfighter',
@@ -50,6 +66,7 @@ export default async function ModelsPage() {
     model: string
     parent_model_id: string | null
     description: string | null
+    tile_synopsis: string | null
     rarity: string | null
     series: string | null
     display_order: number | null
@@ -57,7 +74,7 @@ export default async function ModelsPage() {
   const [{ data: rawSpecRows }, { data: rawCounts }, { data: rawColours }, { data: rawSourceColours }] = await Promise.all([
     supabase
       .from('model_specifications')
-      .select('id, model, parent_model_id, description, rarity, series, display_order')
+      .select('id, model, parent_model_id, description, tile_synopsis, rarity, series, display_order')
       .is('parent_model_id', null)
       .order('display_order'),
     supabase
@@ -202,9 +219,11 @@ export default async function ModelsPage() {
                 key={m.model}
                 model={m.model}
                 nickname={MODEL_NICKNAMES[m.model]}
-                description={m.description}
+                description={m.tile_synopsis}
                 rarity={rarity ?? null}
                 slug={m.model.toLowerCase().replace(/\s+/g, '-')}
+                image={modelTileImage(m.model.toLowerCase().replace(/\s+/g, '-'))}
+                width={MODEL_TILE_WIDTHS[m.model.toLowerCase().replace(/\s+/g, '-')]}
                 accentColor={accentColor}
                 bass={bass}
               />

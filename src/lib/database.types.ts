@@ -1350,6 +1350,7 @@ export type Database = {
           scale_length: string | null
           serial_prefix: string | null
           series: string | null
+          tile_synopsis: string | null
           side_dot_markers: string | null
           skunk_stripe: string | null
           specification_source: string | null
@@ -1419,6 +1420,7 @@ export type Database = {
           scale_length?: string | null
           serial_prefix?: string | null
           series?: string | null
+          tile_synopsis?: string | null
           side_dot_markers?: string | null
           skunk_stripe?: string | null
           specification_source?: string | null
@@ -1488,6 +1490,7 @@ export type Database = {
           scale_length?: string | null
           serial_prefix?: string | null
           series?: string | null
+          tile_synopsis?: string | null
           side_dot_markers?: string | null
           skunk_stripe?: string | null
           specification_source?: string | null

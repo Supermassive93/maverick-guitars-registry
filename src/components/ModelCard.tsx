@@ -11,20 +11,42 @@ type Props = {
   slug: string
   accentColor: string
   bass?: boolean
+  image?: string | null
+  /** Override the standard tile width for a special-size tile (e.g. the extra-wide JR4). */
+  width?: number
 }
 
-export default function ModelCard({ model, nickname, description, rarity, slug, accentColor, bass = false }: Props) {
+// Every model tile is the same fixed size on every series row. These are the dimensions the
+// Evolution series tiles already rendered at (280px wide, 677px tall — the height those tiles
+// stretched to for their longest description), so Evolution looks unchanged and the other
+// series now match it.
+const TILE_WIDTH = 280
+const TILE_HEIGHT = 677
+
+export default function ModelCard({ model, nickname, description, rarity, slug, accentColor, bass = false, image = null, width = TILE_WIDTH }: Props) {
   const [hovered, setHovered] = useState(false)
+
+  // With background art the title sits at the top and the synopsis at the bottom, each on a
+  // dark fade so the text stays readable and the guitar shows through in the middle. The
+  // fade lifts slightly on hover.
+  const scrimTop = `linear-gradient(to bottom, rgba(14,14,14,${hovered ? 0.7 : 0.88}) 0%, rgba(14,14,14,0) 24%)`
+  const scrimBottom = `linear-gradient(to top, rgba(14,14,14,${hovered ? 0.8 : 0.94}) 0%, rgba(14,14,14,0) 34%)`
+
   return (
     <Link
       href={`/models/${slug}`}
       style={{
-        background: hovered ? '#1e1c1a' : '#161616',
+        background: image ? `${scrimTop}, ${scrimBottom}, url(${image}) center / cover no-repeat, #161616`
+                          : hovered ? '#1e1c1a' : '#161616',
         padding: '2rem',
         display: 'flex',
         flexDirection: 'column',
         textDecoration: 'none',
-        flex: '0 0 280px',
+        flex: `0 0 ${width}px`,
+        width: `${width}px`,
+        height: `${TILE_HEIGHT}px`,
+        boxSizing: 'border-box',
+        overflow: 'hidden',
         transition: 'background 0.15s',
       }}
       onMouseEnter={() => setHovered(true)}
@@ -41,7 +63,7 @@ export default function ModelCard({ model, nickname, description, rarity, slug, 
       }}>
         {model}
         {nickname && (
-          <span style={{ fontSize: '15px', color: '#3a3835', letterSpacing: '2px' }}>
+          <span style={{ fontSize: '15px', color: image ? '#9e9b96' : '#3a3835', letterSpacing: '2px' }}>
             {nickname}
           </span>
         )}
@@ -61,12 +83,29 @@ export default function ModelCard({ model, nickname, description, rarity, slug, 
         </div>
       )}
 
-      <p style={{
-        fontSize: '13px', color: '#9e9b96', lineHeight: 1.6,
-        margin: '12px 0 0',
-      }}>
-        {description}
-      </p>
+      {image ? (
+        <p style={{
+          marginTop: 'auto', marginBottom: 0,
+          fontSize: '14px', color: '#d8d5d0', lineHeight: 1.5,
+        }}>
+          {description}
+        </p>
+      ) : (
+        /* Fills the rest of the fixed-height tile; text longer than the space fades out at the
+           bottom (the full description is on the model's own page). */
+        <div style={{
+          flex: 1, minHeight: 0, overflow: 'hidden', marginTop: '12px',
+          WebkitMaskImage: 'linear-gradient(to bottom, #000 calc(100% - 40px), transparent 100%)',
+          maskImage: 'linear-gradient(to bottom, #000 calc(100% - 40px), transparent 100%)',
+        }}>
+          <p style={{
+            fontSize: '13px', color: '#9e9b96', lineHeight: 1.6,
+            margin: 0,
+          }}>
+            {description}
+          </p>
+        </div>
+      )}
     </Link>
   )
 }

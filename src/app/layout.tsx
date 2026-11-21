@@ -3,6 +3,7 @@ import { Bebas_Neue, DM_Sans, DM_Mono } from 'next/font/google'
 import './globals.css'
 import Nav from '@/components/Nav'
 import EvidencePanelPositioner from '@/components/EvidencePanelPositioner'
+import { Analytics } from '@vercel/analytics/next'
 
 const bebasNeue = Bebas_Neue({ variable: '--font-bebas', weight: '400', subsets: ['latin'] })
 const dmSans    = DM_Sans({ variable: '--font-dm-sans', subsets: ['latin'], weight: ['300','400','500'] })
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             Maverick Guitar Company Limited · Est. 1998 · Knebworth, Hertfordshire
           </p>
         </footer>
+        <Analytics />
       </body>
     </html>
   )

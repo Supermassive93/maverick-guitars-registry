@@ -9,6 +9,8 @@ const POSITION_RATIOS: Record<string, number> = {
   'Body rear':       3 / 4,
   'Headstock front': 3 / 4,
   'Headstock rear':  3 / 4,
+  'Electronics cavity': 3 / 4,
+  'Pickup cavity':   3 / 4,
 }
 
 const OUTPUT_SIZE: Record<string, [number, number]> = {
@@ -18,34 +20,20 @@ const OUTPUT_SIZE: Record<string, [number, number]> = {
   'Body rear':       [900, 1200],
   'Headstock front': [900, 1200],
   'Headstock rear':  [900, 1200],
-}
-
-const BODY_SILHOUETTE_URLS: Record<string, Partial<Record<string, string>>> = {
-  'Superstrat': {
-    'Full front':  '/silhouettes/superstrat-full-front.svg',
-    'Full rear':   '/silhouettes/superstrat-full-rear.svg',
-    'Body front':  '/silhouettes/superstrat-body-front.svg',
-    'Body rear':   '/silhouettes/superstrat-body-rear.svg',
-  },
-}
-
-const HEADSTOCK_SILHOUETTE_URLS: Record<string, Partial<Record<string, string>>> = {
-  '6-aside': {
-    'Headstock front': '/silhouettes/headstock-6aside-front.svg',
-    'Headstock rear':  '/silhouettes/headstock-6aside-rear.svg',
-  },
+  'Electronics cavity': [900, 1200],
+  'Pickup cavity':   [900, 1200],
 }
 
 type Props = {
   file: File
   position: string
-  bodyShape?: string
-  headstockStyle?: string
+  /** Outline drawn over the photo as a framing guide (resolved by the caller from /public/silhouettes) */
+  silhouetteUrl?: string
   onConfirm: (croppedFile: File) => void
   onCancel: () => void
 }
 
-export default function GuidedCropModal({ file, position, bodyShape, headstockStyle, onConfirm, onCancel }: Props) {
+export default function GuidedCropModal({ file, position, silhouetteUrl, onConfirm, onCancel }: Props) {
   const frameRef = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement | null>(null)
   const drag = useRef<{ startX: number; startY: number; startTx: number; startTy: number } | null>(null)
@@ -58,11 +46,6 @@ export default function GuidedCropModal({ file, position, bodyShape, headstockSt
   const ratio = POSITION_RATIOS[position] ?? 2 / 3
   const FRAME_W = 340
   const FRAME_H = Math.round(FRAME_W / ratio)
-
-  const isHeadstock = position.startsWith('Headstock')
-  const silhouetteUrl = isHeadstock
-    ? (headstockStyle ? HEADSTOCK_SILHOUETTE_URLS[headstockStyle]?.[position] : undefined)
-    : (bodyShape ? BODY_SILHOUETTE_URLS[bodyShape]?.[position] : undefined)
 
   // Keep transformRef in sync so native event handlers always read current values
   useEffect(() => { transformRef.current = transform }, [transform])

@@ -1,469 +1,174 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import GuidedCropModal from '@/components/GuidedCropModal'
+import SpecFieldRow, {
+  inputCls, selectCls, isAftermarketName, OTHER_SENTINEL,
+  type RefOption, type FieldStatus, type AftermarketPart, type PartChoice,
+} from './SpecFieldRow'
+import {
+  SPEC_SECTIONS, ALL_SPEC_FIELDS, BASS_MODELS, PHOTO_SLOTS, pickupSlotsFor, silhouetteFor,
+  type FieldDef,
+} from '@/lib/submission-fields'
 
-// Serial prefixes (model name -> prefix, e.g. "F1" -> "F-1") are loaded from model_specifications.serial_prefix
-// so the database is the single source of truth. A serial is <prefix> + 5 digits.
-type SerialPrefixes = Record<string, string>
+// Everything the form offers comes from the database: the model list and serial prefixes from
+// model_specifications, every dropdown from ref_values, and the prefill from the model's spec sheet
+// (universal spec, overlaid with the chosen generation's spec). Nothing here is hard-coded to a ref ID
+// except the finish-type logic, which is about what the finish *means*.
 
-// Series ref IDs by model name
-const MODEL_SERIES_REF: Record<string, string> = {
-  'F1': 'SER-0001', 'F1HT': 'SER-0005', 'F2': 'SER-0001', 'F3': 'SER-0001',
-  'F4': 'SER-0001', 'FD-Tox': 'SER-0003', 'X1': 'SER-0001', 'XD-Tox': 'SER-0003',
-  'X-Treme': 'SER-0001', 'Species 1': 'SER-0002', 'Species 2': 'SER-0002',
-  'Species 3': 'SER-0002', 'Species 7 String': 'SER-0002', 'Chaos 1': 'SER-0002',
-  'Chaos 2': 'SER-0002', 'SF-1': 'SER-0001', 'Matrix': 'SER-0001',
-  'G1': 'SER-0005', 'G2': 'SER-0005', 'B1': 'SER-0004', 'S4': 'SER-0004',
-  'S5': 'SER-0004', 'Z-47': 'SER-0004', 'JR4': 'SER-0005', 'Unknown': 'SER-0005',
+type ModelRow = {
+  id: string
+  model: string
+  series: string | null
+  serial_prefix: string | null
+  maverick_body_family: string | null
+  headstock_style: string | null
+  display_order: number | null
 }
 
-const MODEL_GROUPS: Record<string, string[]> = {
-  'Evolution': ['F1', 'F2', 'F3', 'F4', 'SF-1', 'X1', 'X-Treme', 'Matrix'],
-  'Century':   ['Chaos 1', 'Chaos 2', 'Species 1', 'Species 2', 'Species 3', 'Species 7 String'],
-  'D-Tox':     ['XD-Tox', 'FD-Tox'],
-  'Nemesis':   ['B1', 'Z-47', 'S4', 'S5'],
-  'Other':     ['F1HT', 'G1', 'G2', 'JR4'],
-}
+type SpecMap = Record<string, string | null>
+type ImageSlot = { position: string; required: boolean; hint?: string; file: File | null; preview: string | null }
 
-// Bridge ref IDs that have a whammy bar
-const TREMOLO_BRIDGES = new Set(['BRG-0001', 'BRG-0002', 'BRG-0003', 'BRG-0006'])
-// Bridge ref IDs that require a locking nut
-const FLOYD_ROSE_BRIDGES = new Set(['BRG-0001', 'BRG-0002', 'BRG-0003'])
-
-// Aftermarket ref IDs that trigger the "Modified" flag
-const AFTERMARKET_IDS = new Set([
-  'FIN-0003', 'NCK-0004', 'NCK-0005', 'BRG-0003',
-  'PSR-0004', 'SKS-0003', 'SKN-0003', 'NUT-0003',
-  'SWT-0004', 'POT-0003', 'TNR-0002',
-])
-
-type SelectOpt = { value: string; label: string }
-
-// --- Dropdown option lists (value = ref ID, label = display name) ---
-const FINISH_OPTS: SelectOpt[] = [
-  { value: 'FIN-0001', label: 'Factory Finish' },
-  { value: 'FIN-0002', label: 'Custom Shop Finish' },
-  { value: 'FIN-0003', label: 'Refinished' },
-  { value: 'FIN-0005', label: 'Unknown' },
-]
-
-const FACTORY_COLOUR_OPTS: SelectOpt[] = [
-  { value: 'COL-0001', label: 'BK — Gloss Black' },
-  { value: 'COL-0002', label: 'WH — Gloss White' },
-  { value: 'COL-0003', label: 'CB — Cherry Burst' },
-  { value: 'COL-0004', label: 'SR — Sunset Red' },
-  { value: 'COL-0005', label: 'MB — Metallic Blue' },
-  { value: 'COL-0006', label: 'EB — Electric Blue' },
-  { value: 'COL-0007', label: 'TRL — Tribal Red' },
-  { value: 'COL-0008', label: 'OW — Old White' },
-  { value: 'COL-0009', label: 'CSK — Cosmos Black' },
-  { value: 'COL-0012', label: 'GM — Gunmetal' },
-  { value: 'COL-0013', label: 'TBS — Tobacco Sunburst' },
-  { value: 'COL-0018', label: 'UV — Ultra Violet' },
-  { value: 'COL-0019', label: 'NB — Natural Basswood' },
-  { value: 'COL-0020', label: 'FB — Fireburst' },
-  { value: 'COL-0021', label: 'MR — Metallic Red' },
-  { value: 'COL-0022', label: 'NA — Natural Ash' },
-  { value: 'COL-0023', label: 'Unknown' },
-]
-
-const CUSTOM_COLOUR_OPTS: SelectOpt[] = [
-  { value: 'CSC-0001', label: 'BW — Black & White (Zebra)' },
-  { value: 'CSC-0002', label: 'BR — Black & Red (Denis the Menace)' },
-  { value: 'CSC-0005', label: 'NY — Neon Yellow' },
-  { value: 'CSC-0003', label: 'Custom Airbrushed' },
-  { value: 'CSC-0004', label: 'Unknown' },
-]
-
-const HEADSTOCK_FACE_OPTS: SelectOpt[] = [
-  { value: 'HDF-0001', label: 'Matches body colour' },
-  { value: 'HDF-0002', label: 'Black' },
-  { value: 'HDF-0003', label: 'Natural' },
-  { value: 'HDF-0004', label: 'Unknown' },
-]
-
-const HEADSTOCK_LOGO_OPTS: SelectOpt[] = [
-  { value: 'HGL-0001', label: 'Maverick Script Logo — Lacquer-encapsulated foil decal' },
-  { value: 'HGL-0002', label: 'Maverick Script Logo — Cream silkscreen' },
-  { value: 'HGL-0003', label: 'Unknown' },
-]
-
-const BODY_WOOD_OPTS: SelectOpt[] = [
-  { value: 'BWD-0001', label: 'Canadian Basswood' },
-  { value: 'BWD-0002', label: 'American Alder' },
-  { value: 'BWD-0003', label: 'American Swamp Ash' },
-  { value: 'BWD-0004', label: 'Mahogany' },
-  { value: 'BWD-0005', label: 'Unknown' },
-]
-
-const BODY_SHAPE_OPTS: SelectOpt[] = [
-  { value: 'BSA-0001', label: 'Superstrat' },
-  { value: 'BSA-0002', label: 'Offset Double Cut' },
-  { value: 'BSA-0003', label: 'Single Cut — LP Style' },
-  { value: 'BSA-0005', label: 'Double Cut — PRS Style' },
-  { value: 'BSA-0006', label: 'Extended Range' },
-  { value: 'BSA-0008', label: 'Jazz Bass' },
-  { value: 'BSA-0009', label: 'Precision Bass' },
-  { value: 'BSA-0010', label: 'Unknown' },
-]
-
-const BRIDGE_OPTS: SelectOpt[] = [
-  { value: 'BRG-0001', label: 'Maverick Floyd Rose — Licensed' },
-  { value: 'BRG-0002', label: 'Floyd Rose — Original' },
-  { value: 'BRG-0003', label: 'Floyd Rose — Licensed (Non-Maverick)' },
-  { value: 'BRG-0005', label: 'Hardtail' },
-  { value: 'BRG-0006', label: 'Vintage Tremolo' },
-  { value: 'BRG-0007', label: 'Maverick/Wilkinson Wraparound' },
-  { value: 'BRG-0004', label: 'Tune-o-matic' },
-  { value: 'BRG-0008', label: 'Bass Bridge' },
-  { value: 'BRG-0009', label: 'Unknown' },
-]
-
-const WHAMMY_OPTS: SelectOpt[] = [
-  { value: 'Factory — With O-ring grips',    label: 'Factory — With O-ring grips' },
-  { value: 'Factory — Without O-ring grips', label: 'Factory — Without O-ring grips' },
-  { value: 'Aftermarket',                    label: 'Aftermarket' },
-  { value: 'Missing',                        label: 'Missing' },
-]
-
-const PICKUP_SURROUNDS_OPTS: SelectOpt[] = [
-  { value: 'PSR-0001', label: 'Factory — No Surrounds' },
-  { value: 'PSR-0002', label: 'Factory — Black Rings' },
-  { value: 'PSR-0003', label: 'Factory — Cream Rings' },
-  { value: 'PSR-0004', label: 'Aftermarket' },
-  { value: 'PSR-0005', label: 'Unknown' },
-]
-
-const HARDWARE_COLOUR_OPTS: SelectOpt[] = [
-  { value: 'HWC-0001', label: 'Gold' },
-  { value: 'HWC-0002', label: 'Black' },
-  { value: 'HWC-0003', label: 'Nickel' },
-  { value: 'HWC-0004', label: 'Unknown' },
-]
-
-const SWITCH_KNOB_OPTS: SelectOpt[] = [
-  { value: 'Factory — Cylindrical with O-rings', label: 'Factory — Cylindrical with O-rings' },
-  { value: 'Factory — Tapered',                  label: 'Factory — Tapered' },
-  { value: 'Aftermarket',                        label: 'Aftermarket' },
-  { value: 'Unknown',                            label: 'Unknown' },
-]
-
-const TUNER_OPTS: SelectOpt[] = [
-  { value: 'TNR-0001', label: 'Factory — Maverick/Wilkinson' },
-  { value: 'TNR-0002', label: 'Aftermarket' },
-  { value: 'TNR-0003', label: 'Unknown' },
-]
-
-const PICKUP_CONFIG_OPTS: SelectOpt[] = [
-  { value: 'PCG-0001', label: 'HH' },
-  { value: 'PCG-0002', label: 'HSH' },
-  { value: 'PCG-0003', label: 'HSS' },
-  { value: 'PCG-0004', label: 'HS' },
-  { value: 'PCG-0005', label: 'H' },
-  { value: 'PCG-0006', label: 'SSS' },
-  { value: 'PCG-0007', label: 'SS' },
-  { value: 'PCG-0008', label: 'Other' },
-  { value: 'PCG-0009', label: 'Unknown' },
-]
-
-const PICKUP_COLOUR_OPTS: SelectOpt[] = [
-  { value: 'PKC-0001', label: 'Black Covers' },
-  { value: 'PKC-0002', label: 'Nickel Covers' },
-  { value: 'PKC-0003', label: 'Cream Covers' },
-  { value: 'PKC-0004', label: 'Black & Cream' },
-  { value: 'PKC-0005', label: 'Unknown' },
-]
-
-const SWITCH_TYPE_OPTS: SelectOpt[] = [
-  { value: 'SWT-0001', label: 'Factory 5 Way Blade Switch' },
-  { value: 'SWT-0002', label: 'Factory 3 Way Toggle Switch' },
-  { value: 'SWT-0003', label: 'Factory 3 Way Blade Switch' },
-  { value: 'SWT-0004', label: 'Aftermarket' },
-  { value: 'SWT-0005', label: 'Unknown' },
-]
-
-const POTENTIOMETER_OPTS: SelectOpt[] = [
-  { value: 'POT-0001', label: 'Factory Patented Evolution Roller Pots' },
-  { value: 'POT-0002', label: 'Factory Standard Pots' },
-  { value: 'POT-0003', label: 'Aftermarket' },
-  { value: 'POT-0004', label: 'Unknown' },
-]
-
-const NECK_CONSTRUCTION_OPTS: SelectOpt[] = [
-  { value: 'NCK-0001', label: 'Factory — Bolt-on 2-piece scarf joint' },
-  { value: 'NCK-0002', label: 'Factory — Set neck' },
-  { value: 'NCK-0003', label: 'Factory — Neck-through' },
-  { value: 'NCK-0004', label: 'Aftermarket Replacement' },
-  { value: 'NCK-0005', label: 'Modified' },
-  { value: 'NCK-0006', label: 'Unknown' },
-]
-
-const NECK_WOOD_OPTS: SelectOpt[] = [
-  { value: 'NWD-0001', label: 'Selected Canadian Maple' },
-  { value: 'NWD-0002', label: 'Rock Maple' },
-  { value: 'NWD-0003', label: 'Maple' },
-  { value: 'NWD-0005', label: 'Bubinga' },
-  { value: 'NWD-0006', label: 'Mahogany' },
-  { value: 'NWD-0004', label: 'Unknown' },
-]
-
-const NECK_PROFILE_OPTS: SelectOpt[] = [
-  { value: 'NPR-0001', label: 'Ultra Thin' },
-  { value: 'NPR-0002', label: 'Thin C' },
-  { value: 'NPR-0003', label: 'Medium C' },
-  { value: 'NPR-0004', label: 'Fat C' },
-  { value: 'NPR-0005', label: 'D' },
-  { value: 'NPR-0006', label: 'U' },
-  { value: 'NPR-0007', label: 'Unknown' },
-]
-
-const BODY_CONSTRUCTION_OPTS: SelectOpt[] = [
-  { value: 'BCN-0001', label: 'Single Slab' },
-  { value: 'BCN-0002', label: 'Two-piece' },
-  { value: 'BCN-0003', label: 'Three-piece' },
-  { value: 'BCN-0004', label: 'Unknown' },
-]
-
-const HEADSTOCK_STYLE_OPTS: SelectOpt[] = [
-  { value: 'HST-0001', label: '6-aside' },
-  { value: 'HST-0002', label: '6-aside reversed' },
-  { value: 'HST-0003', label: '4-aside' },
-  { value: 'HST-0004', label: '3+3-aside' },
-  { value: 'HST-0005', label: '3+2-aside' },
-  { value: 'HST-0006', label: 'Unknown' },
-]
-
-const SCALE_LENGTH_OPTS: SelectOpt[] = [
-  { value: 'SCL-0001', label: '25" (Maverick / PRS Core)' },
-  { value: 'SCL-0002', label: '25.5" (Fender)' },
-  { value: 'SCL-0003', label: '24.75" (Gibson)' },
-  { value: 'SCL-0005', label: '30" (Bass — Short Scale)' },
-  { value: 'SCL-0006', label: '34" (Bass — Standard)' },
-  { value: 'SCL-0007', label: 'Unknown' },
-]
-
-const FRET_COUNT_OPTS: SelectOpt[] = [
-  { value: 'FRT-0001', label: '19' },
-  { value: 'FRT-0002', label: '21' },
-  { value: 'FRT-0003', label: '22' },
-  { value: 'FRT-0004', label: '24' },
-  { value: 'FRT-0005', label: 'Unknown' },
-]
-
-const FRETBOARD_WOOD_OPTS: SelectOpt[] = [
-  { value: 'FWD-0001', label: 'AAA Indian Rosewood' },
-  { value: 'FWD-0002', label: 'AAA Grade Canadian Maple' },
-  { value: 'FWD-0003', label: 'Ebony' },
-  { value: 'FWD-0004', label: 'Matrix — Rosewood & Maple' },
-  { value: 'FWD-0006', label: 'Unknown' },
-]
-
-const NUT_TYPE_OPTS: SelectOpt[] = [
-  { value: 'NUT-0001', label: 'Factory — Locking nut' },
-  { value: 'NUT-0002', label: 'Factory — Standard nut' },
-  { value: 'NUT-0003', label: 'Aftermarket' },
-  { value: 'NUT-0004', label: 'Unknown' },
-]
-
-const NECK_BINDING_OPTS: SelectOpt[] = [
-  { value: 'NKB-0001', label: 'Factory — No Binding' },
-  { value: 'NKB-0002', label: 'Factory — Cream Binding' },
-  { value: 'NKB-0003', label: 'Factory — Black Binding' },
-  { value: 'NKB-0004', label: 'Unknown' },
-]
-
-const SKUNK_STRIPE_OPTS: SelectOpt[] = [
-  { value: 'SKS-0001', label: 'Factory — Skunk stripe' },
-  { value: 'SKS-0002', label: 'Factory — No skunk stripe' },
-  { value: 'SKS-0003', label: 'Aftermarket' },
-  { value: 'SKS-0004', label: 'Unknown' },
-]
-
-// Pickup position labels by pickup_configuration ref ID
-type PickupPositions = { bridge: string | null; middle: string | null; neck: string | null }
-const PICKUP_CONFIG_MAP: Record<string, PickupPositions> = {
-  'PCG-0001': { bridge: 'Humbucker',   middle: null,          neck: 'Humbucker'   },
-  'PCG-0002': { bridge: 'Humbucker',   middle: 'Single Coil', neck: 'Humbucker'   },
-  'PCG-0003': { bridge: 'Humbucker',   middle: 'Single Coil', neck: 'Single Coil' },
-  'PCG-0004': { bridge: 'Humbucker',   middle: 'Single Coil', neck: null          },
-  'PCG-0005': { bridge: 'Humbucker',   middle: null,          neck: null          },
-  'PCG-0007': { bridge: 'Single Coil', middle: null,          neck: 'Single Coil' },
-  'PCG-0006': { bridge: 'Single Coil', middle: 'Single Coil', neck: 'Single Coil' },
-}
-
-const IMAGE_SCHEMA = [
-  'Full front', 'Full rear',
-  'Body front', 'Body rear',
-  'Headstock front', 'Headstock rear',
-]
-
-type ImageSlot = { position: string; file: File | null; preview: string | null }
-
-function makeInitialSlots(): ImageSlot[] {
-  return IMAGE_SCHEMA.map(position => ({ position, file: null, preview: null }))
-}
-
-type FormState = {
+type IdentityState = {
   serial: string
   serial_status: string
   model: string
+  generation: string
   finish_type: string
   factory_colour: string
   custom_shop_colour: string
-  body_wood: string
-  body_shape_analogue: string
-  pickup_configuration: string
-  neck_pickup: string
-  middle_pickup: string
-  bridge_pickup: string
-  bridge_type: string              // was bridge_configuration
-  hardware_colour: string
-  headstock_face: string
-  headstock_style: string
-  headstock_logo: string
-  bridge_logo: string
-  pickup_surrounds: string
-  pickup_colours: string
-  tuner_style: string
-  neck_binding: string
-  switch_type: string
-  switch_knob: string
-  potentiometers: string
-  whammy_bar: string
-  nut_type: string
-  fret_count: string
-  fretboard_wood: string
-  scale_length: string
-  neck_construction: string
-  neck_wood: string
-  neck_profile: string
-  body_construction: string
-  skunk_stripe: string
-  headstock_break_angle: string
-  neck_pitch: string
-  left_handed_available: string    // was left_handed; stores 'No' or 'Yes' UI values
+  left_handed: 'No' | 'Yes'
   last_known_country: string
   last_known_region: string
   last_known_city: string
-  source_type: string
-  source_url: string
   last_price: string
+  source_url: string
   submitter_email: string
   submission_notes: string
 }
 
-const INITIAL: FormState = {
-  serial: '', serial_status: '', model: '',
-  finish_type: '', factory_colour: '', custom_shop_colour: '',
-  left_handed_available: 'No',
-  body_wood: '', body_shape_analogue: '', pickup_configuration: '',
-  neck_pickup: '', middle_pickup: '', bridge_pickup: '', bridge_type: '',
-  hardware_colour: '', headstock_face: '', headstock_style: '', headstock_logo: '', bridge_logo: '', pickup_surrounds: '',
-  pickup_colours: '', tuner_style: '',
-  neck_binding: '', switch_type: '', switch_knob: '', potentiometers: '',
-  nut_type: '', whammy_bar: '', fret_count: '', fretboard_wood: '', scale_length: '',
-  neck_construction: '', neck_wood: '', neck_profile: '', body_construction: '', skunk_stripe: '', headstock_break_angle: '',
-  neck_pitch: '', last_known_country: '', last_known_region: '', last_known_city: '',
-  source_type: 'Owner registration', source_url: '', last_price: '',
-  submitter_email: '', submission_notes: '',
+const INITIAL_IDENTITY: IdentityState = {
+  serial: '', serial_status: '', model: '', generation: '',
+  finish_type: '', factory_colour: '', custom_shop_colour: '', left_handed: 'No',
+  last_known_country: '', last_known_region: '', last_known_city: '',
+  last_price: '', source_url: '', submitter_email: '', submission_notes: '',
 }
 
-function Field({ label, required, prefilled, children }: {
-  label: string; required?: boolean; prefilled?: boolean; children: React.ReactNode
-}) {
+function makeInitialSlots(): ImageSlot[] {
+  return PHOTO_SLOTS.map(s => ({ position: s.position, required: !!s.required, hint: s.hint, file: null, preview: null }))
+}
+
+const FINISH_FACTORY = 'FIN-0001'
+const FINISH_CUSTOM_SHOP = 'FIN-0002'
+const FINISH_REFINISHED = 'FIN-0003'
+const FINISH_RELIC = 'FIN-0004'
+
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm text-zinc-400 mb-1" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <span>{label}{required && <span className="text-red-500 ml-1">*</span>}</span>
-        {prefilled && (
-          <span style={{
-            fontSize: '9px', color: '#c8a96e',
-            fontFamily: 'var(--font-dm-mono)', letterSpacing: '1px',
-            textTransform: 'uppercase',
-          }}>pre-filled</span>
-        )}
+      <label className="block text-sm text-zinc-400 mb-1">
+        {label}{required && <span className="text-red-500 ml-1">*</span>}
       </label>
       {children}
     </div>
   )
 }
 
-const inputCls = 'w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-zinc-500'
-const selectCls = inputCls + ' appearance-none'
-
-function Select({ value, onChange, options, placeholder }: {
-  value: string
-  onChange: (v: string) => void
-  options: SelectOpt[]
-  placeholder?: string
-}) {
-  return (
-    <select value={value} onChange={e => onChange(e.target.value)} className={selectCls}>
-      <option value="">{placeholder ?? 'Select…'}</option>
-      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-    </select>
-  )
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
     <div className="border border-zinc-800 rounded-lg p-6">
-      <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-widest mb-5">{title}</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{children}</div>
+      <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-widest mb-1">{title}</h2>
+      {note && <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57', marginBottom: '16px', lineHeight: 1.6 }}>{note}</p>}
+      <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${note ? '' : 'mt-4'}`}>{children}</div>
     </div>
   )
 }
 
-function split_email_prefix(email: string) {
+function splitEmailPrefix(email: string) {
   return email.split('@')[0] || 'Anonymous'
 }
 
-function valueIndicatesModified(value: string): boolean {
-  return AFTERMARKET_IDS.has(value)
+function sameValue(a: string, b: string | null | undefined) {
+  if (b == null) return false
+  if (a === b) return true
+  const na = Number(a), nb = Number(b)
+  return a !== '' && b !== '' && !Number.isNaN(na) && !Number.isNaN(nb) && na === nb
 }
+
+function escapeLike(s: string) {
+  return s.replace(/[\\%_]/g, c => `\\${c}`)
+}
+
+// The registration tables added with the spec-aligned form aren't in the hand-maintained generated types yet
+const untyped = (c: ReturnType<typeof createSupabaseBrowserClient>) => c as unknown as SupabaseClient
 
 type GateState = 'checking' | 'gate' | 'form'
 
-export default function SubmitForm() {
+export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: string[] }) {
   const searchParams = useSearchParams()
-  const claimModel  = searchParams.get('model')  ?? ''
+  const claimModel = searchParams.get('model') ?? ''
   const claimSerial = searchParams.get('serial') ?? ''
+  const silhouetteSet = useMemo(() => new Set(silhouetteFiles), [silhouetteFiles])
 
   const [gateState, setGateState] = useState<GateState>('checking')
-  const [form, setForm] = useState<FormState>(INITIAL)
-  const [modelId, setModelId] = useState<string>('')
+  const [identity, setIdentity] = useState<IdentityState>(INITIAL_IDENTITY)
   const [serialDigits, setSerialDigits] = useState('')
+
+  // Reference data
+  const [models, setModels] = useState<ModelRow[]>([])
+  const [refsByCat, setRefsByCat] = useState<Record<string, RefOption[]>>({})
+  const [refNames, setRefNames] = useState<Record<string, string>>({})
+  const [parts, setParts] = useState<AftermarketPart[]>([])
+  const [dataLoaded, setDataLoaded] = useState(false)
+  const [genOptions, setGenOptions] = useState<string[]>([])
+
+  // Spec answers
+  const [values, setValues] = useState<Record<string, string>>({})
+  const [statuses, setStatuses] = useState<Record<string, FieldStatus>>({})
+  const [others, setOthers] = useState<Record<string, string>>({})
+  const [partChoices, setPartChoices] = useState<Record<string, PartChoice | null>>({})
+  const [spec, setSpec] = useState<SpecMap>({})
+
   const [imageSlots, setImageSlots] = useState<ImageSlot[]>(makeInitialSlots)
   const [cropTarget, setCropTarget] = useState<{ index: number; file: File } | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
-  const [isModified, setIsModified] = useState(false)
-  const [catalogueValues, setCatalogueValues] = useState<Partial<FormState>>({})
-  const [prefilledFields, setPrefilledFields] = useState(new Set<keyof FormState>())
-  const [bridgeLogoBrand, setBridgeLogoBrand] = useState('')
-  const [serialPrefixes, setSerialPrefixes] = useState<SerialPrefixes>({})
-  const [prefixesLoaded, setPrefixesLoaded] = useState(false)
 
+  const specRequest = useRef(0)
+  const modelRow = models.find(m => m.model === identity.model) ?? null
+  const isBass = BASS_MODELS.has(identity.model)
+
+  // ── Load reference data once ─────────────────────────────────────────────
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()
-    supabase.from('model_specifications').select('model, serial_prefix').then(({ data }) => {
-      const map: SerialPrefixes = {}
-      for (const row of (data ?? []) as { model: string; serial_prefix: string | null }[]) {
-        map[row.model] = row.serial_prefix && row.serial_prefix !== 'Unknown' ? row.serial_prefix : ''
+    Promise.all([
+      supabase.from('model_specifications')
+        .select('id, model, series, serial_prefix, maverick_body_family, headstock_style, display_order')
+        .order('display_order', { ascending: true, nullsFirst: false }),
+      supabase.from('ref_values').select('id, category, display_name').eq('is_active', true).order('sort_order', { ascending: true }),
+      untyped(supabase).from('aftermarket_parts').select('id, part_type, brand, model, pickup_type, status'),
+    ]).then(([m, r, p]) => {
+      setModels((m.data ?? []) as ModelRow[])
+      const byCat: Record<string, RefOption[]> = {}
+      const names: Record<string, string> = {}
+      for (const row of (r.data ?? []) as { id: string; category: string; display_name: string }[]) {
+        names[row.id] = row.display_name
+        if (/^RETIRED/i.test(row.display_name) || row.display_name === 'Unknown') continue
+        ;(byCat[row.category] ??= []).push({ id: row.id, display_name: row.display_name })
       }
-      setSerialPrefixes(map)
-      setPrefixesLoaded(true)
+      setRefsByCat(byCat)
+      setRefNames(names)
+      setParts((p.data ?? []) as AftermarketPart[])
+      setDataLoaded(true)
     })
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
-        if (data.user.email) {
-          setForm(prev => ({ ...prev, submitter_email: data.user!.email! }))
-        }
+        if (data.user.email) setIdentity(prev => ({ ...prev, submitter_email: data.user!.email! }))
         setGateState('form')
       } else {
         setGateState('gate')
@@ -471,250 +176,142 @@ export default function SubmitForm() {
     })
   }, [])
 
+  // ── Prefill from the model's spec sheet ──────────────────────────────────
+  async function loadSpec(model: ModelRow, generation: string, keepEdits: boolean) {
+    const supabase = createSupabaseBrowserClient()
+    const request = ++specRequest.current
+
+    const { data: genRows } = await supabase.from('model_gen_specs').select('generation').eq('model_id', model.id)
+    const gens = Array.from(new Set(((genRows ?? []) as { generation: string }[]).map(g => g.generation)))
+    if (request !== specRequest.current) return
+    setGenOptions(gens)
+
+    let gen = generation
+    if (!gen && gens.length === 1) {
+      gen = gens[0]
+      setIdentity(prev => ({ ...prev, generation: gen }))
+    }
+
+    const [{ data: uni }, { data: genSpec }] = await Promise.all([
+      supabase.from('model_specifications').select('*').eq('id', model.id).single(),
+      gen
+        ? supabase.from('model_gen_specs').select('*').eq('model_id', model.id).eq('generation', gen).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ])
+    if (request !== specRequest.current) return
+
+    const merged: SpecMap = {}
+    for (const def of ALL_SPEC_FIELDS) {
+      const raw = (genSpec as Record<string, unknown> | null)?.[def.key] ?? (uni as Record<string, unknown> | null)?.[def.key] ?? null
+      const text = raw == null ? null : String(raw)
+      merged[def.key] = text && refNames[text] === 'Unknown' ? null : text
+    }
+
+    setValues(prev => {
+      const next: Record<string, string> = keepEdits ? { ...prev } : {}
+      for (const def of ALL_SPEC_FIELDS) {
+        const untouched = !keepEdits || prev[def.key] === undefined || prev[def.key] === '' || prev[def.key] === spec[def.key]
+        if (untouched) next[def.key] = merged[def.key] ?? ''
+      }
+      return next
+    })
+    setSpec(merged)
+    if (!keepEdits) {
+      setStatuses({})
+      setOthers({})
+      setPartChoices({})
+    }
+  }
+
+  function selectModel(name: string, serial = '') {
+    const row = models.find(m => m.model === name) ?? null
+    const prefix = row?.serial_prefix && row.serial_prefix !== 'Unknown' ? row.serial_prefix : ''
+    const digits = serial && serial.startsWith(prefix) ? serial.slice(prefix.length) : serial
+    setSerialDigits(digits)
+    setIdentity(prev => ({
+      ...prev, model: name, generation: '',
+      serial: serial, serial_status: serial ? 'Complete' : '',
+    }))
+    setSpec({}); setValues({}); setStatuses({}); setOthers({}); setPartChoices({}); setGenOptions([])
+    if (row) loadSpec(row, '', false)
+  }
+
+  function selectGeneration(gen: string) {
+    setIdentity(prev => ({ ...prev, generation: gen }))
+    if (modelRow) loadSpec(modelRow, gen, true)
+  }
+
+  // Claim link (?model=…&serial=…) from the registry grid
   const claimApplied = useRef(false)
   useEffect(() => {
-    if (gateState !== 'form' || claimApplied.current) return
-    if (!claimModel || !prefixesLoaded) return
-    if (claimModel !== 'Unknown' && !(claimModel in serialPrefixes)) return
-    claimApplied.current = true
-    const prefix = serialPrefixes[claimModel] ?? ''
-    const digits = claimSerial.startsWith(prefix) ? claimSerial.slice(prefix.length) : claimSerial
-    setForm(prev => ({ ...prev, model: claimModel, serial: claimSerial, serial_status: 'Complete' }))
-    setSerialDigits(digits)
-    if (claimModel !== 'Unknown') prefillFromModel(claimModel)
-  }, [gateState, claimModel, claimSerial, prefixesLoaded, serialPrefixes])
-
-  useEffect(() => {
-    const hasAftermarket = Object.values(form).some(
-      v => typeof v === 'string' && valueIndicatesModified(v)
-    )
-    const hasCatalogueDeviation = Object.entries(catalogueValues).some(([key, catalogueValue]) => {
-      const formValue = form[key as keyof FormState]
-      return Boolean(catalogueValue && formValue && formValue !== catalogueValue)
-    })
-    setIsModified(hasAftermarket || hasCatalogueDeviation)
-  }, [form, catalogueValues])
-
-  async function prefillFromModel(model: string) {
-    const supabase = createSupabaseBrowserClient()
-
-    const { data: msData } = await supabase
-      .from('model_specifications')
-      .select('id')
-      .eq('model', model)
-      .single()
-
-    if (msData?.id) setModelId(msData.id)
-    if (!msData?.id) return
-
-    // Prefer most recent gen spec (highest GEN ref ID = most recent generation)
-    const { data } = await supabase
-      .from('model_gen_specs')
-      .select('pickup_configuration, bridge_type, switch_type, potentiometers, body_shape_analogue, body_wood, pickup_colours, headstock_face, headstock_style, fretboard_wood, scale_length, nut_type, hardware_colour, neck_construction, neck_wood, neck_profile, fret_count, neck_binding, skunk_stripe, pickup_surrounds, tuner_style')
-      .eq('model_id', msData.id)
-      .not('generation', 'eq', 'GEN-0005')  // exclude Unknown
-      .order('generation', { ascending: false })
-      .limit(1)
-      .single()
-
-    // Fall back to universal spec from model_specifications for shape/headstock
-    const { data: msSpec } = await supabase
-      .from('model_specifications')
-      .select('body_shape_analogue, headstock_style, bridge_type, pickup_configuration, body_wood, fretboard_wood, scale_length, potentiometers, switch_type, headstock_face, nut_type, hardware_colour, neck_construction, neck_wood, neck_profile, fret_count, neck_binding, skunk_stripe, pickup_surrounds, tuner_style, pickup_colours')
-      .eq('id', msData.id)
-      .single()
-
-    if (!data && !msSpec) return
-
-    const updates: Partial<FormState> = {}
-    const filled = new Set<keyof FormState>()
-
-    // Helper: prefer gen-specific value, fall back to universal spec
-    function pick<K extends string>(field: K): string | null {
-      return (data as Record<string, string | null> | null)?.[field] ?? (msSpec as Record<string, string | null> | null)?.[field] ?? null
-    }
-
-    const pickupConfig = pick('pickup_configuration')
-    if (pickupConfig) { updates.pickup_configuration = pickupConfig; filled.add('pickup_configuration') }
-
-    const bridge = pick('bridge_type')
-    if (bridge) {
-      updates.bridge_type = bridge
-      filled.add('bridge_type')
-      if (!TREMOLO_BRIDGES.has(bridge)) updates.whammy_bar = ''
-    }
-
-    const switchType = pick('switch_type')
-    if (switchType) { updates.switch_type = switchType; filled.add('switch_type') }
-
-    const pots = pick('potentiometers')
-    if (pots) { updates.potentiometers = pots; filled.add('potentiometers') }
-
-    const bodyShape = pick('body_shape_analogue')
-    if (bodyShape) { updates.body_shape_analogue = bodyShape; filled.add('body_shape_analogue') }
-
-    const bodyWood = pick('body_wood')
-    if (bodyWood) { updates.body_wood = bodyWood; filled.add('body_wood') }
-
-    const pickupColours = pick('pickup_colours')
-    if (pickupColours) { updates.pickup_colours = pickupColours; filled.add('pickup_colours') }
-
-    const headstockFace = pick('headstock_face')
-    if (headstockFace) { updates.headstock_face = headstockFace; filled.add('headstock_face') }
-
-    const headstockStyle = pick('headstock_style')
-    if (headstockStyle) { updates.headstock_style = headstockStyle; filled.add('headstock_style') }
-
-    const fretboard = pick('fretboard_wood')
-    if (fretboard) { updates.fretboard_wood = fretboard; filled.add('fretboard_wood') }
-
-    const scale = pick('scale_length')
-    if (scale) { updates.scale_length = scale; filled.add('scale_length') }
-
-    const nut = pick('nut_type')
-    if (nut) { updates.nut_type = nut; filled.add('nut_type') }
-
-    const hardwareColour = pick('hardware_colour')
-    if (hardwareColour) { updates.hardware_colour = hardwareColour; filled.add('hardware_colour') }
-
-    const neckConstruction = pick('neck_construction')
-    if (neckConstruction) { updates.neck_construction = neckConstruction; filled.add('neck_construction') }
-
-    const neckWood = pick('neck_wood')
-    if (neckWood) { updates.neck_wood = neckWood; filled.add('neck_wood') }
-
-    const neckProfile = pick('neck_profile')
-    if (neckProfile) { updates.neck_profile = neckProfile; filled.add('neck_profile') }
-
-    const fretCount = pick('fret_count')
-    if (fretCount) { updates.fret_count = fretCount; filled.add('fret_count') }
-
-    const neckBinding = pick('neck_binding')
-    if (neckBinding) { updates.neck_binding = neckBinding; filled.add('neck_binding') }
-
-    const skunkStripe = pick('skunk_stripe')
-    if (skunkStripe) { updates.skunk_stripe = skunkStripe; filled.add('skunk_stripe') }
-
-    const pickupSurrounds = pick('pickup_surrounds')
-    if (pickupSurrounds) { updates.pickup_surrounds = pickupSurrounds; filled.add('pickup_surrounds') }
-
-    const tuner = pick('tuner_style')
-    if (tuner) { updates.tuner_style = tuner; filled.add('tuner_style') }
-
-    setForm(prev => ({ ...prev, ...updates }))
-    setCatalogueValues(updates)
-    setPrefilledFields(filled)
-  }
-
-  async function handleModelChange(model: string) {
-    setSerialDigits('')
-    setPrefilledFields(new Set())
-    setCatalogueValues({})
-    setModelId('')
-    setForm(prev => ({ ...prev, model, serial: '', serial_status: '' }))
-    if (model && model !== 'Unknown') {
-      prefillFromModel(model)
-    } else if (model === 'Unknown') {
-      // Still look up the model_specifications UUID for Unknown
-      const supabase = createSupabaseBrowserClient()
-      const { data } = await supabase
-        .from('model_specifications')
-        .select('id')
-        .eq('model', 'Unknown')
-        .single()
-      if (data?.id) setModelId(data.id)
-    }
-  }
-
-  function handleToggleModified(modified: boolean) {
-    if (modified) {
-      setPrefilledFields(new Set())
-    } else if (form.model && form.model !== 'Unknown') {
-      prefillFromModel(form.model)
-    }
-  }
-
-  function set(key: keyof FormState) {
-    return (value: string) => {
-      if (key === 'bridge_logo' && value !== 'Aftermarket branded') setBridgeLogoBrand('')
-      if (key === 'neck_construction') {
-        if (value === 'NCK-0001') {
-          setPrefilledFields(prev => new Set([...prev, 'skunk_stripe' as keyof FormState, 'neck_binding' as keyof FormState, 'fret_count' as keyof FormState]))
-        } else {
-          setPrefilledFields(prev => { const n = new Set(prev); n.delete('skunk_stripe'); n.delete('neck_binding'); n.delete('fret_count'); return n })
-        }
-      }
-      if (key === 'skunk_stripe') {
-        setPrefilledFields(prev => { const n = new Set(prev); n.delete('skunk_stripe'); return n })
-      }
-      if (key === 'neck_binding') {
-        setPrefilledFields(prev => { const n = new Set(prev); n.delete('neck_binding'); return n })
-      }
-      if (key === 'fret_count') {
-        setPrefilledFields(prev => { const n = new Set(prev); n.delete('fret_count'); return n })
-      }
-      if (key === 'bridge_type') {
-        if (FLOYD_ROSE_BRIDGES.has(value) || (value && !TREMOLO_BRIDGES.has(value) && value !== 'BRG-0009')) {
-          setPrefilledFields(prev => new Set([...prev, 'nut_type' as keyof FormState]))
-        } else {
-          setPrefilledFields(prev => { const n = new Set(prev); n.delete('nut_type'); return n })
-        }
-      }
-      if (prefilledFields.has(key as keyof FormState) && value !== form[key as keyof FormState]) {
-        setPrefilledFields(prev => { const n = new Set(prev); n.delete(key as keyof FormState); return n })
-      }
-      setForm(prev => {
-        const next = { ...prev, [key]: value }
-        if (key === 'finish_type') { next.factory_colour = ''; next.custom_shop_colour = '' }
-        if (key === 'bridge_type') {
-          if (!TREMOLO_BRIDGES.has(value)) next.whammy_bar = ''
-          if (FLOYD_ROSE_BRIDGES.has(value)) {
-            next.nut_type = 'NUT-0001'
-          } else if (value && value !== 'BRG-0009' && !TREMOLO_BRIDGES.has(value)) {
-            next.nut_type = 'NUT-0002'
-          }
-        }
-        if (key === 'neck_construction') {
-          if (value === 'NCK-0001') {
-            next.skunk_stripe = 'SKS-0001'
-            next.neck_binding = 'NKB-0001'
-            next.fret_count   = 'FRT-0004'
-          } else if (value === 'NCK-0002') {
-            next.skunk_stripe = 'SKS-0004'
-            next.neck_binding = 'NKB-0004'
-          } else if (value === 'NCK-0003') {
-            next.skunk_stripe = 'SKS-0004'
-            next.neck_binding = 'NKB-0004'
-          } else if (value === 'NCK-0004' || value === 'NCK-0005') {
-            next.skunk_stripe = 'SKS-0003'
-            next.neck_binding = 'NKB-0004'
-          } else {
-            next.skunk_stripe = ''
-            next.neck_binding = ''
-            next.fret_count   = ''
-          }
-        }
-        return next
-      })
-    }
-  }
+    if (gateState !== 'form' || claimApplied.current || !dataLoaded || !claimModel) return
+    if (!models.some(m => m.model === claimModel)) return
+    const t = setTimeout(() => { claimApplied.current = true; selectModel(claimModel, claimSerial) }, 0)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gateState, dataLoaded, claimModel, claimSerial, models])
 
   function handleSerialDigits(raw: string) {
     const digits = raw.replace(/\D/g, '').slice(0, 5)
     setSerialDigits(digits)
-    const prefix = serialPrefixes[form.model] ?? ''
+    const prefix = modelRow?.serial_prefix && modelRow.serial_prefix !== 'Unknown' ? modelRow.serial_prefix : ''
     if (digits.length === 0) {
-      setForm(prev => ({ ...prev, serial: '', serial_status: '' }))
+      setIdentity(prev => ({ ...prev, serial: '', serial_status: '' }))
     } else {
-      const padded = digits.padStart(5, '0')
-      setForm(prev => ({
+      setIdentity(prev => ({
         ...prev,
-        serial: `${prefix}${padded}`,
+        serial: `${prefix}${digits.padStart(5, '0')}`,
         serial_status: digits.length === 5 ? 'Complete' : 'Partial',
       }))
     }
   }
 
+  // ── Field state helpers ──────────────────────────────────────────────────
+  const optionsFor = (def: FieldDef): RefOption[] => (def.cat ? refsByCat[def.cat] ?? [] : [])
+  const statusOf = (key: string): FieldStatus => statuses[key] ?? 'original'
+
+  function setValue(key: string, v: string) {
+    setValues(prev => ({ ...prev, [key]: v }))
+  }
+
+  function changeStatus(def: FieldDef, s: FieldStatus) {
+    setStatuses(prev => ({ ...prev, [def.key]: s }))
+    const aftermarket = optionsFor(def).filter(o => isAftermarketName(o.display_name))
+    if (s === 'aftermarket') {
+      setValue(def.key, aftermarket.length === 1 ? aftermarket[0].id : '')
+    } else if (s === 'original') {
+      setValue(def.key, spec[def.key] ?? '')
+    } else {
+      setValue(def.key, '')
+    }
+  }
+
+  const isTremolo = (() => {
+    const bridge = values['bridge_type']
+    if (!bridge || statusOf('bridge_type') === 'unsure') return true // unknown → don't hide the fields
+    return /floyd rose|tremolo/i.test(refNames[bridge] ?? '')
+  })()
+
+  const pickupSlots = pickupSlotsFor(refNames[values['pickup_configuration']])
+
+  function visible(def: FieldDef): boolean {
+    if (def.bassOnly && !isBass) return false
+    if (def.needsTremolo && !isTremolo) return false
+    if (def.key === 'bridge_pickup') return pickupSlots.bridge
+    if (def.key === 'middle_pickup') return pickupSlots.middle
+    if (def.key === 'neck_pickup') return pickupSlots.neck
+    return true
+  }
+
+  // Any field the owner has marked as an aftermarket replacement (or a refinish) makes the guitar "Modified"
+  const modifiedFields = [
+    ...ALL_SPEC_FIELDS.filter(d => visible(d) && statusOf(d.key) === 'aftermarket').map(d => d.key),
+    ...((identity.finish_type === FINISH_REFINISHED || identity.finish_type === FINISH_RELIC) ? ['finish_type'] : []),
+  ]
+  const originality: 'Factory original' | 'Modified' | 'Unknown' =
+    modifiedFields.length > 0 ? 'Modified' : modelRow ? 'Factory original' : 'Unknown'
+
+  // ── Photos ───────────────────────────────────────────────────────────────
   function handleSlotFile(index: number, file: File | null) {
     if (!file) {
       setImageSlots(prev => prev.map((slot, i) => {
@@ -746,106 +343,197 @@ export default function SubmitForm() {
       fd.append('image', slot.file)
       const res = await fetch('/api/upload-image', { method: 'POST', body: fd })
       const data = await res.json()
-      if (data.url) result.set(slot.position, data.url)
+      if (!data.url) throw new Error(`Could not upload the "${slot.position}" photo — please try again.`)
+      result.set(slot.position, data.url)
     }
     return result
   }
 
+  // ── Submit ───────────────────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.submitter_email) { setError('Email is required'); return }
-    if (!modelId) { setError('Could not resolve model — please re-select your model and try again.'); return }
-    setSubmitting(true)
     setError('')
+    if (!identity.submitter_email) { setError('Email is required'); return }
+    if (!modelRow) { setError('Please select your model.'); return }
+    const missing = imageSlots.filter(s => s.required && !s.file)
+    if (missing.length > 0) { setError(`A photo is required for: ${missing.map(s => s.position).join(', ')}.`); return }
+    for (const def of ALL_SPEC_FIELDS) {
+      const c = partChoices[def.key]
+      if (visible(def) && statusOf(def.key) === 'aftermarket' && c?.kind === 'new' && (!c.brand.trim() || !c.model.trim())) {
+        setError(`Please enter the brand and model for the ${def.label.toLowerCase()} you added.`)
+        return
+      }
+    }
 
+    setSubmitting(true)
     try {
       const supabase = createSupabaseBrowserClient()
       const { data: { user } } = await supabase.auth.getUser()
-      const hasImages = imageSlots.some(s => s.file)
-      const uploadedMap = hasImages ? await uploadImages() : new Map<string, string>()
-      const imageUrls = IMAGE_SCHEMA.map(p => uploadedMap.get(p)).filter((u): u is string => Boolean(u))
+      const uploaded = await uploadImages()
 
       let registeredBy = 'Guest'
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('id', user.id)
-          .single()
-        registeredBy = profile?.username ?? split_email_prefix(user.email ?? '')
+        const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).single()
+        registeredBy = profile?.username ?? splitEmailPrefix(user.email ?? '')
       }
 
-      const notesPrefix = isModified ? '[Modified] ' : ''
+      // Resolve the aftermarket parts (existing picks, or new ones to add to the shared list)
+      const slotPartIds: Record<string, string> = {}
+      for (const def of ALL_SPEC_FIELDS) {
+        const choice = partChoices[def.key]
+        if (!def.part || !visible(def) || statusOf(def.key) !== 'aftermarket' || !choice) continue
+        if (choice.kind === 'existing') { slotPartIds[def.key] = choice.id; continue }
+        const brand = choice.brand.trim(), model = choice.model.trim()
+        const pickupType = def.part === 'pickup' ? choice.pickup_type : null
+        const { data: created, error: createErr } = await untyped(supabase).from('aftermarket_parts')
+          .insert({ part_type: def.part, brand, model, pickup_type: pickupType, status: 'unverified', created_by: user?.id ?? null })
+          .select('id').single()
+        if (created) { slotPartIds[def.key] = created.id; continue }
+        if (createErr?.code === '23505') {
+          // Someone already added this part — use theirs
+          let q = untyped(supabase).from('aftermarket_parts').select('id').eq('part_type', def.part)
+            .ilike('brand', escapeLike(brand)).ilike('model', escapeLike(model))
+          q = pickupType ? q.eq('pickup_type', pickupType) : q.is('pickup_type', null)
+          const { data: existing } = await q.maybeSingle()
+          if (existing) { slotPartIds[def.key] = existing.id; continue }
+        }
+        throw createErr ?? new Error('Could not save the part you added.')
+      }
+
+      // Columns + per-field flags
+      const columns: Record<string, string | number | null> = {}
+      const flags: { field: string; status: string; detail: string | null; evidence_eligible: boolean }[] = []
+      const suggestions: { field: string; proposed_value: string }[] = []
+
+      for (const def of ALL_SPEC_FIELDS) {
+        if (!visible(def)) continue
+        const st = statusOf(def.key)
+        const raw = values[def.key] ?? ''
+        const other = (others[def.key] ?? '').trim()
+        const numeric = def.kind === 'number' || def.kind === 'count'
+        const toColumn = (v: string) => (numeric ? (v === '' ? null : Number(v)) : v || null)
+
+        if (st === 'unsure') {
+          columns[def.key] = null
+          flags.push({ field: def.key, status: 'unknown', detail: null, evidence_eligible: false })
+        } else if (st === 'aftermarket') {
+          columns[def.key] = toColumn(raw === OTHER_SENTINEL ? '' : raw)
+          flags.push({ field: def.key, status: 'aftermarket', detail: other || null, evidence_eligible: false })
+        } else if (raw === OTHER_SENTINEL) {
+          columns[def.key] = null
+          if (other) suggestions.push({ field: def.key, proposed_value: other })
+          flags.push({ field: def.key, status: 'factory_unlisted', detail: other || null, evidence_eligible: false })
+        } else if (raw !== '') {
+          columns[def.key] = toColumn(raw)
+          const matches = sameValue(raw, spec[def.key])
+          flags.push({ field: def.key, status: matches ? 'matches' : 'factory_unlisted', detail: null, evidence_eligible: matches })
+        }
+      }
+      if (identity.finish_type === FINISH_REFINISHED || identity.finish_type === FINISH_RELIC) {
+        flags.push({ field: 'finish_type', status: 'aftermarket', detail: identity.custom_shop_colour || null, evidence_eligible: false })
+      }
+
+      const guitarId = crypto.randomUUID()
+      const imageUrls = PHOTO_SLOTS.map(s => uploaded.get(s.position)).filter((u): u is string => Boolean(u))
+      const notesPrefix = originality === 'Modified' ? '[Modified] ' : ''
+
       const payload = {
-        user_id:              user?.id ?? null,
-        registered_by:        registeredBy,
-        model_id:             modelId,
-        serial:               form.serial || null,
-        serial_status:        form.serial_status || null,
-        series:               MODEL_SERIES_REF[form.model] ?? null,
-        generation:           null,
-        catalogue_year:       null,
-        finish_type:          form.finish_type || null,
-        factory_colour:       form.factory_colour || null,
-        custom_shop_colour:   form.custom_shop_colour || null,
-        body_wood:            form.body_wood || null,
-        body_shape_analogue:  form.body_shape_analogue || null,
-        pickup_configuration: form.pickup_configuration || null,
-        neck_pickup:          form.neck_pickup || null,
-        middle_pickup:        form.middle_pickup || null,
-        bridge_pickup:        form.bridge_pickup || null,
-        bridge_type:          form.bridge_type || null,
-        hardware_colour:      form.hardware_colour || null,
-        headstock_face:       form.headstock_face || null,
-        headstock_style:      form.headstock_style || null,
-        headstock_logo:       form.headstock_logo || null,
-        bridge_logo:          form.bridge_logo === 'Aftermarket branded' && bridgeLogoBrand
-                                ? `Aftermarket branded — ${bridgeLogoBrand}`
-                                : form.bridge_logo || null,
-        pickup_surrounds:     form.pickup_surrounds || null,
-        pickup_colours:       form.pickup_colours || null,
-        tuner_style:          form.tuner_style || null,
-        neck_binding:         form.neck_binding || null,
-        switch_type:          form.switch_type || null,
-        switch_knob:          form.switch_knob || null,
-        potentiometers:       form.potentiometers || null,
-        whammy_bar:           form.whammy_bar || null,
-        nut_type:             form.nut_type || null,
-        fret_count:           form.fret_count || null,
-        fretboard_wood:       form.fretboard_wood || null,
-        scale_length:         form.scale_length || null,
-        neck_construction:    form.neck_construction || null,
-        neck_wood:            form.neck_wood || null,
-        neck_profile:         form.neck_profile || null,
-        body_construction:    form.body_construction || null,
-        skunk_stripe:         form.skunk_stripe || null,
-        left_handed_available: form.left_handed_available === 'Yes' ? 'LHA-0001' : null,
-        headstock_break_angle: form.headstock_break_angle ? parseFloat(form.headstock_break_angle) : null,
-        neck_pitch:           form.neck_pitch ? parseFloat(form.neck_pitch) : null,
-        last_known_country:   form.last_known_country || null,
-        last_known_region:    form.last_known_region || null,
-        last_known_city:      form.last_known_city || null,
-        source_type:          form.source_type || null,
-        source_url:           form.source_url || null,
-        last_price:           form.last_price ? parseFloat(form.last_price) : null,
-        submitter_email:      form.submitter_email,
-        submission_notes:     `${notesPrefix}${form.submission_notes}`.trim() || null,
-        image_urls:           imageUrls.length > 0 ? imageUrls : null,
-        primary_image_url:    uploadedMap.get('Full front') ?? imageUrls[0] ?? null,
+        id: guitarId,
+        user_id: user?.id ?? null,
+        registered_by: registeredBy,
+        model_id: modelRow.id,
+        serial: identity.serial || null,
+        serial_status: identity.serial_status || null,
+        series: modelRow.series,
+        generation: identity.generation || null,
+        catalogue_year: null,
+        finish_type: identity.finish_type || null,
+        factory_colour: identity.finish_type === FINISH_FACTORY || !identity.finish_type ? identity.factory_colour || null : null,
+        custom_shop_colour: identity.custom_shop_colour || null,
+        left_handed_available: identity.left_handed === 'Yes' ? 'LHA-0001' : null,
+        ...columns,
+        last_known_country: identity.last_known_country || null,
+        last_known_region: identity.last_known_region || null,
+        last_known_city: identity.last_known_city || null,
+        source_type: 'Owner registration',
+        source_url: identity.source_url || null,
+        last_price: identity.last_price ? parseFloat(identity.last_price) : null,
+        submitter_email: identity.submitter_email,
+        submission_notes: `${notesPrefix}${identity.submission_notes}`.trim() || null,
+        originality,
+        modified_fields: modifiedFields.length ? modifiedFields : null,
+        image_urls: imageUrls.length > 0 ? imageUrls : null,
+        primary_image_url: uploaded.get('Full front') ?? imageUrls[0] ?? null,
         status: 'Pending',
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: dbError } = await supabase.from('guitars').insert(payload as any)
-
       if (dbError) throw dbError
+
+      const children = await Promise.all([
+        flags.length ? untyped(supabase).from('guitar_field_flags').insert(flags.map(f => ({ guitar_id: guitarId, ...f }))) : null,
+        Object.keys(slotPartIds).length
+          ? untyped(supabase).from('guitar_parts').insert(Object.entries(slotPartIds).map(([slot, part_id]) => ({ guitar_id: guitarId, slot, part_id })))
+          : null,
+        suggestions.length ? untyped(supabase).from('spec_suggestions').insert(suggestions.map(s => ({ guitar_id: guitarId, ...s }))) : null,
+        uploaded.size
+          ? untyped(supabase).from('guitar_photos').insert(PHOTO_SLOTS.filter(s => uploaded.has(s.position)).map((s, i) => ({
+              guitar_id: guitarId, position: s.position, url: uploaded.get(s.position)!, sort_order: i,
+            })))
+          : null,
+      ])
+      const childError = children.find(c => c?.error)?.error
+      if (childError) throw childError
+
       setSubmitted(true)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Submission failed. Please try again.')
+      setError(err instanceof Error ? err.message : (err as { message?: string })?.message ?? 'Submission failed. Please try again.')
     } finally {
       setSubmitting(false)
     }
   }
+
+  // ── Render helpers ───────────────────────────────────────────────────────
+  function renderField(def: FieldDef, labelOverride?: string) {
+    if (!visible(def)) return null
+    const key = def.key
+    const st = statusOf(key)
+    return (
+      <SpecFieldRow
+        key={key}
+        def={def}
+        label={labelOverride}
+        options={optionsFor(def)}
+        value={values[key] ?? ''}
+        status={st}
+        specValue={spec[key] ?? null}
+        prefilled={spec[key] != null}
+        otherText={others[key] ?? ''}
+        part={partChoices[key] ?? null}
+        parts={parts}
+        onValue={v => setValue(key, v)}
+        onStatus={s => changeStatus(def, s)}
+        onOther={v => setOthers(prev => ({ ...prev, [key]: v }))}
+        onPart={p => setPartChoices(prev => ({ ...prev, [key]: p }))}
+      />
+    )
+  }
+
+  const seriesName = (id: string | null) => (id ? refNames[id] ?? id : 'Other')
+  const modelGroups = useMemo(() => {
+    const groups: { series: string; models: ModelRow[] }[] = []
+    for (const m of models) {
+      const name = seriesName(m.series)
+      let g = groups.find(x => x.series === name)
+      if (!g) { g = { series: name, models: [] }; groups.push(g) }
+      g.models.push(m)
+    }
+    return groups
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [models, refNames])
+
+  const prefix = modelRow?.serial_prefix && modelRow.serial_prefix !== 'Unknown' ? modelRow.serial_prefix : ''
 
   if (gateState === 'checking') {
     return (
@@ -993,9 +681,9 @@ export default function SubmitForm() {
           <p style={{ color: '#9e9b96', fontSize: '15px', lineHeight: 1.75, marginBottom: '8px' }}>
             Your submission is pending review. Once approved it will appear in the registry.
           </p>
-          {form.submitter_email && (
+          {identity.submitter_email && (
             <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: '#5c5a57', marginBottom: '40px' }}>
-              Confirmation will be sent to {form.submitter_email}
+              Confirmation will be sent to {identity.submitter_email}
             </p>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '32px', flexWrap: 'wrap' }}>
@@ -1003,19 +691,7 @@ export default function SubmitForm() {
               ← Back to registry
             </Link>
             <button
-              onClick={() => {
-                setSubmitted(false)
-                setForm(INITIAL)
-                setModelId('')
-                setSerialDigits('')
-                setImageSlots(prev => {
-                  prev.forEach(s => { if (s.preview) URL.revokeObjectURL(s.preview) })
-                  return makeInitialSlots()
-                })
-                setPrefilledFields(new Set())
-                setCatalogueValues({})
-                setBridgeLogoBrand('')
-              }}
+              onClick={() => window.location.assign('/submit')}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
@@ -1030,36 +706,53 @@ export default function SubmitForm() {
     )
   }
 
+  const monoNote: React.CSSProperties = { fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57', lineHeight: 1.6 }
+  const electronicsFields = SPEC_SECTIONS.find(s => s.id === 'electronics')!.fields
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
       <div className="mb-10">
         <h1 className="text-3xl font-bold text-white mb-2">Register your guitar</h1>
-        <p className="text-zinc-400">Fill in as much as you know. All submissions are reviewed before appearing in the registry.</p>
+        <p className="text-zinc-400">
+          Pick your model and the form fills in the factory specification. Only change what is different on your guitar.
+          All submissions are reviewed before appearing in the registry.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Section title="Guitar identity">
-          {/* Model — grouped by series */}
           <div className="sm:col-span-2">
-            <Field label="Model *">
+            <Field label="Model" required>
               <select
-                value={form.model}
-                onChange={e => handleModelChange(e.target.value)}
+                value={identity.model}
+                onChange={e => selectModel(e.target.value)}
                 required
                 className={selectCls}
               >
-                <option value="">Select your model…</option>
-                <option value="Unknown">Unknown — can&apos;t identify</option>
-                {Object.entries(MODEL_GROUPS).map(([series, models]) => (
-                  <optgroup key={series} label={series}>
-                    {models.map(m => <option key={m} value={m}>{m}</option>)}
+                <option value="">{dataLoaded ? 'Select your model…' : 'Loading models…'}</option>
+                {modelGroups.map(g => (
+                  <optgroup key={g.series} label={g.series}>
+                    {g.models.map(m => <option key={m.id} value={m.model}>{m.model}</option>)}
                   </optgroup>
                 ))}
               </select>
             </Field>
           </div>
 
-          {/* Serial */}
+          {genOptions.length > 1 && (
+            <div className="sm:col-span-2">
+              <Field label="Generation">
+                <select value={identity.generation} onChange={e => selectGeneration(e.target.value)} className={selectCls}>
+                  <option value="">Not sure — use the model-wide spec only</option>
+                  {genOptions.map(g => <option key={g} value={g}>{refNames[g] ?? g}</option>)}
+                </select>
+                <p style={{ ...monoNote, marginTop: '5px' }}>
+                  Choosing a generation fills in the details that changed between generations (pickups, neck profile, hardware and so on).
+                </p>
+              </Field>
+            </div>
+          )}
+
           <div className="sm:col-span-2">
             <Field label="Serial number">
               <div style={{ display: 'flex', alignItems: 'stretch' }}>
@@ -1069,17 +762,17 @@ export default function SubmitForm() {
                   border: '1px solid rgba(255,255,255,0.12)', borderRight: 'none',
                   padding: '0 12px',
                   fontFamily: 'var(--font-dm-mono)', fontSize: '13px',
-                  color: form.model ? '#c8a96e' : '#3a3835',
+                  color: identity.model ? '#c8a96e' : '#3a3835',
                   letterSpacing: '1px', whiteSpace: 'nowrap', minWidth: '56px',
                 }}>
-                  {form.model ? (serialPrefixes[form.model] || '?-') : '—'}
+                  {identity.model ? (prefix || '?-') : '—'}
                 </span>
                 <input
                   type="text" inputMode="numeric"
                   value={serialDigits}
                   onChange={e => handleSerialDigits(e.target.value)}
-                  disabled={!form.model}
-                  placeholder={form.model ? '5-digit code' : 'Select model first'}
+                  disabled={!identity.model}
+                  placeholder={identity.model ? '5-digit code' : 'Select model first'}
                   maxLength={5} className={inputCls} style={{ flex: 1 }}
                 />
                 {serialDigits.length > 0 && (
@@ -1094,8 +787,8 @@ export default function SubmitForm() {
                 )}
               </div>
               {serialDigits.length > 0 && (
-                <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57', marginTop: '5px' }}>
-                  Full serial: <span style={{ color: '#9e9b96' }}>{form.serial}</span>
+                <p style={{ ...monoNote, marginTop: '5px' }}>
+                  Full serial: <span style={{ color: '#9e9b96' }}>{identity.serial}</span>
                   {' · '}
                   <span style={{ color: serialDigits.length === 5 ? '#27ae60' : '#c8a96e' }}>
                     {serialDigits.length === 5 ? 'Complete' : 'Partial'}
@@ -1112,26 +805,19 @@ export default function SubmitForm() {
 
           {!serialDigits && (
             <Field label="Serial status">
-              <Select
-                value={form.serial_status}
-                onChange={set('serial_status')}
-                options={[
-                  { value: 'Prefix only',  label: 'Prefix only' },
-                  { value: 'None Visible', label: 'None Visible' },
-                  { value: 'Paper label',  label: 'Paper label' },
-                  { value: 'Hand label',   label: 'Hand label' },
-                ]}
-                placeholder="Unknown / not entered"
-              />
+              <select value={identity.serial_status} onChange={e => setIdentity(p => ({ ...p, serial_status: e.target.value }))} className={selectCls}>
+                <option value="">Unknown / not entered</option>
+                {['Prefix only', 'None Visible', 'Paper label', 'Hand label'].map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
             </Field>
           )}
 
-          {(form.serial_status === 'Paper label' || form.serial_status === 'Hand label') && (
+          {(identity.serial_status === 'Paper label' || identity.serial_status === 'Hand label') && (
             <div className="sm:col-span-2">
               <Field label="Label content">
                 <input
-                  type="text" value={form.serial}
-                  onChange={e => setForm(prev => ({ ...prev, serial: e.target.value.slice(0, 60) }))}
+                  type="text" value={identity.serial}
+                  onChange={e => setIdentity(p => ({ ...p, serial: e.target.value.slice(0, 60) }))}
                   placeholder="Describe or transcribe the label — e.g. 'Prototype 003', handwritten number…"
                   maxLength={60} className={inputCls}
                 />
@@ -1139,41 +825,13 @@ export default function SubmitForm() {
             </div>
           )}
 
-          {/* Factory / Modified toggle */}
-          <div className="sm:col-span-2">
-            <label className="block text-sm text-zinc-400 mb-2">Guitar spec</label>
-            <div style={{ display: 'inline-flex', border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden' }}>
-              {(['Factory', 'Modified'] as const).map(val => {
-                const active = val === 'Factory' ? !isModified : isModified
-                return (
-                  <button key={val} type="button" onClick={() => handleToggleModified(val === 'Modified')}
-                    style={{
-                      padding: '8px 28px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
-                      letterSpacing: '1px', textTransform: 'uppercase', border: 'none', cursor: 'pointer',
-                      background: active ? '#c8a96e' : 'transparent',
-                      color: active ? '#000' : '#5c5a57', transition: 'background 0.15s, color 0.15s',
-                    }}
-                  >{val}</button>
-                )
-              })}
-            </div>
-            <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#3a3835', marginTop: '6px' }}>
-              {isModified
-                ? 'Fill in the spec as it currently is — hardware fields will not be auto-filled.'
-                : form.model && form.model !== 'Unknown'
-                  ? 'Catalogue spec has been pre-filled. Update any fields that differ on your guitar.'
-                  : 'Select a model to auto-fill catalogue spec — update anything that differs.'}
-            </p>
-          </div>
-
-          {/* Handed toggle */}
           <div>
             <label className="block text-sm text-zinc-400 mb-1">Handed</label>
             <div style={{ display: 'inline-flex', border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden' }}>
               {(['No', 'Yes'] as const).map(val => {
-                const active = form.left_handed_available === val
+                const active = identity.left_handed === val
                 return (
-                  <button key={val} type="button" onClick={() => set('left_handed_available')(val)}
+                  <button key={val} type="button" onClick={() => setIdentity(p => ({ ...p, left_handed: val }))}
                     style={{
                       padding: '8px 20px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px',
                       letterSpacing: '1px', textTransform: 'uppercase', border: 'none', cursor: 'pointer',
@@ -1187,180 +845,78 @@ export default function SubmitForm() {
           </div>
         </Section>
 
+        {/* Originality banner — derived from the flags below */}
+        {identity.model && (
+          <div style={{
+            border: `1px solid ${originality === 'Modified' ? 'rgba(184,85,58,0.5)' : 'rgba(200,169,110,0.3)'}`,
+            background: originality === 'Modified' ? 'rgba(184,85,58,0.06)' : 'rgba(200,169,110,0.04)',
+            padding: '14px 18px',
+          }}>
+            <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', color: originality === 'Modified' ? '#d9775a' : '#c8a96e', marginBottom: '6px' }}>
+              {originality === 'Modified' ? 'Will be recorded as: Modified' : 'Will be recorded as: Factory original (pending review)'}
+            </p>
+            <p style={{ ...monoNote }}>
+              Every spec below is pre-filled from the {identity.model} spec sheet. Leave a field as <b>Original</b> if it matches your guitar,
+              change the value if your original differs, or mark it <b>Aftermarket</b> if the part has been replaced.
+              {modifiedFields.length > 0 && ` Aftermarket: ${modifiedFields.map(k => (ALL_SPEC_FIELDS.find(f => f.key === k)?.label ?? 'Finish')).join(', ')}.`}
+            </p>
+          </div>
+        )}
+
         <Section title="Finish & colour">
           <Field label="Finish type">
-            <Select value={form.finish_type} onChange={set('finish_type')} options={FINISH_OPTS} />
+            <select
+              value={identity.finish_type}
+              onChange={e => setIdentity(p => ({ ...p, finish_type: e.target.value, factory_colour: '', custom_shop_colour: '' }))}
+              className={selectCls}
+            >
+              <option value="">Select…</option>
+              {(refsByCat['FIN'] ?? []).map(o => <option key={o.id} value={o.id}>{o.display_name}</option>)}
+            </select>
           </Field>
-          {(!form.finish_type || form.finish_type === 'FIN-0001') && (
+          {(!identity.finish_type || identity.finish_type === FINISH_FACTORY) && (
             <Field label="Factory colour">
-              <Select value={form.factory_colour} onChange={set('factory_colour')} options={FACTORY_COLOUR_OPTS} />
+              <select value={identity.factory_colour} onChange={e => setIdentity(p => ({ ...p, factory_colour: e.target.value }))} className={selectCls}>
+                <option value="">Select…</option>
+                {(refsByCat['COL'] ?? []).map(o => <option key={o.id} value={o.id}>{o.display_name}</option>)}
+              </select>
             </Field>
           )}
-          {form.finish_type === 'FIN-0002' && (
+          {identity.finish_type === FINISH_CUSTOM_SHOP && (
             <Field label="Custom Shop colour">
-              <Select value={form.custom_shop_colour} onChange={set('custom_shop_colour')} options={CUSTOM_COLOUR_OPTS} />
+              <select value={identity.custom_shop_colour} onChange={e => setIdentity(p => ({ ...p, custom_shop_colour: e.target.value }))} className={selectCls}>
+                <option value="">Select…</option>
+                {(refsByCat['CSC'] ?? []).map(o => <option key={o.id} value={o.id}>{o.display_name}</option>)}
+              </select>
             </Field>
           )}
-          {form.finish_type === 'FIN-0003' && (
-            <Field label="Refinish description">
-              <input type="text" value={form.custom_shop_colour}
-                onChange={e => set('custom_shop_colour')(e.target.value.slice(0, 100))}
-                placeholder="e.g. Satin black rattle-can, sunburst respray…" maxLength={100} className={inputCls} />
+          {(identity.finish_type === FINISH_REFINISHED || identity.finish_type === FINISH_RELIC || identity.finish_type === 'FIN-0005') && (
+            <Field label={identity.finish_type === 'FIN-0005' ? 'Finish description (optional)' : 'Describe the finish'}>
+              <input type="text" value={identity.custom_shop_colour}
+                onChange={e => setIdentity(p => ({ ...p, custom_shop_colour: e.target.value.slice(0, 100) }))}
+                placeholder="e.g. Satin black rattle-can, sunburst respray, dark blue metallic…" maxLength={100} className={inputCls} />
               <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#3a3835', marginTop: '5px' }}>
-                {form.custom_shop_colour.length}/100 characters
+                {identity.custom_shop_colour.length}/100 characters
               </p>
             </Field>
           )}
-          {form.finish_type === 'FIN-0005' && (
-            <Field label="Finish description (optional)">
-              <input type="text" value={form.custom_shop_colour}
-                onChange={e => set('custom_shop_colour')(e.target.value.slice(0, 100))}
-                placeholder="Describe what you can see, e.g. dark blue metallic…" maxLength={100} className={inputCls} />
-              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#3a3835', marginTop: '5px' }}>
-                {form.custom_shop_colour.length}/100 characters
-              </p>
-            </Field>
-          )}
-          <Field label="Headstock face colour" prefilled={prefilledFields.has('headstock_face')}>
-            <Select value={form.headstock_face} onChange={set('headstock_face')} options={HEADSTOCK_FACE_OPTS} />
-          </Field>
-          <Field label="Headstock logo">
-            <Select value={form.headstock_logo} onChange={set('headstock_logo')} options={HEADSTOCK_LOGO_OPTS} />
-          </Field>
-          <Field label="Body wood" prefilled={prefilledFields.has('body_wood')}>
-            <Select value={form.body_wood} onChange={set('body_wood')} options={BODY_WOOD_OPTS} />
-          </Field>
-          <Field label="Body shape" prefilled={prefilledFields.has('body_shape_analogue')}>
-            <Select value={form.body_shape_analogue} onChange={set('body_shape_analogue')} options={BODY_SHAPE_OPTS} />
-          </Field>
-          <Field label="Body construction" prefilled={prefilledFields.has('body_construction')}>
-            <Select value={form.body_construction} onChange={set('body_construction')} options={BODY_CONSTRUCTION_OPTS} />
-          </Field>
         </Section>
 
-        <Section title="Hardware & electronics">
-          <div className="sm:col-span-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-
-              {/* Hardware */}
-              <div className="flex flex-col gap-4">
-                <Field label="Bridge" prefilled={prefilledFields.has('bridge_type')}>
-                  <Select value={form.bridge_type} onChange={set('bridge_type')} options={BRIDGE_OPTS} />
-                </Field>
-                <Field label="Bridge logo">
-                  <Select value={form.bridge_logo} onChange={set('bridge_logo')} options={[
-                    { value: 'Maverick Italic script logo',   label: 'Maverick Italic script logo' },
-                    { value: 'Maverick Stencil script logo',  label: 'Maverick Stencil script logo' },
-                    { value: 'No logo',                       label: 'No logo' },
-                    { value: 'Aftermarket branded',           label: 'Aftermarket branded' },
-                    { value: 'Unknown',                       label: 'Unknown' },
-                  ]} />
-                  {form.bridge_logo === 'Aftermarket branded' && (
-                    <input type="text" value={bridgeLogoBrand}
-                      onChange={e => setBridgeLogoBrand(e.target.value.slice(0, 60))}
-                      placeholder="Brand name, e.g. Floyd Rose, Gotoh…" maxLength={60}
-                      className={inputCls} style={{ marginTop: '6px' }} />
-                  )}
-                </Field>
-                {TREMOLO_BRIDGES.has(form.bridge_type) && (
-                  <Field label="Whammy bar">
-                    <Select value={form.whammy_bar} onChange={set('whammy_bar')} options={WHAMMY_OPTS} />
-                  </Field>
-                )}
-                <Field label="Pickup surrounds">
-                  <Select value={form.pickup_surrounds} onChange={set('pickup_surrounds')} options={PICKUP_SURROUNDS_OPTS} />
-                </Field>
-                <Field label="Hardware colour">
-                  <Select value={form.hardware_colour} onChange={set('hardware_colour')} options={HARDWARE_COLOUR_OPTS} />
-                </Field>
-                <Field label="Switch knob">
-                  <Select value={form.switch_knob} onChange={set('switch_knob')} options={SWITCH_KNOB_OPTS} />
-                </Field>
-                <Field label="Tuner style" prefilled={prefilledFields.has('tuner_style')}>
-                  <Select value={form.tuner_style} onChange={set('tuner_style')} options={TUNER_OPTS} />
-                </Field>
-              </div>
-
-              {/* Electronics */}
-              <div className="flex flex-col gap-4">
-                <Field label="Pickup configuration" prefilled={prefilledFields.has('pickup_configuration')}>
-                  <Select value={form.pickup_configuration} onChange={set('pickup_configuration')} options={PICKUP_CONFIG_OPTS} />
-                </Field>
-                {(() => {
-                  const pos = PICKUP_CONFIG_MAP[form.pickup_configuration]
-                  const bridgeLabel = pos?.bridge ? `Bridge pickup — ${pos.bridge}` : 'Bridge pickup'
-                  const middleLabel = pos?.middle ? `Middle pickup — ${pos.middle}` : 'Middle pickup'
-                  const neckLabel   = pos?.neck   ? `Neck pickup — ${pos.neck}`     : 'Neck pickup'
-                  const hasMiddle   = pos ? pos.middle !== null : true
-                  return (
-                    <>
-                      <Field label={bridgeLabel}>
-                        <input type="text" value={form.bridge_pickup} onChange={e => set('bridge_pickup')(e.target.value)} placeholder="e.g. Duncan Designed HB-102" className={inputCls} />
-                      </Field>
-                      {hasMiddle && (
-                        <Field label={middleLabel}>
-                          <input type="text" value={form.middle_pickup} onChange={e => set('middle_pickup')(e.target.value)} placeholder="e.g. Wilkinson single coil" className={inputCls} />
-                        </Field>
-                      )}
-                      <Field label={neckLabel}>
-                        <input type="text" value={form.neck_pickup} onChange={e => set('neck_pickup')(e.target.value)} placeholder="e.g. Duncan Designed HB-102" className={inputCls} />
-                      </Field>
-                    </>
-                  )
-                })()}
-                <Field label="Pickup colours" prefilled={prefilledFields.has('pickup_colours')}>
-                  <Select value={form.pickup_colours} onChange={set('pickup_colours')} options={PICKUP_COLOUR_OPTS} />
-                </Field>
-                <Field label="Switch type" prefilled={prefilledFields.has('switch_type')}>
-                  <Select value={form.switch_type} onChange={set('switch_type')} options={SWITCH_TYPE_OPTS} />
-                </Field>
-                <Field label="Potentiometers" prefilled={prefilledFields.has('potentiometers')}>
-                  <Select value={form.potentiometers} onChange={set('potentiometers')} options={POTENTIOMETER_OPTS} />
-                </Field>
-              </div>
-
-            </div>
-          </div>
-        </Section>
-
-        <Section title="Neck & construction">
-          <Field label="Neck construction">
-            <Select value={form.neck_construction} onChange={set('neck_construction')} options={NECK_CONSTRUCTION_OPTS} />
-          </Field>
-          <Field label="Neck wood" prefilled={prefilledFields.has('neck_wood')}>
-            <Select value={form.neck_wood} onChange={set('neck_wood')} options={NECK_WOOD_OPTS} />
-          </Field>
-          <Field label="Neck profile" prefilled={prefilledFields.has('neck_profile')}>
-            <Select value={form.neck_profile} onChange={set('neck_profile')} options={NECK_PROFILE_OPTS} />
-          </Field>
-          <Field label="Headstock style" prefilled={prefilledFields.has('headstock_style')}>
-            <Select value={form.headstock_style} onChange={set('headstock_style')} options={HEADSTOCK_STYLE_OPTS} />
-          </Field>
-          <Field label="Scale length" prefilled={prefilledFields.has('scale_length')}>
-            <Select value={form.scale_length} onChange={set('scale_length')} options={SCALE_LENGTH_OPTS} />
-          </Field>
-          <Field label="Fret count" prefilled={prefilledFields.has('fret_count')}>
-            <Select value={form.fret_count} onChange={set('fret_count')} options={FRET_COUNT_OPTS} />
-          </Field>
-          <Field label="Fretboard wood" prefilled={prefilledFields.has('fretboard_wood')}>
-            <Select value={form.fretboard_wood} onChange={set('fretboard_wood')} options={FRETBOARD_WOOD_OPTS} />
-          </Field>
-          <Field label="Nut type" prefilled={prefilledFields.has('nut_type')}>
-            <Select value={form.nut_type} onChange={set('nut_type')} options={NUT_TYPE_OPTS} />
-          </Field>
-          <Field label="Neck binding" prefilled={prefilledFields.has('neck_binding')}>
-            <Select value={form.neck_binding} onChange={set('neck_binding')} options={NECK_BINDING_OPTS} />
-          </Field>
-          <Field label="Skunk stripe" prefilled={prefilledFields.has('skunk_stripe')}>
-            <Select value={form.skunk_stripe} onChange={set('skunk_stripe')} options={SKUNK_STRIPE_OPTS} />
-          </Field>
-          <Field label="Headstock break angle (degrees)">
-            <input type="number" step="0.1" value={form.headstock_break_angle} onChange={e => set('headstock_break_angle')(e.target.value)} placeholder="e.g. 13" className={inputCls} />
-          </Field>
-          <Field label="Neck pitch (mm packing to level)">
-            <input type="number" step="0.1" value={form.neck_pitch} onChange={e => set('neck_pitch')(e.target.value)} placeholder="e.g. 8" className={inputCls} />
-          </Field>
-        </Section>
+        {SPEC_SECTIONS.map(section => {
+          const fields = section.fields.filter(visible)
+          if (fields.length === 0) return null
+          return (
+            <Section
+              key={section.id}
+              title={section.title}
+              note={section.id === 'body' ? 'Pre-filled from the spec sheet. Only change what is different on your guitar.' : undefined}
+            >
+              {section.id === 'electronics'
+                ? electronicsFields.map(def => renderField(def))
+                : fields.map(def => renderField(def))}
+            </Section>
+          )
+        })}
 
         <Section title="Provenance">
           <Field label="Source type">
@@ -1374,33 +930,34 @@ export default function SubmitForm() {
             </div>
           </Field>
           <Field label="Last known price (£)">
-            <input type="number" step="0.01" value={form.last_price} onChange={e => set('last_price')(e.target.value)} placeholder="e.g. 250" className={inputCls} />
+            <input type="number" step="0.01" value={identity.last_price} onChange={e => setIdentity(p => ({ ...p, last_price: e.target.value }))} placeholder="e.g. 250" className={inputCls} />
           </Field>
           <div className="sm:col-span-2">
             <Field label="Source URL">
-              <input type="url" value={form.source_url} onChange={e => set('source_url')(e.target.value)} placeholder="https://…" className={inputCls} />
+              <input type="url" value={identity.source_url} onChange={e => setIdentity(p => ({ ...p, source_url: e.target.value }))} placeholder="https://…" className={inputCls} />
             </Field>
           </div>
           <Field label="Last known country">
-            <Select value={form.last_known_country} onChange={set('last_known_country')} options={[
-              'United Kingdom','Ireland','United States','Canada','Australia','New Zealand',
-              'Germany','France','Netherlands','Belgium','Sweden','Norway','Denmark','Spain','Italy','Other',
-            ].map(c => ({ value: c, label: c }))} />
+            <select value={identity.last_known_country} onChange={e => setIdentity(p => ({ ...p, last_known_country: e.target.value }))} className={selectCls}>
+              <option value="">Select…</option>
+              {['United Kingdom','Ireland','United States','Canada','Australia','New Zealand','Germany','France','Netherlands','Belgium','Sweden','Norway','Denmark','Spain','Italy','Other']
+                .map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
           </Field>
           <Field label="Last known region">
-            <input type="text" value={form.last_known_region} onChange={e => set('last_known_region')(e.target.value)} placeholder="e.g. Scotland, California, New South Wales…" maxLength={80} className={inputCls} />
+            <input type="text" value={identity.last_known_region} onChange={e => setIdentity(p => ({ ...p, last_known_region: e.target.value }))} placeholder="e.g. Scotland, California, New South Wales…" maxLength={80} className={inputCls} />
           </Field>
           <div className="sm:col-span-2">
             <Field label="Last known city">
-              <input type="text" value={form.last_known_city} onChange={e => set('last_known_city')(e.target.value)} placeholder="e.g. Glasgow, Los Angeles, Sydney…" maxLength={80} className={inputCls} />
+              <input type="text" value={identity.last_known_city} onChange={e => setIdentity(p => ({ ...p, last_known_city: e.target.value }))} placeholder="e.g. Glasgow, Los Angeles, Sydney…" maxLength={80} className={inputCls} />
             </Field>
           </div>
         </Section>
 
         <Section title="Photos">
           <div className="sm:col-span-2">
-            <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57', marginBottom: '10px', lineHeight: 1.6 }}>
-              Upload a photo for each position where possible. Clear, well-lit shots help with verification and make your entry stand out in the registry.
+            <p style={{ ...monoNote, marginBottom: '10px' }}>
+              Upload a photo for each position where possible. The <b>electronics cavity</b> photo is required — it lets us check wiring and any modifications that can&apos;t be seen from outside.
             </p>
             <div style={{ marginBottom: '16px', padding: '12px 14px', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '4px', background: 'rgba(255,255,255,0.02)' }}>
               <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: '#c8a96e', marginBottom: '8px' }}>
@@ -1411,28 +968,31 @@ export default function SubmitForm() {
                 <li>— Plain backgrounds help: a light-coloured carpet, rug, or clean towel laid flat is ideal</li>
                 <li>— Hold the camera directly above and perpendicular to the guitar — 90° minimises lens distortion</li>
                 <li>— Keep the guitar centred and fill the frame — avoid wide empty borders</li>
+                <li>— For the electronics cavity, remove the cover plate and show all the wiring clearly</li>
               </ul>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '8px' }}>
               {imageSlots.map((slot, i) => (
                 <div key={slot.position} style={{ position: 'relative' }}>
                   <label style={{ display: 'block', cursor: 'pointer' }}>
                     <div style={{
                       position: 'relative', aspectRatio: '3 / 4',
-                      border: `1px solid ${slot.file ? 'rgba(200,169,110,0.35)' : 'rgba(255,255,255,0.08)'}`,
+                      border: `1px solid ${slot.file ? 'rgba(200,169,110,0.35)' : slot.required ? 'rgba(184,85,58,0.5)' : 'rgba(255,255,255,0.08)'}`,
                       borderRadius: '4px', overflow: 'hidden', background: '#0d0d0d',
                       transition: 'border-color 0.15s',
                     }}>
                       {slot.preview ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img src={slot.preview} alt={slot.position} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '6px', padding: '8px', textAlign: 'center' }}>
                           <span style={{ color: '#2a2a2a', fontSize: '28px', lineHeight: 1 }}>+</span>
+                          {slot.hint && <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8px', color: '#3a3835', lineHeight: 1.4 }}>{slot.hint}</span>}
                         </div>
                       )}
                       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '5px 8px', background: 'linear-gradient(transparent, rgba(0,0,0,0.85))' }}>
                         <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8px', letterSpacing: '1px', textTransform: 'uppercase', color: slot.file ? '#c8a96e' : '#3a3835' }}>
-                          {slot.position}
+                          {slot.position}{slot.required && !slot.file ? ' *' : ''}
                         </span>
                       </div>
                     </div>
@@ -1453,8 +1013,8 @@ export default function SubmitForm() {
               ))}
             </div>
             {imageSlots.some(s => s.file) && (
-              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57', marginTop: '12px' }}>
-                {imageSlots.filter(s => s.file).length} of {IMAGE_SCHEMA.length} positions filled
+              <p style={{ ...monoNote, marginTop: '12px' }}>
+                {imageSlots.filter(s => s.file).length} of {imageSlots.length} positions filled
               </p>
             )}
           </div>
@@ -1462,13 +1022,13 @@ export default function SubmitForm() {
 
         <Section title="Your details">
           <Field label="Your email" required>
-            <input type="email" value={form.submitter_email} onChange={e => set('submitter_email')(e.target.value)} placeholder="never displayed publicly" required className={inputCls} />
+            <input type="email" value={identity.submitter_email} onChange={e => setIdentity(p => ({ ...p, submitter_email: e.target.value }))} placeholder="never displayed publicly" required className={inputCls} />
           </Field>
           <div className="sm:col-span-2">
             <Field label="Notes">
               <textarea
-                value={form.submission_notes}
-                onChange={e => set('submission_notes')(e.target.value)}
+                value={identity.submission_notes}
+                onChange={e => setIdentity(p => ({ ...p, submission_notes: e.target.value }))}
                 rows={4}
                 placeholder="Anything else you'd like to add — mods, history, provenance…"
                 className={inputCls + ' resize-none'}
@@ -1492,8 +1052,11 @@ export default function SubmitForm() {
         <GuidedCropModal
           file={cropTarget.file}
           position={imageSlots[cropTarget.index].position}
-          bodyShape={form.body_shape_analogue || undefined}
-          headstockStyle={form.headstock_style || undefined}
+          silhouetteUrl={silhouetteFor(silhouetteSet, imageSlots[cropTarget.index].position, {
+            bodyFamily: modelRow?.maverick_body_family,
+            headstockStyle: values['headstock_style'] || modelRow?.headstock_style,
+            model: identity.model,
+          })}
           onConfirm={handleCropConfirm}
           onCancel={() => setCropTarget(null)}
         />

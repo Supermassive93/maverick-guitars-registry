@@ -2,6 +2,8 @@ import { Suspense } from 'react'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import FormClosed from '@/components/FormClosed'
 import { IS_LOCAL_DEV } from '@/lib/config'
+import fs from 'fs'
+import path from 'path'
 import SubmitForm from './SubmitForm'
 
 export default async function SubmitPage() {
@@ -18,5 +20,11 @@ export default async function SubmitPage() {
     )
   }
 
-  return <Suspense><SubmitForm /></Suspense>
+  // Silhouette overlays are discovered from /public/silhouettes, so dropping a new file in is enough
+  let silhouetteFiles: string[] = []
+  try {
+    silhouetteFiles = fs.readdirSync(path.join(process.cwd(), 'public', 'silhouettes')).filter(f => f.endsWith('.svg'))
+  } catch {}
+
+  return <Suspense><SubmitForm silhouetteFiles={silhouetteFiles} /></Suspense>
 }

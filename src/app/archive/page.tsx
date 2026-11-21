@@ -104,7 +104,7 @@ export default async function ArchivePage() {
               color: '#c8a96e', marginBottom: '16px',
             }}>ORIGIN</h3>
             <p style={{ color: '#9e9b96', fontSize: '15px', lineHeight: 1.8, marginBottom: '16px' }}>
-              Maverick Guitar Company was a British guitar brand active from approximately 1998 to 2006. The guitars were designed in the UK and manufactured in Korea — a model common to many European brands of the era that allowed British design direction with Korean production quality and pricing.
+              Maverick Guitar Company was a British guitar brand, founded in 1999 and active until it announced it would cease trading in September 2007. The guitars were designed in the UK and manufactured in Korea — a model common to many European brands of the era that allowed British design direction with Korean production quality and pricing.
             </p>
             <p style={{ color: '#9e9b96', fontSize: '15px', lineHeight: 1.8 }}>
               The brand was built around a collaboration with Trev Wilkinson — one of the UK&apos;s most respected hardware designers, whose name appears on bridges, tuners, roller nuts and locking hardware found on instruments from manufacturers across Europe, Japan and Korea. The Wilkinson hardware DNA runs through the Maverick range at every level, from the Floyd Rose-licensed tremolos to the roller pots and Wilkinson-branded fixed bridges that appear across the catalogue.

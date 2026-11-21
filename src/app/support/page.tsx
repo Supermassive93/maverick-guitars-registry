@@ -138,7 +138,10 @@ export default async function SupportPage() {
             registering your guitar
           </Link>
           , sharing the registry with other Maverick owners, and contributing knowledge all help the archive grow.
-          Every submission is a contribution.
+          Every submission is a contribution. Got a question, or something to share?{' '}
+          <Link href="/contribute" style={{ color: '#c8a96e', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+            Contact the archive
+          </Link>.
         </p>
       </section>
     </>

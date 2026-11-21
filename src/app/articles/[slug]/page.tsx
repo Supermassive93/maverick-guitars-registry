@@ -21,7 +21,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: '48px 24px 96px' }}>
       <div style={{ marginBottom: '40px' }}>
         <Link
-          href="/archive#articles"
+          href="/community#articles"
           style={{
             fontFamily: 'var(--font-dm-mono)',
             fontSize: '11px',
@@ -32,7 +32,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           }}
           className="link-muted"
         >
-          ← Archive
+          ← Community
         </Link>
       </div>
 
@@ -114,7 +114,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         gap: '12px',
       }}>
         <Link
-          href="/archive#articles"
+          href="/community#articles"
           style={{
             fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
             letterSpacing: '1px', textTransform: 'uppercase',

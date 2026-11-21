@@ -7,7 +7,7 @@ import type { User } from '@supabase/supabase-js'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
 type NavItem = { href: string; label: string; description: string; badge?: string }
-type NavSection = { label: string; basePath: string; items: NavItem[] }
+type NavSection = { label: string; basePath: string; items: NavItem[]; matchPaths?: string[] }
 
 const sections: NavSection[] = [
   {
@@ -34,8 +34,15 @@ const sections: NavSection[] = [
       { href: '/archive#history', label: 'Company History', description: 'The Maverick story — origin to end' },
       { href: '/archive#source-archive', label: 'Source Archive', description: 'Catalogues, press and primary sources' },
       { href: '/archive#methodology', label: 'Methodology', description: 'How evidence and citations work' },
-      { href: '/archive/inferences', label: 'Recorded Inferences', description: 'Reasoned conclusions and the evidence behind them' },
-      { href: '/archive#articles', label: 'Articles & Testimonials', description: 'Community writing and interviews' },
+      { href: '/archive#inferences', label: 'Recorded Inferences', description: 'Reasoned conclusions and the evidence behind them' },
+    ],
+  },
+  {
+    label: 'Community',
+    basePath: '/community',
+    matchPaths: ['/articles'],
+    items: [
+      { href: '/community#articles', label: 'Articles & Testimonials', description: 'Community writing and interviews' },
     ],
   },
   {
@@ -94,7 +101,7 @@ export default function Nav() {
 
   function isActive(section: NavSection) {
     if (section.basePath === '/') return pathname === '/'
-    return pathname.startsWith(section.basePath)
+    return [section.basePath, ...(section.matchPaths ?? [])].some(p => pathname.startsWith(p))
   }
 
   const dropdownPanel: React.CSSProperties = {

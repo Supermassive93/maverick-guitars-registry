@@ -193,7 +193,7 @@ function citationToLines(c: ResolvedCitation, et: EvidenceType, ctx: EvidenceLin
     return [{
       key: c.id,
       label: c.inference?.title ?? 'Read the full reasoning',
-      href: `/archive/inferences#inference-${c.inference_id}`,
+      href: `/archive#inference-${c.inference_id}`,
       excerpt: null,
     }]
   }

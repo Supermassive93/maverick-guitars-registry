@@ -6,34 +6,9 @@ import { useSearchParams } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import GuidedCropModal from '@/components/GuidedCropModal'
 
-type ModelConfig = { prefix: string }
-const MODEL_CONFIG: Record<string, ModelConfig> = {
-  'F1':               { prefix: 'F1-' },
-  'F1HT':             { prefix: 'F1HT-' },
-  'F2':               { prefix: 'F2-' },
-  'F3':               { prefix: 'F3-' },
-  'F4':               { prefix: 'F4-' },
-  'FD-Tox':           { prefix: 'FD-' },
-  'X1':               { prefix: 'X1-' },
-  'XD-Tox':           { prefix: 'XD-' },
-  'X-Treme':          { prefix: 'XT-' },
-  'Species 1':        { prefix: 'SP1-' },
-  'Species 2':        { prefix: 'SP2-' },
-  'Species 3':        { prefix: 'SP3-' },
-  'Species 7 String': { prefix: 'SP7-' },
-  'Chaos 1':          { prefix: 'C1-' },
-  'Chaos 2':          { prefix: 'C2-' },
-  'SF-1':             { prefix: 'SF-' },
-  'Matrix':           { prefix: 'MAT-' },
-  'G1':               { prefix: 'G1-' },
-  'G2':               { prefix: 'G2-' },
-  'B1':               { prefix: 'B1-' },
-  'S4':               { prefix: 'S4-' },
-  'S5':               { prefix: 'S5-' },
-  'Z-47':             { prefix: 'Z47-' },
-  'JR4':              { prefix: 'JR4-' },
-  'Unknown':          { prefix: '' },
-}
+// Serial prefixes (model name -> prefix, e.g. "F1" -> "F-1") are loaded from model_specifications.serial_prefix
+// so the database is the single source of truth. A serial is <prefix> + 5 digits.
+type SerialPrefixes = Record<string, string>
 
 // Series ref IDs by model name
 const MODEL_SERIES_REF: Record<string, string> = {
@@ -471,9 +446,19 @@ export default function SubmitForm() {
   const [catalogueValues, setCatalogueValues] = useState<Partial<FormState>>({})
   const [prefilledFields, setPrefilledFields] = useState(new Set<keyof FormState>())
   const [bridgeLogoBrand, setBridgeLogoBrand] = useState('')
+  const [serialPrefixes, setSerialPrefixes] = useState<SerialPrefixes>({})
+  const [prefixesLoaded, setPrefixesLoaded] = useState(false)
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()
+    supabase.from('model_specifications').select('model, serial_prefix').then(({ data }) => {
+      const map: SerialPrefixes = {}
+      for (const row of (data ?? []) as { model: string; serial_prefix: string | null }[]) {
+        map[row.model] = row.serial_prefix && row.serial_prefix !== 'Unknown' ? row.serial_prefix : ''
+      }
+      setSerialPrefixes(map)
+      setPrefixesLoaded(true)
+    })
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
         if (data.user.email) {
@@ -489,14 +474,15 @@ export default function SubmitForm() {
   const claimApplied = useRef(false)
   useEffect(() => {
     if (gateState !== 'form' || claimApplied.current) return
-    if (!claimModel || !MODEL_CONFIG[claimModel]) return
+    if (!claimModel || !prefixesLoaded) return
+    if (claimModel !== 'Unknown' && !(claimModel in serialPrefixes)) return
     claimApplied.current = true
-    const prefix = MODEL_CONFIG[claimModel].prefix
+    const prefix = serialPrefixes[claimModel] ?? ''
     const digits = claimSerial.startsWith(prefix) ? claimSerial.slice(prefix.length) : claimSerial
     setForm(prev => ({ ...prev, model: claimModel, serial: claimSerial, serial_status: 'Complete' }))
     setSerialDigits(digits)
     if (claimModel !== 'Unknown') prefillFromModel(claimModel)
-  }, [gateState, claimModel, claimSerial])
+  }, [gateState, claimModel, claimSerial, prefixesLoaded, serialPrefixes])
 
   useEffect(() => {
     const hasAftermarket = Object.values(form).some(
@@ -716,7 +702,7 @@ export default function SubmitForm() {
   function handleSerialDigits(raw: string) {
     const digits = raw.replace(/\D/g, '').slice(0, 5)
     setSerialDigits(digits)
-    const prefix = MODEL_CONFIG[form.model]?.prefix ?? ''
+    const prefix = serialPrefixes[form.model] ?? ''
     if (digits.length === 0) {
       setForm(prev => ({ ...prev, serial: '', serial_status: '' }))
     } else {
@@ -1086,7 +1072,7 @@ export default function SubmitForm() {
                   color: form.model ? '#c8a96e' : '#3a3835',
                   letterSpacing: '1px', whiteSpace: 'nowrap', minWidth: '56px',
                 }}>
-                  {form.model ? (MODEL_CONFIG[form.model]?.prefix || '?-') : '—'}
+                  {form.model ? (serialPrefixes[form.model] || '?-') : '—'}
                 </span>
                 <input
                   type="text" inputMode="numeric"

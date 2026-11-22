@@ -16,6 +16,8 @@ export type FieldDef = {
   flaggable?: boolean
   /** Aftermarket replacements for this field are picked from / added to the shared parts list */
   part?: 'pickup' | 'bridge' | 'tuner'
+  /** Fixed by the model and can't change after the fact — shown as a read-only spec, never asked */
+  fixed?: boolean
   /** Only asked for bass models (e.g. EQ circuitry) */
   bassOnly?: boolean
   /** Only shown when the bridge is a tremolo */
@@ -31,15 +33,15 @@ export const SPEC_SECTIONS: SectionDef[] = [
   {
     id: 'body', title: 'Body',
     fields: [
-      { key: 'body_shape_analogue', label: 'Body design analogue', cat: 'BSA' },
-      { key: 'body_wood', label: 'Body wood', cat: 'BWD' },
-      { key: 'body_construction', label: 'Body construction', cat: 'BCN' },
-      { key: 'joint_type', label: 'Joint type', cat: 'JNT' },
-      { key: 'body_bookmatched', label: 'Bookmatched', cat: 'BMK' },
-      { key: 'body_carving', label: 'Body contouring', cat: 'BCV' },
-      { key: 'body_decorative_routing', label: 'Decorative body routing', cat: 'BDR' },
-      { key: 'body_binding', label: 'Body binding', cat: 'BBN' },
-      { key: 'binding_colour', label: 'Binding colour', cat: 'BNC' },
+      { key: 'body_shape_analogue', label: 'Body design analogue', cat: 'BSA', fixed: true },
+      { key: 'body_wood', label: 'Body wood', cat: 'BWD', fixed: true },
+      { key: 'body_construction', label: 'Body construction', cat: 'BCN', fixed: true },
+      { key: 'joint_type', label: 'Joint type', cat: 'JNT', fixed: true },
+      { key: 'body_bookmatched', label: 'Bookmatched', cat: 'BMK', fixed: true },
+      { key: 'body_carving', label: 'Body contouring', cat: 'BCV', fixed: true },
+      { key: 'body_decorative_routing', label: 'Decorative body routing', cat: 'BDR', fixed: true },
+      { key: 'body_binding', label: 'Body binding', cat: 'BBN', fixed: true },
+      { key: 'binding_colour', label: 'Binding colour', cat: 'BNC', fixed: true },
     ],
   },
   {

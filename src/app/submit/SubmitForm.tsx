@@ -6,6 +6,8 @@ import { useSearchParams } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import GuidedCropModal from '@/components/GuidedCropModal'
+import IdWizard from '@/components/IdWizard'
+import { MODEL_MAP, GENERATION_DB_ID, type WizardResult } from '@/lib/id-wizard-config'
 import SpecFieldRow, {
   inputCls, selectCls, isAftermarketName, OTHER_SENTINEL,
   type RefOption, type FieldStatus, type AftermarketPart, type PartChoice,
@@ -31,6 +33,7 @@ type ModelRow = {
 }
 
 type SpecMap = Record<string, string | null>
+type GenIndicator = { feature: string; feature_value: string; generation: string; model: string | null }
 type ImageSlot = { position: string; required: boolean; hint?: string; file: File | null; preview: string | null }
 
 type IdentityState = {
@@ -115,6 +118,9 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
   const silhouetteSet = useMemo(() => new Set(silhouetteFiles), [silhouetteFiles])
 
   const [gateState, setGateState] = useState<GateState>('checking')
+  // The identification wizard runs after sign-in / guest and before the form; a claim link (?model=) skips it
+  const [wizardDone, setWizardDone] = useState(false)
+  const [wizardGeneration, setWizardGeneration] = useState('')
   const [identity, setIdentity] = useState<IdentityState>(INITIAL_IDENTITY)
   const [serialDigits, setSerialDigits] = useState('')
 
@@ -124,7 +130,11 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
   const [refNames, setRefNames] = useState<Record<string, string>>({})
   const [parts, setParts] = useState<AftermarketPart[]>([])
   const [dataLoaded, setDataLoaded] = useState(false)
-  const [genOptions, setGenOptions] = useState<string[]>([])
+  const [indicators, setIndicators] = useState<GenIndicator[]>([])
+  const [touched, setTouched] = useState<Record<string, true>>({})
+  // Learned serial ranges for the chosen model, and its generations in production order
+  const [serialRanges, setSerialRanges] = useState<{ generation: string; serial_min: number; serial_max: number }[]>([])
+  const [genOrder, setGenOrder] = useState<string[]>([])
 
   // Spec answers
   const [values, setValues] = useState<Record<string, string>>({})
@@ -152,7 +162,9 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
         .order('display_order', { ascending: true, nullsFirst: false }),
       supabase.from('ref_values').select('id, category, display_name').eq('is_active', true).order('sort_order', { ascending: true }),
       untyped(supabase).from('aftermarket_parts').select('id, part_type, brand, model, pickup_type, status'),
-    ]).then(([m, r, p]) => {
+      supabase.from('generation_indicators').select('feature, feature_value, generation, model').eq('status', 'confirmed'),
+    ]).then(([m, r, p, gi]) => {
+      setIndicators((gi.data ?? []) as GenIndicator[])
       setModels((m.data ?? []) as ModelRow[])
       const byCat: Record<string, RefOption[]> = {}
       const names: Record<string, string> = {}
@@ -181,16 +193,7 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
     const supabase = createSupabaseBrowserClient()
     const request = ++specRequest.current
 
-    const { data: genRows } = await supabase.from('model_gen_specs').select('generation').eq('model_id', model.id)
-    const gens = Array.from(new Set(((genRows ?? []) as { generation: string }[]).map(g => g.generation)))
-    if (request !== specRequest.current) return
-    setGenOptions(gens)
-
-    let gen = generation
-    if (!gen && gens.length === 1) {
-      gen = gens[0]
-      setIdentity(prev => ({ ...prev, generation: gen }))
-    }
+    const gen = generation
 
     const [{ data: uni }, { data: genSpec }] = await Promise.all([
       supabase.from('model_specifications').select('*').eq('id', model.id).single(),
@@ -204,7 +207,9 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
     for (const def of ALL_SPEC_FIELDS) {
       const raw = (genSpec as Record<string, unknown> | null)?.[def.key] ?? (uni as Record<string, unknown> | null)?.[def.key] ?? null
       const text = raw == null ? null : String(raw)
-      merged[def.key] = text && refNames[text] === 'Unknown' ? null : text
+      // 'Unknown' is dropped from pre-fill so owners aren't handed it as an answer, but fixed fields are
+      // shown exactly as the spec sheet records them, Unknown included
+      merged[def.key] = text && refNames[text] === 'Unknown' && !def.fixed ? null : text
     }
 
     setValues(prev => {
@@ -232,13 +237,22 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
       ...prev, model: name, generation: '',
       serial: serial, serial_status: serial ? 'Complete' : '',
     }))
-    setSpec({}); setValues({}); setStatuses({}); setOthers({}); setPartChoices({}); setGenOptions([])
-    if (row) loadSpec(row, '', false)
-  }
-
-  function selectGeneration(gen: string) {
-    setIdentity(prev => ({ ...prev, generation: gen }))
-    if (modelRow) loadSpec(modelRow, gen, true)
+    setSpec({}); setValues({}); setStatuses({}); setOthers({}); setPartChoices({}); setTouched({})
+    setSerialRanges([]); setGenOrder([])
+    if (row) {
+      loadSpec(row, '', false)
+      const supabase = createSupabaseBrowserClient()
+      Promise.all([
+        untyped(supabase).from('serial_range_indicators').select('generation, serial_min, serial_max').eq('model', row.model),
+        supabase.from('model_gen_specs').select('generation, production_year_start').eq('model_id', row.id),
+      ]).then(([ranges, gens]) => {
+        setSerialRanges((ranges.data ?? []) as { generation: string; serial_min: number; serial_max: number }[])
+        const order = ((gens.data ?? []) as { generation: string; production_year_start: number | null }[])
+          .sort((a, b) => (a.production_year_start ?? 9999) - (b.production_year_start ?? 9999))
+          .map(g => g.generation)
+        setGenOrder(Array.from(new Set(order)))
+      })
+    }
   }
 
   // Claim link (?model=…&serial=…) from the registry grid
@@ -250,6 +264,19 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gateState, dataLoaded, claimModel, claimSerial, models])
+
+  function applyWizardResult(result: WizardResult) {
+    const wizardModel = MODEL_MAP.get(result.modelCode)
+    const row = models.find(m => m.model === wizardModel?.dbName) ?? null
+    const gen = GENERATION_DB_ID[result.generation]
+    if (wizardModel) selectModel(wizardModel.dbName)
+    if (gen) {
+      setWizardGeneration(gen)
+      setIdentity(prev => ({ ...prev, generation: gen }))
+      if (row) loadSpec(row, gen, false)
+    }
+    setWizardDone(true)
+  }
 
   function handleSerialDigits(raw: string) {
     const digits = raw.replace(/\D/g, '').slice(0, 5)
@@ -274,8 +301,15 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
     setValues(prev => ({ ...prev, [key]: v }))
   }
 
+  // Owner-edited fields (not model pre-fill) are what the live generation guess is based on
+  function setOwnerValue(key: string, v: string) {
+    setTouched(prev => ({ ...prev, [key]: true }))
+    setValue(key, v)
+  }
+
   function changeStatus(def: FieldDef, s: FieldStatus) {
     setStatuses(prev => ({ ...prev, [def.key]: s }))
+    setTouched(prev => ({ ...prev, [def.key]: true }))
     const aftermarket = optionsFor(def).filter(o => isAftermarketName(o.display_name))
     if (s === 'aftermarket') {
       setValue(def.key, aftermarket.length === 1 ? aftermarket[0].id : '')
@@ -285,6 +319,55 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
       setValue(def.key, '')
     }
   }
+
+  // ── Generation is worked out from the details given, never asked ─────────
+  // Each confirmed generation indicator that matches an answer is a vote for its generation; the
+  // generation is only set when one has strictly the most votes (a tie leaves it for review).
+  function voteGeneration(answers: Record<string, string>): string | null {
+    const norm = (t: string) => t.toLowerCase().replace(/[—–]/g, '-').replace(/\s*-\s*/g, '-').replace(/×/g, 'x').replace(/\s+/g, ' ').trim()
+    const tally: Record<string, number> = {}
+    for (const ind of indicators) {
+      if (ind.model && ind.model !== modelRow?.id && ind.model !== modelRow?.model) continue
+      const answer = answers[ind.feature]
+      if (!answer) continue
+      const candidates = [answer, refNames[answer]].filter(Boolean).map(norm)
+      if (candidates.includes(norm(ind.feature_value))) tally[ind.generation] = (tally[ind.generation] ?? 0) + 1
+    }
+    const ranked = Object.entries(tally).sort((a, b) => b[1] - a[1])
+    if (ranked.length === 0) return null
+    return ranked.length === 1 || ranked[0][1] > ranked[1][1] ? ranked[0][0] : null
+  }
+
+  const ownerAnswers: Record<string, string> = {}
+  for (const def of ALL_SPEC_FIELDS) {
+    if (touched[def.key] && values[def.key] && statuses[def.key] !== 'aftermarket') ownerAnswers[def.key] = values[def.key]
+  }
+  if (identity.serial_status) ownerAnswers['serial_status'] = identity.serial_status
+  // Learned serial ranges: a serial inside a generation's known range belongs to it, and a serial below the
+  // range of the model's first generation is also that generation (serials count up from 00001)
+  function generationFromSerial(): string | null {
+    if (identity.serial_status !== 'Complete' || serialDigits.length !== 5) return null
+    const n = Number(serialDigits)
+    const hit = serialRanges.find(r => n >= r.serial_min && n <= r.serial_max)
+    if (hit) return hit.generation
+    const first = serialRanges.find(r => r.generation === genOrder[0])
+    return first && n < first.serial_min ? first.generation : null
+  }
+
+  const indicatorGeneration = modelRow ? voteGeneration(ownerAnswers) : null
+  const serialGeneration = modelRow ? generationFromSerial() : null
+  const liveGeneration = indicatorGeneration ?? serialGeneration
+  const generationBasis = indicatorGeneration ? 'indicators' : serialGeneration ? 'serial range' : null
+
+  useEffect(() => {
+    if (!modelRow || !liveGeneration || liveGeneration === identity.generation) return
+    const t = setTimeout(() => {
+      setIdentity(prev => ({ ...prev, generation: liveGeneration }))
+      loadSpec(modelRow, liveGeneration, true)
+    }, 0)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveGeneration, modelRow, identity.generation])
 
   const isTremolo = (() => {
     const bridge = values['bridge_type']
@@ -413,6 +496,12 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
         const numeric = def.kind === 'number' || def.kind === 'count'
         const toColumn = (v: string) => (numeric ? (v === '' ? null : Number(v)) : v || null)
 
+        // Fixed by the model: stored as the model's value, never owner-edited so no flag
+        if (def.fixed) {
+          columns[def.key] = toColumn(spec[def.key] ?? '')
+          continue
+        }
+
         if (st === 'unsure') {
           columns[def.key] = null
           flags.push({ field: def.key, status: 'unknown', detail: null, evidence_eligible: false })
@@ -433,6 +522,15 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
         flags.push({ field: 'finish_type', status: 'aftermarket', detail: identity.custom_shop_colour || null, evidence_eligible: false })
       }
 
+      // Last pass over everything entered (including model pre-fill) if no generation was settled while filling in
+      const allAnswers: Record<string, string> = {}
+      for (const def of ALL_SPEC_FIELDS) {
+        if (visible(def) && values[def.key] && statusOf(def.key) !== 'aftermarket') allAnswers[def.key] = values[def.key]
+      }
+      if (identity.serial_status) allAnswers['serial_status'] = identity.serial_status
+      const finalIndicator = voteGeneration(allAnswers)
+      const finalGeneration = finalIndicator ?? serialGeneration
+
       const guitarId = crypto.randomUUID()
       const imageUrls = PHOTO_SLOTS.map(s => uploaded.get(s.position)).filter((u): u is string => Boolean(u))
       const notesPrefix = originality === 'Modified' ? '[Modified] ' : ''
@@ -445,7 +543,10 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
         serial: identity.serial || null,
         serial_status: identity.serial_status || null,
         series: modelRow.series,
-        generation: identity.generation || null,
+        generation: identity.generation || finalGeneration,
+        generation_basis: (identity.generation || finalGeneration)
+          ? (wizardGeneration && identity.generation === wizardGeneration ? 'wizard (logo)' : (generationBasis ?? (finalIndicator ? 'indicators' : 'serial range')))
+          : null,
         catalogue_year: null,
         finish_type: identity.finish_type || null,
         factory_colour: identity.finish_type === FINISH_FACTORY || !identity.finish_type ? identity.factory_colour || null : null,
@@ -512,7 +613,7 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
         otherText={others[key] ?? ''}
         part={partChoices[key] ?? null}
         parts={parts}
-        onValue={v => setValue(key, v)}
+        onValue={v => setOwnerValue(key, v)}
         onStatus={s => changeStatus(def, s)}
         onOther={v => setOthers(prev => ({ ...prev, [key]: v }))}
         onPart={p => setPartChoices(prev => ({ ...prev, [key]: p }))}
@@ -543,6 +644,10 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
         </p>
       </div>
     )
+  }
+
+  if (gateState === 'form' && !wizardDone && !claimModel) {
+    return <IdWizard onConfirmed={applyWizardResult} />
   }
 
   if (gateState === 'gate') {
@@ -707,7 +812,6 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
   }
 
   const monoNote: React.CSSProperties = { fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57', lineHeight: 1.6 }
-  const electronicsFields = SPEC_SECTIONS.find(s => s.id === 'electronics')!.fields
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
@@ -738,20 +842,6 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
               </select>
             </Field>
           </div>
-
-          {genOptions.length > 1 && (
-            <div className="sm:col-span-2">
-              <Field label="Generation">
-                <select value={identity.generation} onChange={e => selectGeneration(e.target.value)} className={selectCls}>
-                  <option value="">Not sure — use the model-wide spec only</option>
-                  {genOptions.map(g => <option key={g} value={g}>{refNames[g] ?? g}</option>)}
-                </select>
-                <p style={{ ...monoNote, marginTop: '5px' }}>
-                  Choosing a generation fills in the details that changed between generations (pickups, neck profile, hardware and so on).
-                </p>
-              </Field>
-            </div>
-          )}
 
           <div className="sm:col-span-2">
             <Field label="Serial number">
@@ -797,7 +887,7 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
               )}
               {!serialDigits && (
                 <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#3a3835', marginTop: '5px' }}>
-                  Leave blank if serial is missing or not visible — you can set the status below
+                  Don’t know the serial, or can’t read it? Leave this blank and carry on — the generation will be worked out from the details you enter instead.
                 </p>
               )}
             </Field>
@@ -806,7 +896,7 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
           {!serialDigits && (
             <Field label="Serial status">
               <select value={identity.serial_status} onChange={e => setIdentity(p => ({ ...p, serial_status: e.target.value }))} className={selectCls}>
-                <option value="">Unknown / not entered</option>
+                <option value="">Serial unknown / not entered</option>
                 {['Prefix only', 'None Visible', 'Paper label', 'Hand label'].map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </Field>
@@ -824,6 +914,27 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
               </Field>
             </div>
           )}
+
+          {/* Generation is assigned by the system from the serial and the details given — it is not a choice */}
+          <div className="sm:col-span-2">
+            <div style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', padding: '10px 14px', display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', color: '#5c5a57' }}>Generation</span>
+              {(liveGeneration ?? identity.generation) ? (
+                <>
+                  <span style={{ fontFamily: 'var(--font-bebas)', fontSize: '22px', letterSpacing: '1px', color: '#c8a96e' }}>
+                    {refNames[(liveGeneration ?? identity.generation)] ?? (liveGeneration ?? identity.generation)}
+                  </span>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57' }}>
+                    {generationBasis === 'serial range' ? 'assigned from the serial number range' : 'assigned from the details you have given'}
+                  </span>
+                </>
+              ) : (
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#5c5a57' }}>
+                  Assigned automatically from your serial number and the details you enter below
+                </span>
+              )}
+            </div>
+          </div>
 
           <div>
             <label className="block text-sm text-zinc-400 mb-1">Handed</label>
@@ -844,24 +955,6 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
             </div>
           </div>
         </Section>
-
-        {/* Originality banner — derived from the flags below */}
-        {identity.model && (
-          <div style={{
-            border: `1px solid ${originality === 'Modified' ? 'rgba(184,85,58,0.5)' : 'rgba(200,169,110,0.3)'}`,
-            background: originality === 'Modified' ? 'rgba(184,85,58,0.06)' : 'rgba(200,169,110,0.04)',
-            padding: '14px 18px',
-          }}>
-            <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', color: originality === 'Modified' ? '#d9775a' : '#c8a96e', marginBottom: '6px' }}>
-              {originality === 'Modified' ? 'Will be recorded as: Modified' : 'Will be recorded as: Factory original (pending review)'}
-            </p>
-            <p style={{ ...monoNote }}>
-              Every spec below is pre-filled from the {identity.model} spec sheet. Leave a field as <b>Original</b> if it matches your guitar,
-              change the value if your original differs, or mark it <b>Aftermarket</b> if the part has been replaced.
-              {modifiedFields.length > 0 && ` Aftermarket: ${modifiedFields.map(k => (ALL_SPEC_FIELDS.find(f => f.key === k)?.label ?? 'Finish')).join(', ')}.`}
-            </p>
-          </div>
-        )}
 
         <Section title="Finish & colour">
           <Field label="Finish type">
@@ -909,11 +1002,28 @@ export default function SubmitForm({ silhouetteFiles }: { silhouetteFiles: strin
             <Section
               key={section.id}
               title={section.title}
-              note={section.id === 'body' ? 'Pre-filled from the spec sheet. Only change what is different on your guitar.' : undefined}
+              note={section.id === 'body' ? 'These are set by the model, so there is nothing to fill in.' : undefined}
             >
-              {section.id === 'electronics'
-                ? electronicsFields.map(def => renderField(def))
-                : fields.map(def => renderField(def))}
+              {fields.some(f => f.fixed) && (
+                <div className="sm:col-span-2">
+                  <div style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', padding: '12px 16px' }}>
+                    <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', color: '#5c5a57', marginBottom: '10px' }}>
+                      {identity.model ? `${identity.model} — fixed by the model` : 'Fixed by the model — select a model above'}
+                    </p>
+                    <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px 24px', margin: 0 }}>
+                      {fields.filter(f => f.fixed).map(f => (
+                        <div key={f.key}>
+                          <dt style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', color: '#5c5a57', letterSpacing: '1px', textTransform: 'uppercase' }}>{f.label}</dt>
+                          <dd style={{ margin: 0, fontSize: '14px', color: spec[f.key] ? '#f0ede8' : '#3a3835' }}>
+                            {spec[f.key] ? (refNames[spec[f.key]!] ?? spec[f.key]) : '—'}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                </div>
+              )}
+              {fields.filter(f => !f.fixed).map(def => renderField(def))}
             </Section>
           )
         })}

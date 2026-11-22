@@ -62,12 +62,6 @@ export default function SpecFieldRow({
   const shownOpts = status === 'aftermarket' && aftermarketOpts.length > 0 ? aftermarketOpts : factoryOpts
   const usesPartPicker = status === 'aftermarket' && !!def.part
 
-  const statuses: { id: FieldStatus; text: string }[] = [
-    { id: 'original', text: 'Original' },
-    ...(def.flaggable ? [{ id: 'aftermarket' as const, text: 'Aftermarket' }] : []),
-    { id: 'unsure', text: 'Not sure' },
-  ]
-
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
@@ -79,30 +73,22 @@ export default function SpecFieldRow({
             </span>
           )}
         </label>
-        <div style={{ display: 'inline-flex', border: '1px solid rgba(255,255,255,0.1)' }}>
-          {statuses.map(s => {
-            const active = status === s.id
-            const isMod = s.id === 'aftermarket'
-            return (
-              <button
-                key={s.id} type="button" onClick={() => onStatus(s.id)}
-                style={{
-                  padding: '2px 8px', border: 'none', cursor: 'pointer',
-                  fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase',
-                  background: active ? (isMod ? '#b8553a' : s.id === 'unsure' ? '#3a3835' : '#c8a96e') : 'transparent',
-                  color: active ? (s.id === 'unsure' ? '#f0ede8' : '#000') : '#5c5a57',
-                }}
-              >{s.text}</button>
-            )
-          })}
-        </div>
+        {def.flaggable && (
+          <button
+            type="button"
+            onClick={() => onStatus(status === 'aftermarket' ? 'original' : 'aftermarket')}
+            style={{
+              padding: '2px 8px', cursor: 'pointer',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '1px', textTransform: 'uppercase',
+              border: `1px solid ${status === 'aftermarket' ? '#b8553a' : 'rgba(255,255,255,0.1)'}`,
+              background: status === 'aftermarket' ? '#b8553a' : 'transparent',
+              color: status === 'aftermarket' ? '#000' : '#5c5a57',
+            }}
+          >Aftermarket</button>
+        )}
       </div>
 
-      {status === 'unsure' ? (
-        <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: '#3a3835', padding: '8px 0' }}>
-          Will be recorded as unknown.
-        </p>
-      ) : usesPartPicker ? (
+      {usesPartPicker ? (
         <>
           {aftermarketOpts.length > 1 && (
             <select value={value} onChange={e => onValue(e.target.value)} className={selectCls} style={{ marginBottom: '6px' }}>

@@ -193,12 +193,12 @@ export const QUESTIONS: WizardQuestion[] = [
   ]),
 
   // Shared ending
-  q('Q_GEN_LOGO', 'Look at the Maverick logo on your headstock. Which matches yours?', [
-    { ...o('OPT_GEN_LOGO_NO_TM', 'Logo with no trademark symbol', G('GEN_0_5'), true), image: '/wizard/tiles/OPT_GEN_LOGO_NO_TM.svg' },
-    { ...o('OPT_GEN_LOGO_STYLISED_TM', 'Logo with stylised ™', G('GEN_1'), true), image: '/wizard/tiles/OPT_GEN_LOGO_STYLISED_TM.svg' },
-    { ...o('OPT_GEN_LOGO_STANDARD_TM', 'Logo with standard ™', G('GEN_2'), true), image: '/wizard/tiles/OPT_GEN_LOGO_STANDARD_TM.svg' },
+  q('Q_GEN_LOGO', 'Look at the Maverick logo on your headstock. Which trademark matches yours?', [
+    { ...o('OPT_GEN_LOGO_NO_TM', 'No trademark symbol', G('GEN_0_5'), true), image: '/wizard/tiles/OPT_GEN_LOGO_NO_TM.png' },
+    { ...o('OPT_GEN_LOGO_STYLISED_TM', 'Stylised trademark symbol', G('GEN_1'), true), image: '/wizard/tiles/OPT_GEN_LOGO_STYLISED_TM.png' },
+    { ...o('OPT_GEN_LOGO_STANDARD_TM', 'Standard trademark symbol', G('GEN_2'), true), image: '/wizard/tiles/OPT_GEN_LOGO_STANDARD_TM.png' },
     { ...o('OPT_GEN_LOGO_CANT_TELL', "Can't tell (logo worn, refinished or missing)", G('GEN_UNKNOWN')), glyph: '?' },
-  ], 'Look closely at the area next to the logo for a ™ symbol.'),
+  ], 'Look closely at the area next to the logo for a small trademark symbol.'),
 ]
 
 const QUESTION_MAP = new Map(QUESTIONS.map(x => [x.id, x]))

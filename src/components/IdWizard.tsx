@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { DECK_CSS } from '@/lib/deck-css'
 import {
-  GENERATION_NAMES, MODELS, withArticle, MODEL_MAP, WIZARD_VERSION, getQuestion, resolve,
+  GENERATION_NAMES, GEN_QUESTION, MODELS, withArticle, MODEL_MAP, WIZARD_VERSION, getQuestion, resolve,
   type PathStep, type WizardResult,
 } from '@/lib/id-wizard-config'
 
@@ -46,25 +46,26 @@ function DeckCard({ code, name, tile, index, selected, onClick }: {
   )
 }
 
-function Tile({ label, image, glyph, selected, zoomable, onClick }: {
-  label: string; image?: string; glyph?: string; selected?: boolean; zoomable?: boolean; onClick: () => void
+function Tile({ label, image, glyph, selected, zoomable, large, onClick }: {
+  label: string; image?: string; glyph?: string; selected?: boolean; zoomable?: boolean; large?: boolean; onClick: () => void
 }) {
   const [missing, setMissing] = useState(!image)
   const [zoom, setZoom] = useState(false)
   return (
     <>
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', height: '100%' }}>
         <button
           type="button" onClick={onClick}
           style={{
-            width: '100%', textAlign: 'left', cursor: 'pointer', padding: 0,
+            // Fill the grid cell and stretch the label, so tiles in a row share the same outer box
+            width: '100%', height: '100%', display: 'flex', flexDirection: 'column', textAlign: 'left', cursor: 'pointer', padding: 0,
             background: '#161616', color: '#f0ede8',
             border: `1px solid ${selected ? '#c8a96e' : 'rgba(255,255,255,0.08)'}`,
           }}
         >
           <div style={{ aspectRatio: '4 / 3', background: '#0f0f0f', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
             {glyph ? (
-              <span style={{ fontFamily: 'var(--font-bebas)', fontSize: '96px', color: '#c8a96e', lineHeight: 1 }}>{glyph}</span>
+              <span style={{ fontFamily: 'var(--font-bebas)', fontSize: large ? '160px' : '96px', color: '#c8a96e', lineHeight: 1 }}>{glyph}</span>
             ) : !missing && image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={image} alt={label} onError={() => setMissing(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -74,7 +75,7 @@ function Tile({ label, image, glyph, selected, zoomable, onClick }: {
               </span>
             )}
           </div>
-          <div style={{ padding: '12px 14px', fontSize: '14px', lineHeight: 1.4 }}>{label}</div>
+          <div style={{ padding: large ? '16px 20px' : '12px 14px', fontSize: large ? '16px' : '14px', lineHeight: 1.4, flex: 1 }}>{label}</div>
         </button>
         {zoomable && !missing && (
           <button type="button" aria-label={`Enlarge ${label}`} onClick={() => setZoom(true)}
@@ -166,6 +167,7 @@ export default function IdWizard({ onConfirmed }: { onConfirmed: (result: Wizard
 
   const { question, step } = state
   const picked = path[step - 1]?.choice
+  const isLogoQuestion = question.id === GEN_QUESTION
   const choose = (choice: string) => update([...path, { questionId: question.id, choice }])
 
   return wrap(
@@ -203,9 +205,12 @@ export default function IdWizard({ onConfirmed }: { onConfirmed: (result: Wizard
           })}
         </>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '12px' }}>
+        // The logo question gets four large tiles in a 2 × 2 square so the symbols are easy to compare
+        <div style={isLogoQuestion
+          ? { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px', maxWidth: '880px' }
+          : { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '12px' }}>
           {question.options.map(opt => (
-            <Tile key={opt.id} label={opt.label} image={opt.image ?? `/wizard/tiles/${opt.id}.webp`} glyph={opt.glyph} zoomable={opt.zoomable} selected={picked === opt.id} onClick={() => choose(opt.id)} />
+            <Tile key={opt.id} label={opt.label} image={opt.image ?? `/wizard/tiles/${opt.id}.webp`} glyph={opt.glyph} zoomable={opt.zoomable} large={isLogoQuestion} selected={picked === opt.id} onClick={() => choose(opt.id)} />
           ))}
         </div>
       )}

@@ -79,7 +79,7 @@ function Tile({ label, image, glyph, selected, zoomable, large, onClick }: {
         </button>
         {zoomable && !missing && (
           <button type="button" aria-label={`Enlarge ${label}`} onClick={() => setZoom(true)}
-            style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.7)', color: '#c8a96e', border: 'none', padding: '4px 8px', cursor: 'pointer', ...mono, fontSize: '11px' }}>
+            style={{ position: 'absolute', top: '6px', left: '6px', background: 'rgba(0,0,0,0.7)', color: '#c8a96e', border: 'none', padding: '4px 8px', cursor: 'pointer', ...mono, fontSize: '11px' }}>
             ⤢
           </button>
         )}

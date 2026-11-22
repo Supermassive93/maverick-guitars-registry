@@ -108,10 +108,10 @@ export const QUESTIONS: WizardQuestion[] = [
   { id: 'Q_SELECT_MODEL', prompt: 'Select your model.', inputType: 'model-picker', options: [] }, // options = every model; next is always Q_GEN_LOGO
 
   q('Q_TUNERS', 'Look at your headstock. How many tuners does your Maverick have?', [
-    o('OPT_TUNERS_4', '4 tuners', Q('Q_BODY_4STR')),
-    o('OPT_TUNERS_5', '5 tuners', M('MDL_S5')),
-    o('OPT_TUNERS_6', '6 tuners', Q('Q_BODY_6STR')),
-    o('OPT_TUNERS_7', '7 tuners', M('MDL_SPECIES7')),
+    { ...o('OPT_TUNERS_4', '4 tuners', Q('Q_BODY_4STR')), image: '/wizard/tiles/OPT_TUNERS_4.png' },
+    { ...o('OPT_TUNERS_5', '5 tuners', M('MDL_S5')), image: '/wizard/tiles/OPT_TUNERS_5.png' },
+    { ...o('OPT_TUNERS_6', '6 tuners', Q('Q_BODY_6STR')), image: '/wizard/tiles/OPT_TUNERS_6.png' },
+    { ...o('OPT_TUNERS_7', '7 tuners', M('MDL_SPECIES7')), image: '/wizard/tiles/OPT_TUNERS_7.png' },
   ]),
 
   // Basses

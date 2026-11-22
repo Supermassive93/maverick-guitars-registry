@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { DECK_CSS } from '@/lib/deck-css'
 import {
-  GENERATION_NAMES, GEN_QUESTION, MODELS, withArticle, MODEL_MAP, WIZARD_VERSION, getQuestion, resolve,
+  GENERATION_NAMES, MODELS, withArticle, MODEL_MAP, WIZARD_VERSION, getQuestion, resolve,
   type PathStep, type WizardResult,
 } from '@/lib/id-wizard-config'
 
@@ -65,7 +65,7 @@ function Tile({ label, image, glyph, selected, zoomable, large, onClick }: {
         >
           <div style={{ aspectRatio: '4 / 3', background: '#0f0f0f', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
             {glyph ? (
-              <span style={{ fontFamily: 'var(--font-bebas)', fontSize: large ? '160px' : '96px', color: '#c8a96e', lineHeight: 1 }}>{glyph}</span>
+              <span style={{ fontFamily: 'var(--font-bebas)', fontSize: large ? '120px' : '96px', color: '#c8a96e', lineHeight: 1 }}>{glyph}</span>
             ) : !missing && image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={image} alt={label} onError={() => setMissing(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -75,7 +75,7 @@ function Tile({ label, image, glyph, selected, zoomable, large, onClick }: {
               </span>
             )}
           </div>
-          <div style={{ padding: large ? '16px 20px' : '12px 14px', fontSize: large ? '16px' : '14px', lineHeight: 1.4, flex: 1 }}>{label}</div>
+          <div style={{ padding: large ? '14px 16px' : '12px 14px', fontSize: large ? '15px' : '14px', lineHeight: 1.4, flex: 1 }}>{label}</div>
         </button>
         {zoomable && !missing && (
           <button type="button" aria-label={`Enlarge ${label}`} onClick={() => setZoom(true)}
@@ -167,7 +167,6 @@ export default function IdWizard({ onConfirmed }: { onConfirmed: (result: Wizard
 
   const { question, step } = state
   const picked = path[step - 1]?.choice
-  const isLogoQuestion = question.id === GEN_QUESTION
   const choose = (choice: string) => update([...path, { questionId: question.id, choice }])
 
   return wrap(
@@ -205,12 +204,12 @@ export default function IdWizard({ onConfirmed }: { onConfirmed: (result: Wizard
           })}
         </>
       ) : (
-        // The logo question gets four large tiles in a 2 × 2 square so the symbols are easy to compare
-        <div style={isLogoQuestion
-          ? { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px', maxWidth: '880px' }
-          : { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '12px' }}>
+        // Every tile question uses the same fixed-size tiles (3 per row at most), centred on the page so a short row never sits to one side
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', maxWidth: '880px', margin: '0 auto' }}>
           {question.options.map(opt => (
-            <Tile key={opt.id} label={opt.label} image={opt.image ?? `/wizard/tiles/${opt.id}.webp`} glyph={opt.glyph} zoomable={opt.zoomable} large={isLogoQuestion} selected={picked === opt.id} onClick={() => choose(opt.id)} />
+            <div key={opt.id} style={{ flex: '0 0 282px', width: '282px', maxWidth: '100%' }}>
+              <Tile label={opt.label} image={opt.image ?? `/wizard/tiles/${opt.id}.webp`} glyph={opt.glyph} zoomable={opt.zoomable} large selected={picked === opt.id} onClick={() => choose(opt.id)} />
+            </div>
           ))}
         </div>
       )}

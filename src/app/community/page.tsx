@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 import type { Article } from '@/lib/types'
 import Link from 'next/link'
 import { monoLabel } from '@/lib/text-styles'
+import FormClosed from '@/components/FormClosed'
+import { IS_LOCAL_DEV } from '@/lib/config'
 
 export const metadata: Metadata = {
   title: 'Community — Maverick Guitars Registry',
@@ -11,6 +13,17 @@ export const metadata: Metadata = {
 
 export default async function CommunityPage() {
   const supabase = await createSupabaseServerClient()
+
+  const { data: settingsRaw } = await supabase.from('site_settings').select('community_open').maybeSingle()
+  const settings = settingsRaw as { community_open: boolean } | null
+  if (!IS_LOCAL_DEV && settings && !settings.community_open) {
+    return (
+      <FormClosed
+        title="IN DEVELOPMENT"
+        message="Articles and testimonials from the Maverick community are being prepared — coming soon. Check back shortly."
+      />
+    )
+  }
 
   const { data: articlesRaw } = await supabase
     .from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false })

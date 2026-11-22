@@ -1741,6 +1741,7 @@ export type Database = {
       }
       site_settings: {
         Row: {
+          community_open: boolean
           contributions_open: boolean
           id: boolean
           registration_open: boolean
@@ -1750,6 +1751,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          community_open?: boolean
           contributions_open?: boolean
           id?: boolean
           registration_open?: boolean
@@ -1759,6 +1761,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          community_open?: boolean
           contributions_open?: boolean
           id?: boolean
           registration_open?: boolean

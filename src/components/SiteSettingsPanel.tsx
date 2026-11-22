@@ -8,6 +8,7 @@ type Settings = {
   registration_open: boolean
   contributions_open: boolean
   support_open: boolean
+  community_open: boolean
 }
 
 const FEATURES: { key: keyof Settings; label: string; description: string; superOnly?: boolean }[] = [
@@ -15,6 +16,7 @@ const FEATURES: { key: keyof Settings; label: string; description: string; super
   { key: 'registration_open', label: 'New registrations',   description: 'Allow new users to create accounts' },
   { key: 'contributions_open', label: 'Contributions form', description: 'Allow users to submit archive material' },
   { key: 'support_open', label: 'Support Us page', description: 'Show the live page instead of an In Development placeholder', superOnly: true },
+  { key: 'community_open', label: 'Articles & Testimonials', description: 'Show the live Community page and articles instead of an In Development placeholder', superOnly: true },
 ]
 
 export default function SiteSettingsPanel({ initial, isSuperAdmin = false }: { initial: Settings; isSuperAdmin?: boolean }) {

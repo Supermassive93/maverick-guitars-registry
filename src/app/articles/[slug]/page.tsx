@@ -2,10 +2,23 @@ import { notFound } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { Article } from '@/lib/types'
 import Link from 'next/link'
+import FormClosed from '@/components/FormClosed'
+import { IS_LOCAL_DEV } from '@/lib/config'
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const supabase = await createSupabaseServerClient()
+
+  const { data: settingsRaw } = await supabase.from('site_settings').select('community_open').maybeSingle()
+  const settings = settingsRaw as { community_open: boolean } | null
+  if (!IS_LOCAL_DEV && settings && !settings.community_open) {
+    return (
+      <FormClosed
+        title="IN DEVELOPMENT"
+        message="Articles and testimonials from the Maverick community are being prepared — coming soon. Check back shortly."
+      />
+    )
+  }
 
   const { data: articleRaw } = await supabase
     .from('articles')

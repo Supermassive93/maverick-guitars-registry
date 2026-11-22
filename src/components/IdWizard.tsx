@@ -18,7 +18,7 @@ const WIDE_TILES: Record<string, number> = { MDL_JR4: 470 }
 // Order the models appear in the picker (anything not listed follows in config order). JR4 is last as its tile is wider.
 const PICKER_ORDER = [
   'MDL_F1', 'MDL_F2', 'MDL_F3', 'MDL_F4', 'MDL_SF1', 'MDL_SF3', 'MDL_MATRIX', 'MDL_FDTOX',
-  'MDL_X1', 'MDL_XTREME', 'MDL_XDTOX', 'MDL_CHAOS1', 'MDL_CHAOS2', 'MDL_CHAOS2_HT',
+  'MDL_X1', 'MDL_XTREME', 'MDL_XDTOX', 'MDL_CHAOS1', 'MDL_CHAOS2',
   'MDL_SPECIES1', 'MDL_SPECIES2', 'MDL_SPECIES3', 'MDL_SPECIES7', 'MDL_G1', 'MDL_G2', 'MDL_JR4',
 ]
 const pickerRank = (code: string) => { const i = PICKER_ORDER.indexOf(code); return i === -1 ? 999 : i }

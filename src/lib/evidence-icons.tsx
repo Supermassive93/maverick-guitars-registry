@@ -11,6 +11,7 @@ import {
   IconCamera,
   IconBuildingBank,
   IconPhotoShield,
+  IconUsersGroup,
   type Icon,
 } from '@tabler/icons-react'
 
@@ -28,6 +29,7 @@ const ICONS: Record<string, Icon> = {
   camera: IconCamera,
   'building-bank': IconBuildingBank,
   'photo-shield': IconPhotoShield,
+  'users-group': IconUsersGroup,
 }
 
 export function EvidenceIcon({ name, size = 11 }: { name: string; size?: number }) {

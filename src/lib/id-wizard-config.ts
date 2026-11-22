@@ -56,7 +56,6 @@ export const MODELS: WizardModel[] = [
   { code: 'MDL_XTREME', dbName: 'X-Treme', displayName: 'X-Treme', family: 'guitar', body: 'X', tile: 'x-treme' },
   { code: 'MDL_X1', dbName: 'X1', displayName: 'X1', family: 'guitar', body: 'X', tile: 'x1' },
   { code: 'MDL_CHAOS2', dbName: 'Chaos 2', displayName: 'Chaos 2', family: 'guitar', body: 'X', tile: 'chaos-2' },
-  { code: 'MDL_CHAOS2_HT', dbName: 'Chaos 2 HT', displayName: 'Chaos 2 HT', family: 'guitar', body: 'X', tile: 'chaos-2-ht' },
   { code: 'MDL_SPECIES2', dbName: 'Species 2', displayName: 'Species 2', family: 'guitar', body: 'X', tile: 'species-2' },
   { code: 'MDL_G1', dbName: 'G1', displayName: 'G1', family: 'guitar', body: 'G', tile: 'g1' },
   { code: 'MDL_G2', dbName: 'G2', displayName: 'G2', family: 'guitar', body: 'G', tile: 'g2' },
@@ -176,10 +175,9 @@ export const QUESTIONS: WizardQuestion[] = [
     o('OPT_ROUTING_X_YES', 'Yes, decorative routing', M('MDL_XTREME')),
     o('OPT_ROUTING_X_NO', 'No decorative routing', M('MDL_X1')),
   ]),
-  q('Q_BRIDGE_X', LOOK_BRIDGE, [
-    o('OPT_BRIDGE_X_FLOYD', FLOYD, M('MDL_CHAOS2')),
-    o('OPT_BRIDGE_X_WILKINSON', WILK, M('MDL_CHAOS2_HT')),
-    o('OPT_BRIDGE_X_TOM_THRU', TOM, M('MDL_SPECIES2')),
+  q('Q_BRIDGE_X', "Look at your Maverick's bridge. Does it have a through-body Tune-o-Matic style bridge?", [
+    o('OPT_BRIDGE_X_TOM_THRU', 'Yes — Tune-o-Matic style bridge, strings through the body', M('MDL_SPECIES2')),
+    o('OPT_BRIDGE_X_OTHER', 'No — another style (Floyd Rose or hardtail)', M('MDL_CHAOS2')),
   ]),
 
   // G body

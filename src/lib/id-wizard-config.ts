@@ -102,8 +102,8 @@ const TOM = 'Tune-o-Matic bridge, strings through the body'
 
 export const QUESTIONS: WizardQuestion[] = [
   q('Q_KNOW_MODEL', 'Do you know which Maverick model you have?', [
-    o('OPT_KNOW_MODEL_YES', 'Yes, I know my model', Q('Q_SELECT_MODEL')),
-    o('OPT_KNOW_MODEL_NO', 'No, help me identify it', Q('Q_TUNERS')),
+    { ...o('OPT_KNOW_MODEL_YES', 'Yes, I know my model', Q('Q_SELECT_MODEL')), image: '/wizard/tiles/OPT_KNOW_MODEL_YES.png' },
+    { ...o('OPT_KNOW_MODEL_NO', 'No, help me identify it', Q('Q_TUNERS')), image: '/wizard/tiles/OPT_KNOW_MODEL_NO.png' },
   ]),
   { id: 'Q_SELECT_MODEL', prompt: 'Select your model.', inputType: 'model-picker', options: [] }, // options = every model; next is always Q_GEN_LOGO
 

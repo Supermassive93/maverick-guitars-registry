@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { DECK_CSS } from '@/lib/deck-css'
 import {
   GENERATION_NAMES, MODELS, withArticle, MODEL_MAP, WIZARD_VERSION, getQuestion, resolve,
   type PathStep, type WizardResult,
@@ -8,6 +9,43 @@ import {
 
 const STORAGE_KEY = 'maverick-id-wizard-path'
 const mono = { fontFamily: 'var(--font-dm-mono)' } as const
+
+// Same tile size as the models page (the JR4 picture is wider, so its tile is too)
+const TILE_WIDTH = 280
+const TILE_HEIGHT = 677
+const WIDE_TILES: Record<string, number> = { MDL_JR4: 470 }
+
+// Order the models appear in the picker (anything not listed follows in config order). JR4 is last as its tile is wider.
+const PICKER_ORDER = [
+  'MDL_F1', 'MDL_F2', 'MDL_F3', 'MDL_F4', 'MDL_SF1', 'MDL_SF3', 'MDL_MATRIX', 'MDL_FDTOX',
+  'MDL_X1', 'MDL_XTREME', 'MDL_XDTOX', 'MDL_CHAOS1', 'MDL_CHAOS2', 'MDL_CHAOS2_HT',
+  'MDL_SPECIES1', 'MDL_SPECIES2', 'MDL_SPECIES3', 'MDL_SPECIES7', 'MDL_G1', 'MDL_G2', 'MDL_JR4',
+]
+const pickerRank = (code: string) => { const i = PICKER_ORDER.indexOf(code); return i === -1 ? 999 : i }
+
+// One card in the fanned deck. Shares the deck layout and hover riffle with the models page.
+function DeckCard({ code, name, tile, index, selected, onClick }: {
+  code: string; name: string; tile: string; index: number; selected: boolean; onClick: () => void
+}) {
+  const width = WIDE_TILES[code] ?? TILE_WIDTH
+  return (
+    <button
+      type="button" onClick={onClick} className="deck-card" data-i={index} aria-label={name}
+      style={{
+        // The deck overlap is worked out from --card-w, so a wide tile uses the standard width there (otherwise it
+        // would tuck far back over its neighbours); the row gets matching right padding for the extra width
+        ['--card-w' as string]: `${TILE_WIDTH}px`,
+        flex: `0 0 ${width}px`, width: `${width}px`, height: `${TILE_HEIGHT}px`,
+        boxSizing: 'border-box', overflow: 'hidden', cursor: 'pointer', textAlign: 'left',
+        padding: '2rem', border: 'none',
+        outline: selected ? '2px solid #c8a96e' : 'none', outlineOffset: '-2px',
+        background: `linear-gradient(to bottom, rgba(14,14,14,0.88) 0%, rgba(14,14,14,0) 24%), url(/model-tiles/${tile}.jpg) center / cover no-repeat, #161616`,
+      }}
+    >
+      <span style={{ fontFamily: 'var(--font-bebas)', fontSize: '52px', color: '#c8a96e', letterSpacing: '3px', lineHeight: 1 }}>{name}</span>
+    </button>
+  )
+}
 
 function Tile({ label, image, selected, zoomable, onClick }: {
   label: string; image?: string; selected?: boolean; zoomable?: boolean; onClick: () => void
@@ -87,8 +125,9 @@ export default function IdWizard({ onConfirmed }: { onConfirmed: (result: Wizard
     </div>
   )
 
+  const wide = state.status === 'question' && state.question.inputType === 'model-picker'
   const wrap = (children: React.ReactNode) => (
-    <div style={{ maxWidth: '960px', margin: '0 auto', padding: '48px 24px 96px' }}>{nav}{children}</div>
+    <div style={{ maxWidth: wide ? '1600px' : '960px', margin: '0 auto', padding: '48px 24px 96px' }}>{nav}{children}</div>
   )
 
   if (state.status === 'result') {
@@ -156,18 +195,28 @@ export default function IdWizard({ onConfirmed }: { onConfirmed: (result: Wizard
       </p>
 
       {question.inputType === 'model-picker' ? (
-        (['bass', 'guitar'] as const).map(family => (
-          <div key={family} style={{ marginBottom: '32px' }}>
-            <p style={{ ...mono, fontSize: '11px', letterSpacing: '2px', color: '#c8a96e', textTransform: 'uppercase', marginBottom: '12px' }}>
-              {family === 'bass' ? 'Basses' : 'Guitars'}
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '12px' }}>
-              {MODELS.filter(m => m.family === family).map(m => (
-                <Tile key={m.code} label={m.displayName} image={`/model-tiles/${m.tile}.jpg`} selected={picked === m.code} onClick={() => choose(m.code)} />
-              ))}
-            </div>
-          </div>
-        ))
+        <>
+          <style>{DECK_CSS}</style>
+          {(['guitar', 'bass'] as const).map(family => {
+            const list = MODELS.filter(m => m.family === family).sort((a, b) => pickerRank(a.code) - pickerRank(b.code))
+            return (
+              <div key={family} style={{ marginBottom: '16px' }}>
+                <p style={{ ...mono, fontSize: '11px', letterSpacing: '2px', color: '#c8a96e', textTransform: 'uppercase' }}>
+                  {family === 'bass' ? 'Basses' : 'Guitars'}
+                </p>
+                <div className="model-deck" style={{
+                  ['--deck-n' as string]: list.length,
+                  ['--deck-min-strip' as string]: '40px',
+                  paddingRight: list.reduce((sum, m) => sum + (WIDE_TILES[m.code] ?? TILE_WIDTH) - TILE_WIDTH, 0),
+                }}>
+                  {list.map((m, i) => (
+                    <DeckCard key={m.code} code={m.code} name={m.displayName} tile={m.tile} index={i} selected={picked === m.code} onClick={() => choose(m.code)} />
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '12px' }}>
           {question.options.map(opt => (

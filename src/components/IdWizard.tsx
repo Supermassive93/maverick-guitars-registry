@@ -1,13 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { DECK_CSS } from '@/lib/deck-css'
 import {
   GENERATION_NAMES, MODELS, withArticle, MODEL_MAP, WIZARD_VERSION, getQuestion, resolve,
   type PathStep, type WizardResult,
 } from '@/lib/id-wizard-config'
 
-const STORAGE_KEY = 'maverick-id-wizard-path'
 const mono = { fontFamily: 'var(--font-dm-mono)' } as const
 
 // Same tile size as the models page (the JR4 picture is wider, so its tile is too)
@@ -94,25 +93,9 @@ function Tile({ label, image, selected, zoomable, onClick }: {
 
 export default function IdWizard({ onConfirmed }: { onConfirmed: (result: WizardResult) => void }) {
   const [path, setPath] = useState<PathStep[]>([])
-  const [loaded, setLoaded] = useState(false)
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      try {
-        const saved = sessionStorage.getItem(STORAGE_KEY)
-        if (saved) setPath(JSON.parse(saved))
-      } catch { /* storage unavailable */ }
-      setLoaded(true)
-    }, 0)
-    return () => clearTimeout(t)
-  }, [])
-
-  function update(next: PathStep[]) {
-    setPath(next)
-    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch { /* storage unavailable */ }
-  }
-
-  if (!loaded) return null
+  // Progress lives in component state only: every visit to the wizard starts at the first question
+  const update = (next: PathStep[]) => setPath(next)
 
   const state = resolve(path)
   const btn = { ...mono, fontSize: '11px', letterSpacing: '1px', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer', background: 'transparent' } as const
@@ -172,7 +155,7 @@ export default function IdWizard({ onConfirmed }: { onConfirmed: (result: Wizard
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '40px' }}>
-          <button type="button" onClick={() => { try { sessionStorage.removeItem(STORAGE_KEY) } catch { /* storage unavailable */ } onConfirmed(result) }} style={{ ...btn, background: '#c8a96e', color: '#000', border: '1px solid #c8a96e' }}>Correct — continue</button>
+          <button type="button" onClick={() => onConfirmed(result)} style={{ ...btn, background: '#c8a96e', color: '#000', border: '1px solid #c8a96e' }}>Correct — continue</button>
           <button type="button" onClick={() => update([])} style={{ ...btn, color: '#9e9b96', border: '1px solid rgba(255,255,255,0.1)' }}>Incorrect — start again</button>
         </div>
       </>

@@ -17,6 +17,8 @@ export interface WizardOption {
   label: string
   next: Next
   zoomable?: boolean
+  glyph?: string // shown in the tile's image area instead of a picture
+  image?: string // tile picture; defaults to /wizard/tiles/<option id>.webp
 }
 
 export interface WizardQuestion {
@@ -192,10 +194,10 @@ export const QUESTIONS: WizardQuestion[] = [
 
   // Shared ending
   q('Q_GEN_LOGO', 'Look at the Maverick logo on your headstock. Which matches yours?', [
-    o('OPT_GEN_LOGO_NO_TM', 'Logo with no trademark symbol', G('GEN_0_5'), true),
-    o('OPT_GEN_LOGO_STYLISED_TM', 'Logo with stylised ™', G('GEN_1'), true),
-    o('OPT_GEN_LOGO_STANDARD_TM', 'Logo with standard ™', G('GEN_2'), true),
-    o('OPT_GEN_LOGO_CANT_TELL', "Can't tell (logo worn, refinished or missing)", G('GEN_UNKNOWN'), true),
+    { ...o('OPT_GEN_LOGO_NO_TM', 'Logo with no trademark symbol', G('GEN_0_5'), true), image: '/wizard/tiles/OPT_GEN_LOGO_NO_TM.svg' },
+    { ...o('OPT_GEN_LOGO_STYLISED_TM', 'Logo with stylised ™', G('GEN_1'), true), image: '/wizard/tiles/OPT_GEN_LOGO_STYLISED_TM.svg' },
+    { ...o('OPT_GEN_LOGO_STANDARD_TM', 'Logo with standard ™', G('GEN_2'), true), image: '/wizard/tiles/OPT_GEN_LOGO_STANDARD_TM.svg' },
+    { ...o('OPT_GEN_LOGO_CANT_TELL', "Can't tell (logo worn, refinished or missing)", G('GEN_UNKNOWN')), glyph: '?' },
   ], 'Look closely at the area next to the logo for a ™ symbol.'),
 ]
 

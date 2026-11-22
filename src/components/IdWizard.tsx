@@ -46,8 +46,8 @@ function DeckCard({ code, name, tile, index, selected, onClick }: {
   )
 }
 
-function Tile({ label, image, selected, zoomable, onClick }: {
-  label: string; image?: string; selected?: boolean; zoomable?: boolean; onClick: () => void
+function Tile({ label, image, glyph, selected, zoomable, onClick }: {
+  label: string; image?: string; glyph?: string; selected?: boolean; zoomable?: boolean; onClick: () => void
 }) {
   const [missing, setMissing] = useState(!image)
   const [zoom, setZoom] = useState(false)
@@ -63,7 +63,9 @@ function Tile({ label, image, selected, zoomable, onClick }: {
           }}
         >
           <div style={{ aspectRatio: '4 / 3', background: '#0f0f0f', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            {!missing && image ? (
+            {glyph ? (
+              <span style={{ fontFamily: 'var(--font-bebas)', fontSize: '96px', color: '#c8a96e', lineHeight: 1 }}>{glyph}</span>
+            ) : !missing && image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={image} alt={label} onError={() => setMissing(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
@@ -203,7 +205,7 @@ export default function IdWizard({ onConfirmed }: { onConfirmed: (result: Wizard
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '12px' }}>
           {question.options.map(opt => (
-            <Tile key={opt.id} label={opt.label} image={`/wizard/tiles/${opt.id}.webp`} zoomable={opt.zoomable} selected={picked === opt.id} onClick={() => choose(opt.id)} />
+            <Tile key={opt.id} label={opt.label} image={opt.image ?? `/wizard/tiles/${opt.id}.webp`} glyph={opt.glyph} zoomable={opt.zoomable} selected={picked === opt.id} onClick={() => choose(opt.id)} />
           ))}
         </div>
       )}

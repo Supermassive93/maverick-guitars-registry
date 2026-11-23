@@ -151,8 +151,8 @@ export const QUESTIONS: WizardQuestion[] = [
     { ...o('OPT_HEADSTOCK_F_REVERSED', 'Reversed — 6 tuners along the bottom', Q('Q_CONTROLS_F_REV')), image: '/wizard/tiles/OPT_HEADSTOCK_F_REVERSED.png' },
   ]),
   q('Q_CONTROLS_F_REV', LOOK_CONTROLS, [
-    o('OPT_CONTROLS_F_REV_ONE', ONE, M('MDL_FDTOX')),
-    o('OPT_CONTROLS_F_REV_TWO', TWO, Q('Q_FINGERBOARD_F')),
+    { ...o('OPT_CONTROLS_F_REV_ONE', ONE, M('MDL_FDTOX')), image: '/wizard/tiles/OPT_CONTROLS_ONE.png' },
+    { ...o('OPT_CONTROLS_F_REV_TWO', TWO, Q('Q_FINGERBOARD_F')), image: '/wizard/tiles/OPT_CONTROLS_TWO.png' },
   ]),
   q('Q_FINGERBOARD_F', 'Look at your fingerboard. Which matches yours?', [
     o('OPT_FINGERBOARD_F_TWO_WOOD', 'Maple and rosewood, standard fret markers', M('MDL_MATRIX')),
@@ -164,12 +164,12 @@ export const QUESTIONS: WizardQuestion[] = [
     { ...o('OPT_BRIDGE_F_TOM_THRU', TOM, M('MDL_SPECIES1')), image: '/wizard/tiles/OPT_BRIDGE_F_TOM_THRU.png' },
   ]),
   q('Q_CONTROLS_F_FLOYD', 'Look at the controls on the body. Are they Evolution roller controls or standard knobs?', [
-    o('OPT_CONTROLS_F_FLOYD_ROLLERS', 'Evolution roller controls', M('MDL_SF3')),
-    o('OPT_CONTROLS_F_FLOYD_KNOBS', 'Standard knobs', M('MDL_CHAOS1')),
+    { ...o('OPT_CONTROLS_F_FLOYD_ROLLERS', 'Evolution roller controls', M('MDL_SF3')), image: '/wizard/tiles/OPT_CONTROLS_F_FLOYD_ROLLERS.png' },
+    { ...o('OPT_CONTROLS_F_FLOYD_KNOBS', 'Standard knobs', M('MDL_CHAOS1')), image: '/wizard/tiles/OPT_CONTROLS_F_FLOYD_KNOBS.png' },
   ]),
   q('Q_CONTROLS_F_HT', LOOK_CONTROLS, [
-    o('OPT_CONTROLS_F_HT_ONE', ONE, M('MDL_JR4')),
-    o('OPT_CONTROLS_F_HT_TWO', TWO, M('MDL_F2')),
+    { ...o('OPT_CONTROLS_F_HT_ONE', ONE, M('MDL_JR4')), image: '/wizard/tiles/OPT_CONTROLS_ONE.png' },
+    { ...o('OPT_CONTROLS_F_HT_TWO', TWO, M('MDL_F2')), image: '/wizard/tiles/OPT_CONTROLS_TWO.png' },
   ]),
 
   // X body
@@ -178,12 +178,12 @@ export const QUESTIONS: WizardQuestion[] = [
     { ...o('OPT_PICKUPS_X_HH5', 'Two humbuckers + 5-way selector', Q('Q_BRIDGE_X')), image: '/wizard/tiles/OPT_PICKUPS_F_HH5.png' },
   ]),
   q('Q_CONTROLS_X', LOOK_CONTROLS, [
-    o('OPT_CONTROLS_X_ONE', ONE, M('MDL_XDTOX')),
-    o('OPT_CONTROLS_X_TWO', TWO, Q('Q_ROUTING_X')),
+    { ...o('OPT_CONTROLS_X_ONE', ONE, M('MDL_XDTOX')), image: '/wizard/tiles/OPT_CONTROLS_ONE.png' },
+    { ...o('OPT_CONTROLS_X_TWO', TWO, Q('Q_ROUTING_X')), image: '/wizard/tiles/OPT_CONTROLS_TWO.png' },
   ]),
   q('Q_ROUTING_X', 'Look at the front of the body. Does it have decorative routing (carved grooves or channels for decoration)?', [
-    o('OPT_ROUTING_X_YES', 'Yes, decorative routing', M('MDL_XTREME')),
-    o('OPT_ROUTING_X_NO', 'No decorative routing', M('MDL_X1')),
+    { ...o('OPT_ROUTING_X_YES', 'Yes, decorative routing', M('MDL_XTREME')), image: '/wizard/tiles/OPT_ROUTING_X_YES.png' },
+    { ...o('OPT_ROUTING_X_NO', 'No decorative routing', M('MDL_X1')), image: '/wizard/tiles/OPT_ROUTING_X_NO.png' },
   ]),
   q('Q_BRIDGE_X', "Look at your Maverick's bridge. Does it have a through-body Tune-o-Matic style bridge?", [
     { ...o('OPT_BRIDGE_X_TOM_THRU', 'Yes — Tune-o-Matic style bridge, strings through the body', M('MDL_SPECIES2')), image: '/wizard/tiles/OPT_BRIDGE_F_TOM_THRU.png' },

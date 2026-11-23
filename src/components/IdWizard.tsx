@@ -9,10 +9,10 @@ import {
 
 const mono = { fontFamily: 'var(--font-dm-mono)' } as const
 
-// Same tile size as the models page (the JR4 picture is wider, so its tile is too)
+// Same tile size as the models page (the Artist Signature pictures — JR4 and X-5 — are wider, so their tiles are too)
 const TILE_WIDTH = 280
 const TILE_HEIGHT = 677
-const WIDE_TILES: Record<string, number> = { MDL_JR4: 470 }
+const WIDE_TILES: Record<string, number> = { MDL_JR4: 470, MDL_X5: 470 }
 
 // Order the models appear in the picker (anything not listed follows in config order). JR4 is last as its tile is wider.
 const PICKER_ORDER = [

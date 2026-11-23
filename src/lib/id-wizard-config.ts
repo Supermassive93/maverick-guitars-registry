@@ -43,6 +43,7 @@ export const MODELS: WizardModel[] = [
   { code: 'MDL_S4', dbName: 'S4', displayName: 'S4 Bass', family: 'bass', body: 'F', tile: 's4' },
   { code: 'MDL_Z47', dbName: 'Z-47', displayName: 'Z-47 Bass', family: 'bass', body: 'X', tile: 'z-47' },
   { code: 'MDL_S5', dbName: 'S5', displayName: 'S5 Bass', family: 'bass', body: 'OTHER', tile: 's5' },
+  { code: 'MDL_X5', dbName: 'X-5', displayName: 'X-5 Bass', family: 'bass', body: 'X', tile: 'x-5' },
   { code: 'MDL_F1', dbName: 'F1', displayName: 'F1', family: 'guitar', body: 'F', tile: 'f1' },
   { code: 'MDL_FDTOX', dbName: 'FD-Tox', displayName: 'FD-Tox', family: 'guitar', body: 'F', tile: 'fd-tox' },
   { code: 'MDL_MATRIX', dbName: 'Matrix', displayName: 'Matrix', family: 'guitar', body: 'F', tile: 'matrix' },
@@ -109,7 +110,7 @@ export const QUESTIONS: WizardQuestion[] = [
 
   q('Q_TUNERS', 'Look at your headstock. How many tuners does your Maverick have?', [
     { ...o('OPT_TUNERS_4', '4 tuners', Q('Q_BODY_4STR')), image: '/wizard/tiles/OPT_TUNERS_4.png' },
-    { ...o('OPT_TUNERS_5', '5 tuners', M('MDL_S5')), image: '/wizard/tiles/OPT_TUNERS_5.png' },
+    { ...o('OPT_TUNERS_5', '5 tuners', Q('Q_BODY_5STR')), image: '/wizard/tiles/OPT_TUNERS_5.png' },
     { ...o('OPT_TUNERS_6', '6 tuners', Q('Q_BODY_6STR')), image: '/wizard/tiles/OPT_TUNERS_6.png' },
     { ...o('OPT_TUNERS_7', '7 tuners', M('MDL_SPECIES7')), image: '/wizard/tiles/OPT_TUNERS_7.png' },
   ]),
@@ -122,6 +123,10 @@ export const QUESTIONS: WizardQuestion[] = [
   q('Q_KNOBS_4STR', 'Look at the control knobs on the body. Are they in a straight line or staggered?', [
     o('OPT_KNOBS_4STR_STRAIGHT', 'In a straight line', M('MDL_B1')),
     o('OPT_KNOBS_4STR_STAGGERED', 'Staggered', M('MDL_S4')),
+  ]),
+  q('Q_BODY_5STR', 'Which body shape best matches your Maverick?', [
+    o('OPT_BODY_5STR_F', 'F body', M('MDL_S5')),
+    o('OPT_BODY_5STR_X', 'X body', M('MDL_X5')),
   ]),
 
   // Guitars

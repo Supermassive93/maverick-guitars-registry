@@ -155,8 +155,8 @@ export const QUESTIONS: WizardQuestion[] = [
     { ...o('OPT_CONTROLS_F_REV_TWO', TWO, Q('Q_FINGERBOARD_F')), image: '/wizard/tiles/OPT_CONTROLS_TWO.png' },
   ]),
   q('Q_FINGERBOARD_F', 'Look at your fingerboard. Which matches yours?', [
-    o('OPT_FINGERBOARD_F_TWO_WOOD', 'Maple and rosewood, standard fret markers', M('MDL_MATRIX')),
-    o('OPT_FINGERBOARD_F_ONE_WOOD', 'Single wood, Maverick vent fret markers', M('MDL_SF1')),
+    { ...o('OPT_FINGERBOARD_F_TWO_WOOD', 'Maple and rosewood, standard fret markers', M('MDL_MATRIX')), image: '/wizard/tiles/OPT_FINGERBOARD_F_TWO_WOOD.png' },
+    { ...o('OPT_FINGERBOARD_F_ONE_WOOD', 'Single wood, Maverick Fret vent, Fret markers', M('MDL_SF1')), image: '/wizard/tiles/OPT_FINGERBOARD_F_ONE_WOOD.png' },
   ]),
   q('Q_BRIDGE_F', LOOK_BRIDGE, [
     { ...o('OPT_BRIDGE_F_FLOYD', FLOYD, Q('Q_CONTROLS_F_FLOYD')), image: '/wizard/tiles/OPT_BRIDGE_F_FLOYD.png' },

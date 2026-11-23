@@ -141,10 +141,10 @@ export const QUESTIONS: WizardQuestion[] = [
 
   // F body
   q('Q_PICKUPS_F', 'Look at your pickups and pickup selector. Which layout matches yours?', [
-    o('OPT_PICKUPS_F_HH3', 'Two humbuckers + 3-way toggle', Q('Q_HEADSTOCK_F')),
-    o('OPT_PICKUPS_F_HH5', 'Two humbuckers + 5-way selector', Q('Q_BRIDGE_F')),
-    o('OPT_PICKUPS_F_HSH5', 'Humbucker / single / humbucker + 5-way selector', M('MDL_F3')),
-    o('OPT_PICKUPS_F_HSS5', 'Humbucker / single / single + 5-way selector', M('MDL_F4')),
+    { ...o('OPT_PICKUPS_F_HH3', 'Two humbuckers + 3-way toggle', Q('Q_HEADSTOCK_F')), image: '/wizard/tiles/OPT_PICKUPS_F_HH3.png' },
+    { ...o('OPT_PICKUPS_F_HH5', 'Two humbuckers + 5-way selector', Q('Q_BRIDGE_F')), image: '/wizard/tiles/OPT_PICKUPS_F_HH5.png' },
+    { ...o('OPT_PICKUPS_F_HSH5', 'Humbucker / single / humbucker + 5-way selector', M('MDL_F3')), image: '/wizard/tiles/OPT_PICKUPS_F_HSH5.png' },
+    { ...o('OPT_PICKUPS_F_HSS5', 'Humbucker / single / single + 5-way selector', M('MDL_F4')), image: '/wizard/tiles/OPT_PICKUPS_F_HSS5.png' },
   ], 'H = humbucker (wide, twin-coil), S = single coil (narrow). Count pickups from neck to bridge.'),
   q('Q_HEADSTOCK_F', 'Look at your headstock. Are the tuners on the top edge (standard) or the bottom edge (reversed)?', [
     { ...o('OPT_HEADSTOCK_F_STANDARD', 'Standard — 6 tuners along the top', M('MDL_F1')), image: '/wizard/tiles/OPT_HEADSTOCK_F_STANDARD.png' },
@@ -174,8 +174,8 @@ export const QUESTIONS: WizardQuestion[] = [
 
   // X body
   q('Q_PICKUPS_X', 'Look at your pickups and pickup selector. Which layout matches yours?', [
-    o('OPT_PICKUPS_X_HH3', 'Two humbuckers + 3-way toggle', Q('Q_CONTROLS_X')),
-    o('OPT_PICKUPS_X_HH5', 'Two humbuckers + 5-way selector', Q('Q_BRIDGE_X')),
+    { ...o('OPT_PICKUPS_X_HH3', 'Two humbuckers + 3-way toggle', Q('Q_CONTROLS_X')), image: '/wizard/tiles/OPT_PICKUPS_F_HH3.png' },
+    { ...o('OPT_PICKUPS_X_HH5', 'Two humbuckers + 5-way selector', Q('Q_BRIDGE_X')), image: '/wizard/tiles/OPT_PICKUPS_F_HH5.png' },
   ]),
   q('Q_CONTROLS_X', LOOK_CONTROLS, [
     o('OPT_CONTROLS_X_ONE', ONE, M('MDL_XDTOX')),
@@ -187,7 +187,7 @@ export const QUESTIONS: WizardQuestion[] = [
   ]),
   q('Q_BRIDGE_X', "Look at your Maverick's bridge. Does it have a through-body Tune-o-Matic style bridge?", [
     { ...o('OPT_BRIDGE_X_TOM_THRU', 'Yes — Tune-o-Matic style bridge, strings through the body', M('MDL_SPECIES2')), image: '/wizard/tiles/OPT_BRIDGE_F_TOM_THRU.png' },
-    o('OPT_BRIDGE_X_OTHER', 'No — another style (Floyd Rose or hardtail)', M('MDL_CHAOS2')),
+    { ...o('OPT_BRIDGE_X_OTHER', 'No — another style (Floyd Rose or hardtail)', M('MDL_CHAOS2')), image: '/wizard/tiles/OPT_BRIDGE_X_OTHER.png' },
   ]),
 
   // G body

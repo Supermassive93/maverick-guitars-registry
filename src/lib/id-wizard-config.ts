@@ -93,6 +93,9 @@ const o = (id: string, label: string, next: Next, zoomable = false): WizardOptio
 const q = (id: string, prompt: string, options: WizardOption[], help?: string): WizardQuestion =>
   ({ id, prompt, help, inputType: 'tiles', options })
 
+// Body-shape pictures, shared by the 4-, 5- and 6-tuner body questions
+const BODY_TILE = { F: '/wizard/tiles/OPT_BODY_F.png', X: '/wizard/tiles/OPT_BODY_X.png', G: '/wizard/tiles/OPT_BODY_G.png' }
+
 const LOOK_CONTROLS = 'Look at the controls on the body. How many volume/tone controls are there?'
 const LOOK_BRIDGE = 'Look at your bridge. Which type does your Maverick have?'
 const ONE = 'One control'
@@ -117,23 +120,23 @@ export const QUESTIONS: WizardQuestion[] = [
 
   // Basses
   q('Q_BODY_4STR', 'Which body shape best matches your Maverick?', [
-    o('OPT_BODY_4STR_F', 'F body', Q('Q_KNOBS_4STR')),
-    o('OPT_BODY_4STR_X', 'X body', M('MDL_Z47')),
+    { ...o('OPT_BODY_4STR_F', 'F body', Q('Q_KNOBS_4STR')), image: BODY_TILE.F },
+    { ...o('OPT_BODY_4STR_X', 'X body', M('MDL_Z47')), image: BODY_TILE.X },
   ]),
   q('Q_KNOBS_4STR', 'Look at the control knobs on the body. Are they in a straight line or staggered?', [
-    o('OPT_KNOBS_4STR_STRAIGHT', 'In a straight line', M('MDL_B1')),
-    o('OPT_KNOBS_4STR_STAGGERED', 'Staggered', M('MDL_S4')),
+    { ...o('OPT_KNOBS_4STR_STRAIGHT', 'In a straight line', M('MDL_B1')), image: '/wizard/tiles/OPT_KNOBS_4STR_STRAIGHT.png' },
+    { ...o('OPT_KNOBS_4STR_STAGGERED', 'Staggered', M('MDL_S4')), image: '/wizard/tiles/OPT_KNOBS_4STR_STAGGERED.png' },
   ]),
   q('Q_BODY_5STR', 'Which body shape best matches your Maverick?', [
-    o('OPT_BODY_5STR_F', 'F body', M('MDL_S5')),
-    o('OPT_BODY_5STR_X', 'X body', M('MDL_X5')),
+    { ...o('OPT_BODY_5STR_F', 'F body', M('MDL_S5')), image: BODY_TILE.F },
+    { ...o('OPT_BODY_5STR_X', 'X body', M('MDL_X5')), image: BODY_TILE.X },
   ]),
 
   // Guitars
   q('Q_BODY_6STR', 'Which body shape best matches your Maverick?', [
-    o('OPT_BODY_6STR_F', 'F body', Q('Q_PICKUPS_F')),
-    o('OPT_BODY_6STR_X', 'X body', Q('Q_PICKUPS_X')),
-    o('OPT_BODY_6STR_G', 'G body', Q('Q_BRIDGE_G')),
+    { ...o('OPT_BODY_6STR_F', 'F body', Q('Q_PICKUPS_F')), image: BODY_TILE.F },
+    { ...o('OPT_BODY_6STR_X', 'X body', Q('Q_PICKUPS_X')), image: BODY_TILE.X },
+    { ...o('OPT_BODY_6STR_G', 'G body', Q('Q_BRIDGE_G')), image: BODY_TILE.G },
   ]),
 
   // F body
@@ -144,8 +147,8 @@ export const QUESTIONS: WizardQuestion[] = [
     o('OPT_PICKUPS_F_HSS5', 'Humbucker / single / single + 5-way selector', M('MDL_F4')),
   ], 'H = humbucker (wide, twin-coil), S = single coil (narrow). Count pickups from neck to bridge.'),
   q('Q_HEADSTOCK_F', 'Look at your headstock. Are the tuners on the top edge (standard) or the bottom edge (reversed)?', [
-    o('OPT_HEADSTOCK_F_STANDARD', 'Standard — 6 tuners along the top', M('MDL_F1')),
-    o('OPT_HEADSTOCK_F_REVERSED', 'Reversed — 6 tuners along the bottom', Q('Q_CONTROLS_F_REV')),
+    { ...o('OPT_HEADSTOCK_F_STANDARD', 'Standard — 6 tuners along the top', M('MDL_F1')), image: '/wizard/tiles/OPT_HEADSTOCK_F_STANDARD.png' },
+    { ...o('OPT_HEADSTOCK_F_REVERSED', 'Reversed — 6 tuners along the bottom', Q('Q_CONTROLS_F_REV')), image: '/wizard/tiles/OPT_HEADSTOCK_F_REVERSED.png' },
   ]),
   q('Q_CONTROLS_F_REV', LOOK_CONTROLS, [
     o('OPT_CONTROLS_F_REV_ONE', ONE, M('MDL_FDTOX')),

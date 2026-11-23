@@ -159,9 +159,9 @@ export const QUESTIONS: WizardQuestion[] = [
     o('OPT_FINGERBOARD_F_ONE_WOOD', 'Single wood, Maverick vent fret markers', M('MDL_SF1')),
   ]),
   q('Q_BRIDGE_F', LOOK_BRIDGE, [
-    o('OPT_BRIDGE_F_FLOYD', FLOYD, Q('Q_CONTROLS_F_FLOYD')),
-    o('OPT_BRIDGE_F_WILKINSON', WILK, Q('Q_CONTROLS_F_HT')),
-    o('OPT_BRIDGE_F_TOM_THRU', TOM, M('MDL_SPECIES1')),
+    { ...o('OPT_BRIDGE_F_FLOYD', FLOYD, Q('Q_CONTROLS_F_FLOYD')), image: '/wizard/tiles/OPT_BRIDGE_F_FLOYD.png' },
+    { ...o('OPT_BRIDGE_F_WILKINSON', WILK, Q('Q_CONTROLS_F_HT')), image: '/wizard/tiles/OPT_BRIDGE_F_WILKINSON.png' },
+    { ...o('OPT_BRIDGE_F_TOM_THRU', TOM, M('MDL_SPECIES1')), image: '/wizard/tiles/OPT_BRIDGE_F_TOM_THRU.png' },
   ]),
   q('Q_CONTROLS_F_FLOYD', 'Look at the controls on the body. Are they Evolution roller controls or standard knobs?', [
     o('OPT_CONTROLS_F_FLOYD_ROLLERS', 'Evolution roller controls', M('MDL_SF3')),

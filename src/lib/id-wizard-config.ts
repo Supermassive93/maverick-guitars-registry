@@ -186,18 +186,18 @@ export const QUESTIONS: WizardQuestion[] = [
     o('OPT_ROUTING_X_NO', 'No decorative routing', M('MDL_X1')),
   ]),
   q('Q_BRIDGE_X', "Look at your Maverick's bridge. Does it have a through-body Tune-o-Matic style bridge?", [
-    o('OPT_BRIDGE_X_TOM_THRU', 'Yes — Tune-o-Matic style bridge, strings through the body', M('MDL_SPECIES2')),
+    { ...o('OPT_BRIDGE_X_TOM_THRU', 'Yes — Tune-o-Matic style bridge, strings through the body', M('MDL_SPECIES2')), image: '/wizard/tiles/OPT_BRIDGE_F_TOM_THRU.png' },
     o('OPT_BRIDGE_X_OTHER', 'No — another style (Floyd Rose or hardtail)', M('MDL_CHAOS2')),
   ]),
 
   // G body
   q('Q_BRIDGE_G', LOOK_BRIDGE, [
-    o('OPT_BRIDGE_G_WRAP', 'Single wraparound (LP-style) bridge', Q('Q_BINDING_G')),
-    o('OPT_BRIDGE_G_TOM_THRU', TOM, M('MDL_SPECIES3')),
+    { ...o('OPT_BRIDGE_G_WRAP', 'Single wraparound (LP-style) bridge', Q('Q_BINDING_G')), image: '/wizard/tiles/OPT_BRIDGE_G_WRAP.png' },
+    { ...o('OPT_BRIDGE_G_TOM_THRU', TOM, M('MDL_SPECIES3')), image: '/wizard/tiles/OPT_BRIDGE_F_TOM_THRU.png' },
   ]),
   q('Q_BINDING_G', 'Look at the edges of the body. Is there binding (a contrasting strip running around the edge)?', [
-    o('OPT_BINDING_G_NONE', 'No body binding', M('MDL_G1')),
-    o('OPT_BINDING_G_BOUND', 'Body binding present', M('MDL_G2')),
+    { ...o('OPT_BINDING_G_NONE', 'No body binding', M('MDL_G1')), image: '/wizard/tiles/OPT_BINDING_G_NONE.png' },
+    { ...o('OPT_BINDING_G_BOUND', 'Body binding present', M('MDL_G2')), image: '/wizard/tiles/OPT_BINDING_G_BOUND.png' },
   ]),
 
   // Shared ending

@@ -2,11 +2,11 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { readPickupSvg, injectPickupColors } from '@/lib/pickup-svg'
 
-// Special-size tiles (the standard width is set in ModelCard). The JR4 picture is wider than the
-// others — 417x600 — so its tile is widened to show it whole at the standard tile height.
-const MODEL_TILE_WIDTHS: Record<string, number> = {
-  'jr4': 470,
-}
+// Artist Signature models get a larger tile (the standard width is set in ModelCard). Their
+// pictures are wider than the others — JR4 is 417x600, X-5 is 426x612 — so the tile is widened
+// to show them whole at the standard tile height. This is the format for all signature models.
+const ARTIST_SIGNATURE_SERIES_ID = 'SER-0005'
+const ARTIST_SIGNATURE_TILE_WIDTH = 470
 
 // Tile background art lives in public/model-tiles/<model-slug>.jpg — a model gets one by
 // having a file there; models without one keep the plain tile.
@@ -219,7 +219,7 @@ export default async function ModelsPage() {
                 rarity={rarity ?? null}
                 slug={m.model.toLowerCase().replace(/\s+/g, '-')}
                 image={modelTileImage(m.model.toLowerCase().replace(/\s+/g, '-'))}
-                width={MODEL_TILE_WIDTHS[m.model.toLowerCase().replace(/\s+/g, '-')]}
+                width={m.series === ARTIST_SIGNATURE_SERIES_ID ? ARTIST_SIGNATURE_TILE_WIDTH : undefined}
                 accentColor={accentColor}
                 bass={bass}
               />
